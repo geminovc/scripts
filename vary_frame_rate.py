@@ -6,8 +6,6 @@ import os
 import signal
 import shlex
 import sys
-
-sys.path.insert(0, "..")
 import packet_parser
 
 EXAMPLE_DIR = "/home/vibhaa/aiortc/examples/videostream-cli"
