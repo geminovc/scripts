@@ -103,6 +103,7 @@ def aggregate_data():
 
         stats = packet_parser.gather_trace_statistics(dump_file, args.window)
         df = pd.DataFrame(stats['bitrates'], columns = ['time', 'kbps'])
+        df['kbps'] = (df['kbps'] / 1000).round(2)
         df['fps'] = fps
         if first:
             df.to_csv(args.csv_name, header=True, index=False, mode="w")
