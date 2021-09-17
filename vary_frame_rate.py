@@ -90,6 +90,25 @@ def run_experiments():
         os.system("sudo pkill -9 tcpdump")
         recv_output.close()
 
+""" get fps from ffprobe 
+"""
+def get_fps_from_video(video_name):
+    ffprobe_cmd = f'ffprobe -v error -select_streams v \
+            -of default=noprint_wrappers=1:nokey=1 \
+            -show_entries stream=avg_frame_rate {video_name}' 
+    fps_string = sh.check_output(ffprobe_cmd, shell=True)
+    print(fps_string)
+    fps_string = fps_string.decode("utf-8")[:-1]
+    print(fps_string)
+    if "/" in fps_string:
+        parts = fps_string.split("/")
+        fps = round(int(parts[0]) / int(parts[1]), 2)
+    else:
+        fps = int(fps_string)
+    print(fps_string, fps)
+    return fps
+
+
 
 """ gets bitrate info from pcap file 
     and puts it into csv for R
@@ -98,11 +117,13 @@ def aggregate_data():
     first = True
     for fps in args.fps_list:
         dump_file = f'{EXAMPLE_DIR}/tcpdumps/noloss_{fps}fps_dump'
+        saved_video_file = f'{EXAMPLE_DIR}/videos/noloss_{fps}fps.mp4'
 
         stats = packet_parser.gather_trace_statistics(dump_file, args.window)
         df = pd.DataFrame(stats['bitrates'], columns = ['time', 'kbps'])
         df['kbps'] = (df['kbps'] / 1000).round(2)
-        df['fps'] = fps
+        df['fps'] = get_fps_from_video(saved_video_file)
+
         if first:
             df.to_csv(args.csv_name, header=True, index=False, mode="w")
             first = False
