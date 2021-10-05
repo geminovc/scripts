@@ -76,13 +76,13 @@ def get_source_pixels_from_flow(flow, frame):
     src_list_x, src_list_y = [], []
     frame = [int(x) for x in frame]
     x1, y1, x2, y2 = frame
-    x1 -= 256
-    x2 -= 256
+    x1 %= 256
+    x2 %= 256
 
     for x in range(min(x1, x2), max(x1, x2) + 1):
         for y in range(min(y1, y2), max(y1, y2) + 1):
             xs = flow[x, y, 1]
-            ys = flow[x, y, 2]
+            ys = flow[x, y, 0]
             src_pixel = (xs, ys)
             src_list_x.append(xs)
             src_list_y.append(ys)
@@ -97,6 +97,7 @@ count = 0
 prev_rect = None
 prev_patch = None
 current = []
+plt.rcParams["figure.figsize"] = [16, 9]
 while cap.isOpened():
     ret, img = cap.read()
     if ret == False:
@@ -104,14 +105,16 @@ while cap.isOpened():
     count += 1
 
     # extract the source, predicted and flow
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     source_img = img[:, :256, :]
+    driving_img = img[:, 256:512, :]
     predicted_img = img[:, 4*256:5*256, :]
     flow = img[:, 3*256:4*256, :]
     
     # display source and predicted, register call back
     fig, ax = plt.subplots()
     fig.canvas.mpl_connect('key_press_event', press)
-    new_img = np.concatenate((source_img, predicted_img), axis=1)
+    new_img = np.concatenate((source_img, driving_img, predicted_img), axis=1)
     line = ax.imshow(new_img)        
     
     # retain rectangle from previous frame    
