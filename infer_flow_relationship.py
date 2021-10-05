@@ -108,13 +108,14 @@ while cap.isOpened():
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     source_img = img[:, :256, :]
     driving_img = img[:, 256:512, :]
-    predicted_img = img[:, 4*256:5*256, :]
+    deformed_img = img[:, 512:3*256, :]
     flow = img[:, 3*256:4*256, :]
+    predicted_img = img[:, 4*256:5*256, :]
     
     # display source and predicted, register call back
     fig, ax = plt.subplots()
     fig.canvas.mpl_connect('key_press_event', press)
-    new_img = np.concatenate((source_img, driving_img, predicted_img), axis=1)
+    new_img = np.concatenate((source_img, driving_img, deformed_img, predicted_img), axis=1)
     line = ax.imshow(new_img)        
     
     # retain rectangle from previous frame    
