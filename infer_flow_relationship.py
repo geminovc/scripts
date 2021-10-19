@@ -44,8 +44,8 @@ def draw_overlays(x1, x2, y1, y2):
     rect = plt.Rectangle((min(x1, x2), min(y1, y2)), \
             np.abs(x1 - x2), np.abs(y1 - y2), fill=False, edgecolor='red')
     
-    a1, b1, a2, b2 = get_source_pixels_from_flow(flow, current)
-    patch = plt.Rectangle((a1, b1), a2 - a1, b2 - b1, fill=False, edgecolor='green')
+    corners = get_source_pixels_from_flow(flow, current)
+    patch = plt.Polygon(corners, fill=False, edgecolor='green')
     
     if prev_rect != None:
         prev_rect.remove()
@@ -79,15 +79,21 @@ def get_source_pixels_from_flow(flow, frame):
     x1 %= 256
     x2 %= 256
 
-    for x in range(min(x1, x2), max(x1, x2) + 1):
-        for y in range(min(y1, y2), max(y1, y2) + 1):
-            xs = flow[x, y, 1]
-            ys = flow[x, y, 0]
-            src_pixel = (xs, ys)
-            src_list_x.append(xs)
-            src_list_y.append(ys)
+    low_x = min(x1, x2)
+    low_y = min(y1, y2)
+    high_x = max(x1, x2)
+    high_y = max(y1, y2)
+    input_corners = [(low_x, low_y), (low_x, high_y), (high_x, high_y), (high_x, low_y)] 
 
-    return min(src_list_x), min(src_list_y), max(src_list_x), max(src_list_y)
+    output_corners = np.zeros((4, 2))
+    for i, (x, y) in enumerate(input_corners):
+        xs = flow[x, y, 1]
+        ys = flow[x, y, 0]
+        src_pixel = [xs, ys]
+        output_corners[i][0] = xs
+        output_corners[i][1] = ys
+
+    return output_corners
 
 
 """ iterate through video frames fetching grids and finding its source patch
