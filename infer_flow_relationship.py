@@ -14,7 +14,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets  import RectangleSelector
 import signal
-import cv2
 
 parser = argparse.ArgumentParser(description='Interactive tool to visualize flows based on bounding boxes')
 parser.add_argument('--name', metavar='n', type=str,
