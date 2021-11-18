@@ -8,10 +8,14 @@ import argparse
 import glymur
 import matplotlib.pyplot as plt
 from utils import *
+from imageio import imread
+import glob
 
 parser = argparse.ArgumentParser(description='Tool to understand residuals')
 parser.add_argument('--name', metavar='n', type=str,
                     help='name of video strip to infer data from.')
+parser.add_argument('--dir', metavar='d', type=str,
+                    help='directory with frames.')
 parser.add_argument('--save-directory', metavar='s', type=str,
                     help='folder where residuals are to be saved', default='residuals')
 parser.add_argument('--compression-factor-list', metavar='c', type=int, nargs='+',
@@ -23,7 +27,6 @@ args = parser.parse_args()
 video_name = args.name
 compression_factor_list = args.compression_factor_list
 
-cap = cv2.VideoCapture(video_name)
 count = 0
 width = 256
 sizes = {factor:[] for factor in compression_factor_list}
@@ -32,14 +35,11 @@ sizes = {factor:[] for factor in compression_factor_list}
 pre_residual_metrics = []
 qualities = {f:[] for f in compression_factor_list}
 
-while cap.isOpened():
-    ret, img = cap.read()
-    if ret == False:
-        break
+file_list = glob.glob(os.path.join(args.dir, video_name + '*.png'))
+for f in file_list:
+    img = imread(f)
     count += 1
 
-    # extract the source, predicted and flow
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     source_img = img[:, :width, :]
     driving_img = img[:, 2*width:3*width, :]
     predicted_img = img[:, 5*width:6*width, :]
@@ -56,13 +56,16 @@ while cap.isOpened():
         file_size = os.path.getsize(filename)
         sizes[factor].append(file_size)
 
-        # reconstruction
+        # uncompress and normalize residual
         reconstructed_residual = glymur.Jp2k(filename)[:]
         reconstructed_residual = reconstructed_residual.astype(int)
         blacks = 255 * np.ones_like(reconstructed_residual).astype(int)
         normalized_residual = reconstructed_residual * 2 - blacks
         
+        # adjust prediction and clip incorrect values
         final_prediction = predicted_img + normalized_residual
+        final_prediction[final_prediction > 255] = 255
+        final_prediction[final_prediction < 0] = 0
         final_prediction = final_prediction.astype(np.uint8)
         
         metrics = get_quality(final_prediction, driving_img)
@@ -72,11 +75,6 @@ while cap.isOpened():
         if count % args.save_frequency != 0:
             rm_cmd = f'rm {filename}'
             os.system(rm_cmd)
-        
-
-cap.release()
-cv2.destroyAllWindows()
-
 
 # get final stats
 psnr, ssim, lpips = get_average_visual_metrics(pre_residual_metrics)
