@@ -76,17 +76,19 @@ def byte_as_bits(byte):
 
     Returns:
         frame data - dictionary with frame timestamps, size and type
-        bitrates - timeseries of bitrate in sequence of windows
+        bitrates - timeseries of bitrate in sequence of windows separated
+                    by type
 """
 def gather_trace_statistics(pcap_filename, window=1):
     bind_layers(UDP, RTP)
     
     frame_data = []
-    bitrates = []
+    bitrates = {'video': [], 'audio': [], 'keypoints': []}
     count = 0
     cur_frame_size = 0
+    window_num = 0
     last_window_start = -1
-    bytes_so_far = 0
+    bytes_so_far = {'video': 0, 'audio': 0, 'keypoints':0}
     packet_reader = PcapReader(pcap_filename)
 
     for packet in packet_reader:
@@ -111,19 +113,30 @@ def gather_trace_statistics(pcap_filename, window=1):
                                 'keyframe': keyframe})
                             cur_frame_size = 0
 
-                        # get bitrate info
-                        time = dt.datetime.fromtimestamp(packet.time)
-                        if last_window_start == -1:
-                            last_window_start = time
-                        if ((time - last_window_start).seconds > window):
-                            bitrates.append([len(bitrates), bytes_so_far * 8])
-                            last_window_start += dt.timedelta(0, window)
-                            bytes_so_far = len(packet)
-                        else:
-                            bytes_so_far += len(packet)
+                        packet_type = 'video'
+                    
+                    elif packet[RTP].payload_type == 'something':
+                        packet_type = 'audio'
 
-                        logging.debug(len(packet))
-                        logging.debug(packet.payload.layers())
+                    else: 
+                        packet_type = 'keypoints'
+
+                    # dump last window's bitrate
+                    time = dt.datetime.fromtimestamp(packet.time)
+                    if last_window_start == -1:
+                        last_window_start = time
+
+                    if ((time - last_window_start).seconds > window):
+                        for p in bitrates.keys():
+                            bitrates[p].append(bytes_so_far[p] * 8)
+                            bytes_so_far[p] = 0
+                        last_window_start += dt.timedelta(0, window)
+                    
+                    bytes_so_far[packet_type] += len(packet)
+
+                    logging.debug(len(packet))
+                    logging.debug(packet.payload.layers())
+                
                 count += 1
 
     print(f'Read {count} packets total')

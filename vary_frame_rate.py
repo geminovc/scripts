@@ -120,8 +120,13 @@ def aggregate_data():
         saved_video_file = f'{EXAMPLE_DIR}/videos/noloss_{fps}fps.mp4'
 
         stats = packet_parser.gather_trace_statistics(dump_file, args.window)
-        df = pd.DataFrame(stats['bitrates'], columns = ['time', 'kbps'])
-        df['kbps'] = (df['kbps'] / 1000).round(2)
+        num_windows = len(stats['bitrates']['video'])
+        streams = list(stats['bitrates'].keys())
+        stats['bitrates']['time'] = np.arange(1, num_windows + 1)
+        
+        df = pd.DataFrame.from_dict(stats['bitrates'])
+        for s in streams:
+            df['s'] = (df['s'] / 1000).round(2)
         df['fps'] = get_fps_from_video(saved_video_file)
 
         if first:
