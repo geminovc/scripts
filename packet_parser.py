@@ -83,13 +83,13 @@ def gather_trace_statistics(pcap_filename, window=1):
     bind_layers(UDP, RTP)
     
     frame_data = []
+    bytes_so_far = {'video': 0, 'audio': 0, 'keypoints':0}
     bitrates = {'video': [], 'audio': [], 'keypoints': []}
     count = 0
+    count_kp = count_video = 0
     cur_frame_size = 0
     window_num = 0
-    count_kp = count_video = 0
     last_window_start = -1
-    bytes_so_far = {'video': 0, 'audio': 0, 'keypoints':0}
     packet_reader = PcapReader(pcap_filename)
 
     for packet in packet_reader:
@@ -145,6 +145,7 @@ def gather_trace_statistics(pcap_filename, window=1):
                     logging.debug(packet.payload.layers())
                 
                 count += 1
+
     for p in bitrates.keys():
         bitrates[p].append(bytes_so_far[p] * 8)
         bytes_so_far[p] = 0
