@@ -7,6 +7,7 @@ import signal
 import shlex
 import sys
 import packet_parser
+import numpy as np
 
 EXAMPLE_DIR = "/home/vibhaa/aiortc/examples/videostream-cli"
 
@@ -43,7 +44,7 @@ def run_experiments():
         print('fps:', fps)
         sender_log = f'sender_noloss_{fps}fps.log'
         receiver_log = f'receiver_noloss_{fps}fps.log'
-        dump_file = f'noloss_{fps}fps_dump'
+        dump_file = f'noloss_{fps}fps_dump.pcap'
         
         # run sender inside mm-shell
         mm_setup = 'sudo sysctl -w net.ipv4.ip_forward=1'
@@ -86,9 +87,12 @@ def run_experiments():
         time.sleep(args.duration)
         os.kill(recv_proc.pid, signal.SIGINT)
         time.sleep(5)
-        os.kill(mm_proc.pid, signal.SIGKILL)
+        
+        os.kill(mm_proc.pid, signal.SIGTERM)
         os.system("sudo pkill -9 tcpdump")
+        os.system("sudo pkill -9 python3")
         recv_output.close()
+
 
 """ get fps from ffprobe 
 """
@@ -116,7 +120,7 @@ def get_fps_from_video(video_name):
 def aggregate_data():
     first = True
     for fps in args.fps_list:
-        dump_file = f'{EXAMPLE_DIR}/tcpdumps/noloss_{fps}fps_dump'
+        dump_file = f'{EXAMPLE_DIR}/tcpdumps/noloss_{fps}fps_dump.pcap'
         saved_video_file = f'{EXAMPLE_DIR}/videos/noloss_{fps}fps.mp4'
 
         stats = packet_parser.gather_trace_statistics(dump_file, args.window)
@@ -126,7 +130,7 @@ def aggregate_data():
         
         df = pd.DataFrame.from_dict(stats['bitrates'])
         for s in streams:
-            df['s'] = (df['s'] / 1000).round(2)
+            df[s] = (df[s] / 1000.0 / args.window).round(2)
         df['fps'] = get_fps_from_video(saved_video_file)
 
         if first:

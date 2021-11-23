@@ -87,6 +87,7 @@ def gather_trace_statistics(pcap_filename, window=1):
     count = 0
     cur_frame_size = 0
     window_num = 0
+    count_kp = count_video = 0
     last_window_start = -1
     bytes_so_far = {'video': 0, 'audio': 0, 'keypoints':0}
     packet_reader = PcapReader(pcap_filename)
@@ -114,13 +115,19 @@ def gather_trace_statistics(pcap_filename, window=1):
                             cur_frame_size = 0
 
                         packet_type = 'video'
+                        count_video += 1
                     
-                    elif packet[RTP].payload_type == 'something':
+                    elif packet[RTP].payload_type == 96:
                         packet_type = 'audio'
 
-                    else: 
+                    elif packet[RTP].payload_type == 8:
                         packet_type = 'keypoints'
+                        count_kp += 1
+                    
+                    else: 
+                        continue
 
+                    print(packet_type, len(packet))
                     # dump last window's bitrate
                     time = dt.datetime.fromtimestamp(packet.time)
                     if last_window_start == -1:
@@ -138,7 +145,10 @@ def gather_trace_statistics(pcap_filename, window=1):
                     logging.debug(packet.payload.layers())
                 
                 count += 1
+    for p in bitrates.keys():
+        bitrates[p].append(bytes_so_far[p] * 8)
+        bytes_so_far[p] = 0
 
-    print(f'Read {count} packets total')
+    print(f'Read {count} packets total {count_kp} kp {count_video} video')
 
     return {'frame_data': frame_data, 'bitrates': bitrates}
