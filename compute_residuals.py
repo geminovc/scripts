@@ -81,7 +81,7 @@ psnr, ssim, lpips = get_average_visual_metrics(pre_residual_metrics)
 print(f"Without residual: PSNR: {psnr}, SSIM: {ssim}, LPIPS: {lpips}")
 
 for factor in compression_factor_list:
-    bw = np.average(sizes[factor])
+    bw = np.average(sizes[factor]) * 8 * 30/1000.0
     psnr, ssim, lpips = get_average_visual_metrics(qualities[factor])
 
     print(factor, "x")
