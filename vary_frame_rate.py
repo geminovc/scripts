@@ -1,15 +1,11 @@
 import pandas as pd
-import time
 import subprocess as sh
 import argparse
 import os
-import signal
-import shlex
-import sys
 import packet_parser
 import numpy as np
+from utils import *
 
-EXAMPLE_DIR = "/home/vibhaa/aiortc/examples/videostream-cli"
 
 parser = argparse.ArgumentParser(description='Frame Rate Variation.')
 parser.add_argument('--fps-list', type=int, nargs='+',
@@ -27,9 +23,15 @@ parser.add_argument('--duration', type=int,
 parser.add_argument('--window', type=int,
                     help='duration to aggregate bitrate over (in seconds)', 
                     default=1)
-parser.add_argument('--video-name', type=str,
+parser.add_argument('--video-file', type=str,
                     help='name of video', 
                     default="sundar_pichai.mp4")
+parser.add_argument('--save-prefix', type=str,
+                    help='prefix to save logs and files in', 
+                    required=True)
+parser.add_argument('--executable-dir', type=str,
+                    help='folder where the video-stream cli.py executable lies', 
+                    required=True)
 parser.add_argument('--csv-name', type=str,
                     help='file to save final data in', 
                     default="data/frame_rate_data")
@@ -40,58 +42,22 @@ args = parser.parse_args()
     capturing tcpdumps to measure bitrates from
 """
 def run_experiments():
+    params = {}
+    save_prefix = args.save_prefix
+    params['uplink_trace'] = args.uplink_trace
+    params['downlink_trace'] = args.downlink_trace
+    params['video_file'] = args.video_file
+    params['executable_dir'] = args.executable_dir 
+    params['duration'] = args.duration
+    
     for fps in args.fps_list:
-        print('fps:', fps)
-        sender_log = f'sender_noloss_{fps}fps.log'
-        receiver_log = f'receiver_noloss_{fps}fps.log'
-        dump_file = f'noloss_{fps}fps_dump.pcap'
-        
-        # run sender inside mm-shell
-        mm_setup = 'sudo sysctl -w net.ipv4.ip_forward=1'
-        sh.run(mm_setup, shell=True)
+        params['fps'] = fps
+        params['save_dir'] = f'{save_prefix}_{fps}fps'
 
-        mm_cmd = f'mm-link {args.uplink_trace} {args.downlink_trace} \
-                ./offer.sh {EXAMPLE_DIR}/videos/{args.video_name} {fps} \
-                {EXAMPLE_DIR}/logs/{sender_log}'
-        mm_args = shlex.split(mm_cmd)
-        mm_proc = sh.Popen(mm_args)
+        if not os.path.exists(params['save_dir']):
+            os.makedirs(params['save_dir'])
 
-        # get tcpdump
-        time.sleep(5)
-        ifconfig_cmd = 'ifconfig | grep -oh "link-[0-9]*"'
-        link_name = sh.check_output(ifconfig_cmd, shell=True)
-        link_name = link_name.decode("utf-8")[:-1]
-        print("Link Name:", link_name)
-
-        rm_cmd = f'sudo rm {EXAMPLE_DIR}/tcpdumps/{dump_file}'
-        sh.run(rm_cmd, shell=True)
-
-        tcpdump_cmd = f'sudo tcpdump -i {link_name} \
-                -w {EXAMPLE_DIR}/tcpdumps/{dump_file}'
-        tcpdump_args = shlex.split(tcpdump_cmd)
-        tcp_proc = sh.Popen(tcpdump_args)
-
-        # start receiver
-        recv_output = open(f'{EXAMPLE_DIR}/logs/{receiver_log}', "w")
-        receiver_cmd = f'python3 {EXAMPLE_DIR}/cli.py answer \
-                        --record-to {EXAMPLE_DIR}/videos/noloss_{fps}fps.mp4 \
-                        --signaling-path /tmp/test.sock \
-                        --signaling unix-socket \
-                        --fps {fps} \
-                        --verbose'
-        receiver_args = shlex.split(receiver_cmd)
-        recv_proc = sh.Popen(receiver_args, stderr = recv_output) 
-
-        # wait for experiment and kill processes
-        print("PIDS", recv_proc.pid, tcp_proc.pid, mm_proc.pid)
-        time.sleep(args.duration)
-        os.kill(recv_proc.pid, signal.SIGINT)
-        time.sleep(5)
-        
-        os.kill(mm_proc.pid, signal.SIGTERM)
-        os.system("sudo pkill -9 tcpdump")
-        os.system("sudo pkill -9 python3")
-        recv_output.close()
+        run_single_experiment(params)
 
 
 """ get fps from ffprobe 
@@ -119,9 +85,12 @@ def get_fps_from_video(video_name):
 """
 def aggregate_data():
     first = True
+    save_prefix = args.save_prefix
+    
     for fps in args.fps_list:
-        dump_file = f'{EXAMPLE_DIR}/tcpdumps/noloss_{fps}fps_dump.pcap'
-        saved_video_file = f'{EXAMPLE_DIR}/videos/noloss_{fps}fps.mp4'
+        save_dir = f'{save_prefix}_{fps}fps'
+        dump_file = f'{save_dir}/tcpdump.pcap'
+        saved_video_file = f'{save_dir}/received.mp4'
 
         stats = packet_parser.gather_trace_statistics(dump_file, args.window)
         num_windows = len(stats['bitrates']['video'])
@@ -131,6 +100,7 @@ def aggregate_data():
         df = pd.DataFrame.from_dict(stats['bitrates'])
         for s in streams:
             df[s] = (df[s] / 1000.0 / args.window).round(2)
+        df['kbps'] = df.iloc[:, 0:3].sum(axis=1).round(2) 
         df['fps'] = get_fps_from_video(saved_video_file)
 
         if first:

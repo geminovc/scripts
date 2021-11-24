@@ -127,7 +127,6 @@ def gather_trace_statistics(pcap_filename, window=1):
                     else: 
                         continue
 
-                    print(packet_type, len(packet))
                     # dump last window's bitrate
                     time = dt.datetime.fromtimestamp(packet.time)
                     if last_window_start == -1:
