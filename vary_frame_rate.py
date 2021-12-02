@@ -60,26 +60,6 @@ def run_experiments():
         run_single_experiment(params)
 
 
-""" get fps from ffprobe 
-"""
-def get_fps_from_video(video_name):
-    ffprobe_cmd = f'ffprobe -v error -select_streams v \
-            -of default=noprint_wrappers=1:nokey=1 \
-            -show_entries stream=avg_frame_rate {video_name}' 
-    fps_string = sh.check_output(ffprobe_cmd, shell=True)
-    print(fps_string)
-    fps_string = fps_string.decode("utf-8")[:-1]
-    print(fps_string)
-    if "/" in fps_string:
-        parts = fps_string.split("/")
-        fps = round(int(parts[0]) / int(parts[1]), 2)
-    else:
-        fps = int(fps_string)
-    print(fps_string, fps)
-    return fps
-
-
-
 """ gets bitrate info from pcap file 
     and puts it into csv for R
 """

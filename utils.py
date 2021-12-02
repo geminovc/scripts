@@ -7,6 +7,7 @@ import shlex
 import time
 import os
 import signal
+import datetime as dt
 
 """ get per frame visual metrics based on predicted and original frame 
 """
@@ -20,10 +21,10 @@ def get_quality(prediction, original):
     return {'psnr': psnr, 'ssim': ssim, 'lpips': lpips}
 
 
-""" average out visual metrics across all frames as aggregated in
+""" average out metrics across all frames as aggregated in
     the metrics_dict dictionary element
 """
-def get_average_visual_metrics(metrics_dict):
+def get_average_metrics(metrics_dict):
     psnrs = [m['psnr'] for m in metrics_dict]
     psnr = np.average(psnrs)
 
@@ -33,7 +34,86 @@ def get_average_visual_metrics(metrics_dict):
     lpips = [m['lpips'] for m in metrics_dict]
     lpip = np.average(lpips)
 
-    return psnr, ssim, lpip
+    if 'latency' in metrics_dict[0]:
+        latencies = [m['latency'] for m in metrics_dict]
+        latency = np.average(latencies)
+    else:
+        latency = 0
+
+    return psnr, ssim, lpip, latency
+
+
+""" get the fps of a video by running ffprobe
+"""
+def get_fps_from_video(video_name):
+    ffprobe_cmd = f'ffprobe -v error -select_streams v \
+            -of default=noprint_wrappers=1:nokey=1 \
+            -show_entries stream=avg_frame_rate {video_name}' 
+    fps_string = sh.check_output(ffprobe_cmd, shell=True)
+    print(fps_string)
+    fps_string = fps_string.decode("utf-8")[:-1]
+    print(fps_string)
+    if "/" in fps_string:
+        parts = fps_string.split("/")
+        fps = round(int(parts[0]) / int(parts[1]), 2)
+    else:
+        fps = int(fps_string)
+    print(fps_string, fps)
+    return fps
+
+
+""" get video quality and latency metrics aggregated over
+    windows of the experiment
+"""
+def get_video_quality_latency_over_windows(save_dir, window):
+    
+    window_metrics = [] 
+    averaged_metrics = {'psnr': [], 'ssim': [], 'lpips': [], 'latency': []}
+    sent_times = {}
+    last_window_start = -1
+
+    # parse send times
+    with open(f'{save_dir}/send_times.txt', 'r') as send_times_file:
+        for line in send_times_file:
+            words = line.split(' ')
+            frame_num = int(words[1])
+            relevant_time = f'{words[3]} {words[4][:-1]}'
+            relevant_time = dt.datetime.strptime(relevant_time, "%Y-%m-%d %H:%M:%S.%f")
+            sent_times[frame_num] = relevant_time
+
+
+    # get receive time, latency, metrics
+    recv_times_file = open(f'{save_dir}/recv_times.txt', 'r')
+    for line in recv_times_file: 
+        words = line.split(' ')
+        frame_num = int(words[1])
+        relevant_time = f'{words[3]} {words[4][:-1]}'
+        relevant_time = dt.datetime.strptime(relevant_time, "%Y-%m-%d %H:%M:%S.%f")
+        
+        sent_frame_file = f'{save_dir}/sender_frame_{frame_num:05d}.npy'
+        recv_frame_file = f'{save_dir}/receiver_frame_{frame_num:05d}.npy'
+
+        sent_frame = np.load(sent_frame_file)
+        recvd_frame = np.load(recv_frame_file)
+
+        qualities = get_quality(recvd_frame, sent_frame)
+        latency = (relevant_time - sent_times[frame_num]).total_seconds() * 1000
+        frame_metrics  = qualities.copy()
+        frame_metrics.update({'latency': latency})
+        window_metrics.append(frame_metrics)
+        
+        if last_window_start == -1:
+            last_window_start = relevant_time
+
+        if ((relevant_time - last_window_start).seconds > window):
+            averages = get_average_metrics(window_metrics)
+            for i, k in enumerate(window_metrics[0].keys()):
+                averaged_metrics[k].append(averages[i])
+            window_metrics = []
+            last_window_start += dt.timedelta(0, window)
+
+    recv_times_file.close()
+    return averaged_metrics
 
 
 """ run a single experiment inside a mahimahi shell, 
