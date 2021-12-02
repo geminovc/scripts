@@ -5,6 +5,7 @@ import os
 import packet_parser
 import numpy as np
 from utils import *
+import shutil
 
 
 parser = argparse.ArgumentParser(description='Frame Rate Variation.')
@@ -40,6 +41,7 @@ args = parser.parse_args()
 
 """ runs video conference at different frame rates
     capturing tcpdumps to measure bitrates from
+    WARNING: overwrites existing data
 """
 def run_experiments():
     params = {}
@@ -54,8 +56,8 @@ def run_experiments():
         params['fps'] = fps
         params['save_dir'] = f'{save_prefix}_{fps}fps'
 
-        if not os.path.exists(params['save_dir']):
-            os.makedirs(params['save_dir'])
+        shutil.rmtree(params['save_dir'], ignore_errors=True)
+        os.makedirs(params['save_dir'])
 
         run_single_experiment(params)
 
