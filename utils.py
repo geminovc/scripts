@@ -66,7 +66,6 @@ def get_fps_from_video(video_name):
     windows of the experiment
 """
 def get_video_quality_latency_over_windows(save_dir, window):
-    
     window_metrics = [] 
     averaged_metrics = {'psnr': [], 'ssim': [], 'lpips': [], 'latency': []}
     sent_times = {}
@@ -113,6 +112,9 @@ def get_video_quality_latency_over_windows(save_dir, window):
             last_window_start += dt.timedelta(0, window)
 
     recv_times_file.close()
+    averages = get_average_metrics(window_metrics)
+    for i, k in enumerate(window_metrics[0].keys()):
+        averaged_metrics[k].append(averages[i])
     return averaged_metrics
 
 
