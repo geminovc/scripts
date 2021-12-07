@@ -8,6 +8,11 @@ import time
 import os
 import signal
 import datetime as dt
+import torch
+
+loss_fn_vgg = lpips.LPIPS(net='vgg')
+if torch.cuda.is_available():
+    loss_fn_vgg = loss_fn_vgg.cuda()
 
 """ get per frame visual metrics based on predicted and original frame 
 """
@@ -15,10 +20,24 @@ def get_quality(prediction, original):
     psnr = peak_signal_noise_ratio(original, prediction)
     ssim = structural_similarity(original, prediction, multichannel=True)
 
-    # TODO: tensorify/send to CUDA
-    lpips = 0 #loss_fn_vgg(original, prediction)
+    if np.max(original) > 1 or np.max(prediction) > 1:
+        original = original.astype(np.float32)
+        prediction = prediction.astype(np.float32)
+        original /= 255.0
+        prediction /= 255.0
 
-    return {'psnr': psnr, 'ssim': ssim, 'lpips': lpips}
+    original = np.transpose(original, [2, 0, 1])
+    original_tensor = torch.unsqueeze(torch.from_numpy(original), 0)
+
+    prediction = np.transpose(prediction, [2, 0, 1])
+    prediction_tensor = torch.unsqueeze(torch.from_numpy(prediction), 0)
+
+    if torch.cuda.is_available():
+        original_tensor = original_tensor.cuda()
+        prediction_tensor = prediction_tensor.cuda()
+    lpips_val = loss_fn_vgg(original_tensor, prediction_tensor).data.cpu().numpy().flatten()[0]
+
+    return {'psnr': psnr, 'ssim': ssim, 'lpips': lpips_val}
 
 
 """ average out metrics across all frames as aggregated in
