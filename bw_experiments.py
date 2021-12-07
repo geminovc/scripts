@@ -85,6 +85,8 @@ def aggregate_data():
 
         metrics = get_video_quality_latency_over_windows(save_dir, args.window)
         for m in metrics.keys():
+            while len(metrics[m]) < df.shape[0]:
+                metrics[m].append(0)
             df[m] = metrics[m]
 
         if first:
