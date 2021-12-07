@@ -9,6 +9,7 @@ import os
 import signal
 import datetime as dt
 import torch
+import getpass
 
 loss_fn_vgg = lpips.LPIPS(net='vgg')
 if torch.cuda.is_available():
@@ -149,6 +150,7 @@ def run_single_experiment(params):
     video_file = params['video_file']
     exec_dir = params['executable_dir']
     dump_file = 'tcpdump.pcap'
+    user = getpass.getuser()
     
     # run sender inside mm-shell
     mm_setup = 'sudo sysctl -w net.ipv4.ip_forward=1'
@@ -170,7 +172,7 @@ def run_single_experiment(params):
     rm_cmd = f'sudo rm {log_dir}/{dump_file}'
     sh.run(rm_cmd, shell=True)
 
-    tcpdump_cmd = f'sudo tcpdump -i {link_name} \
+    tcpdump_cmd = f'sudo tcpdump -Z {user} -i {link_name} \
             -w {log_dir}/{dump_file}'
     print(tcpdump_cmd)
     tcpdump_args = shlex.split(tcpdump_cmd)
