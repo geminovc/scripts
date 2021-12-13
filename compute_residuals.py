@@ -1,4 +1,6 @@
-""" Computes thNeeds a video strip from the FOM model reconstruction to read frames
+""" Computes the residual sizes by compressing using JPEG2000
+
+    Needs a video strip from the FOM model reconstruction to read frames
     and residuals from
 """
 import os
