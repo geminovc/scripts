@@ -79,12 +79,12 @@ for f in file_list:
             os.system(rm_cmd)
 
 # get final stats
-psnr, ssim, lpips = get_average_visual_metrics(pre_residual_metrics)
+psnr, ssim, lpips, _ = get_average_metrics(pre_residual_metrics)
 print(f"Without residual: PSNR: {psnr}, SSIM: {ssim}, LPIPS: {lpips}")
 
 for factor in compression_factor_list:
     bw = np.average(sizes[factor]) * 8 * 30/1000.0
-    psnr, ssim, lpips = get_average_visual_metrics(qualities[factor])
+    psnr, ssim, lpips, _ = get_average_metrics(qualities[factor])
 
     print(factor, "x")
-    print(f"BW: {bw}, PSNR: {psnr}, SSIM: {ssim}, LPIPS: {lpips}")
+    print(f"BW: {bw}kbps, PSNR: {psnr}, SSIM: {ssim}, LPIPS: {lpips}")
