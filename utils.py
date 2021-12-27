@@ -144,14 +144,20 @@ def get_video_quality_latency_over_windows(save_dir, window):
 def run_single_experiment(params):
     log_dir = params['save_dir']
     duration = params['duration']
-    fps = params['fps']
+    fps = params['fps'] if 'fps' in params else 30
     uplink_trace = params['uplink_trace']
     downlink_trace = params['downlink_trace']
     video_file = params['video_file']
     exec_dir = params['executable_dir']
     dump_file = 'tcpdump.pcap'
     user = getpass.getuser()
-    
+   
+    # environment variable for number of bits if need be
+    base_env = os.environ.copy()
+    if 'jacobian_bits' in params:
+        num_bits = params['jacobian_bits']
+        base_env['JACOBIAN_BITS'] = str(num_bits)
+
     # run sender inside mm-shell
     mm_setup = 'sudo sysctl -w net.ipv4.ip_forward=1'
     sh.run(mm_setup, shell=True)
@@ -160,7 +166,7 @@ def run_single_experiment(params):
             ./offer.sh {video_file} {fps} \
             {log_dir}/sender.log {log_dir} {exec_dir}'
     mm_args = shlex.split(mm_cmd)
-    mm_proc = sh.Popen(mm_args)
+    mm_proc = sh.Popen(mm_args, env=base_env)
 
     # get tcpdump
     time.sleep(5)
@@ -188,7 +194,7 @@ def run_single_experiment(params):
                     --save-dir {log_dir} \
                     --verbose'
     receiver_args = shlex.split(receiver_cmd)
-    recv_proc = sh.Popen(receiver_args, stderr = recv_output) 
+    recv_proc = sh.Popen(receiver_args, stderr=recv_output, env=base_env) 
 
     # wait for experiment and kill processes
     print("PIDS", recv_proc.pid, tcp_proc.pid, mm_proc.pid)

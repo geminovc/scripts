@@ -131,6 +131,7 @@ def gather_trace_statistics(pcap_filename, window=1):
                     time = dt.datetime.fromtimestamp(packet.time)
                     if last_window_start == -1:
                         last_window_start = time
+                        first_packet_time = time
 
                     if ((time - last_window_start).seconds > window):
                         for p in bitrates.keys():
@@ -149,6 +150,11 @@ def gather_trace_statistics(pcap_filename, window=1):
         bitrates[p].append(bytes_so_far[p] * 8)
         bytes_so_far[p] = 0
 
+    # adjust window if the elapsed time is less than the window length
+    elapsed_time =  (time - first_packet_time).seconds
+    if elapsed_time < window:
+        window = elapsed_time
+
     print(f'Read {count} packets total {count_kp} kp {count_video} video')
 
-    return {'frame_data': frame_data, 'bitrates': bitrates}
+    return {'frame_data': frame_data, 'bitrates': bitrates, 'window': window}
