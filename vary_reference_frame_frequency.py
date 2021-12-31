@@ -9,9 +9,9 @@ import shutil
 
 
 parser = argparse.ArgumentParser(description='Compression Factor Variation.')
-parser.add_argument('--jacobian-bits-list', type=int, nargs='+',
-                    help='set of bits allocated per jacobian entry', 
-                    default=[4, 6, 8, 10])
+parser.add_argument('--reference-frame-frequency-list', type=int, nargs='+',
+                    help='interval between reference frame in frames',
+                    default=[10, 20, 30, 50, 100, 200])
 parser.add_argument('--uplink-trace', type=str,
                     help='uplink trace path for mahimahi', 
                     default="traces/12mbps_trace")
@@ -21,9 +21,9 @@ parser.add_argument('--downlink-trace', type=str,
 parser.add_argument('--duration', type=int,
                     help='duration of experiment (in seconds)', 
                     default=310)
-parser.add_argument('--reference-frame-freq', type=int,
-                    help='interval in bits between reference frames',
-                    default=20)
+parser.add_argument('--jacobian-bits', type=int,
+                    help='number of bits to assign to jacobian',
+                    default=6)
 parser.add_argument('--window', type=int,
                     help='duration to aggregate bitrate over (in seconds)', 
                     default=1)
@@ -54,12 +54,12 @@ def run_experiments():
     params['video_file'] = args.video_file
     params['executable_dir'] = args.executable_dir 
     params['duration'] = args.duration
-    params['reference_update_freq'] = args.reference_frame_freq
-    params['enable_prediction'] = True
+    params['jacobian_bits'] = args.jacobian_bits
+    params['enable_prediction'] = False
     
-    for jacobian_bits in args.jacobian_bits_list:
-        params['jacobian_bits'] = jacobian_bits
-        params['save_dir'] = f'{save_prefix}_{jacobian_bits}jbits'
+    for freq in args.reference_frame_frequency_list:
+        params['save_dir'] = f'{save_prefix}_ref_every_{freq}frames'
+        params['reference_update_freq'] = freq
 
         shutil.rmtree(params['save_dir'], ignore_errors=True)
         os.makedirs(params['save_dir'])
@@ -74,8 +74,8 @@ def aggregate_data():
     first = True
     save_prefix = args.save_prefix
     
-    for jacobian_bits in args.jacobian_bits_list:
-        save_dir = f'{save_prefix}_{jacobian_bits}jbits'
+    for freq in args.reference_frame_frequency_list:
+        save_dir = f'{save_prefix}_ref_every_{freq}frames'
         dump_file = f'{save_dir}/tcpdump.pcap'
         saved_video_file = f'{save_dir}/received.mp4'
         print(save_dir)
@@ -91,7 +91,8 @@ def aggregate_data():
             df[s] = (df[s] / 1000.0 / window).round(2)
         df['kbps'] = df.iloc[:, 0:3].sum(axis=1).round(2) 
         #df['fps'] = get_fps_from_video(saved_video_file)
-        df['jbits'] = jacobian_bits
+        df['jbits'] = args.jacobian_bits
+        df['reference_freq'] = freq
 
         metrics = get_video_quality_latency_over_windows(save_dir, args.window)
         for m in metrics.keys():

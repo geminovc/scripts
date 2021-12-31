@@ -150,8 +150,15 @@ def run_single_experiment(params):
     video_file = params['video_file']
     exec_dir = params['executable_dir']
     dump_file = 'tcpdump.pcap'
+    enable_prediction = params['enable_prediction']
+    reference_update_freq = params['reference_update_freq']
     user = getpass.getuser()
-   
+
+    # dump all parameters
+    param_file = open(f'{log_dir}/params.json', "w")
+    json.dump(params, param_file)
+    param_file.close()
+
     # environment variable for number of bits if need be
     base_env = os.environ.copy()
     if 'jacobian_bits' in params:
@@ -164,7 +171,8 @@ def run_single_experiment(params):
 
     mm_cmd = f'mm-link {uplink_trace} {downlink_trace} \
             ./offer.sh {video_file} {fps} \
-            {log_dir}/sender.log {log_dir} {exec_dir}'
+            {log_dir}/sender.log {log_dir} {exec_dir} \
+            {enable_prediction} {reference_update_freq}'
     mm_args = shlex.split(mm_cmd)
     mm_proc = sh.Popen(mm_args, env=base_env)
 
@@ -191,8 +199,10 @@ def run_single_experiment(params):
                     --signaling-path /tmp/test.sock \
                     --signaling unix-socket \
                     --fps {fps} \
-                    --save-dir {log_dir} \
-                    --verbose'
+                    --save-dir {log_dir}'
+    if enable_prediction:
+        receiver_cmd += ' --enable-prediction'
+    receiver_cmd += ' --verbose' 
     receiver_args = shlex.split(receiver_cmd)
     recv_proc = sh.Popen(receiver_args, stderr=recv_output, env=base_env) 
 
