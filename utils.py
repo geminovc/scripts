@@ -10,6 +10,7 @@ import signal
 import datetime as dt
 import torch
 import getpass
+import json
 
 loss_fn_vgg = lpips.LPIPS(net='vgg')
 if torch.cuda.is_available():
@@ -112,6 +113,10 @@ def get_video_quality_latency_over_windows(save_dir, window):
         sent_frame_file = f'{save_dir}/sender_frame_{frame_num:05d}.npy'
         recv_frame_file = f'{save_dir}/receiver_frame_{frame_num:05d}.npy'
 
+        if not os.path.exists(sent_frame_file):
+            print("Skipping frame", frame_num)
+            continue
+        
         sent_frame = np.load(sent_frame_file)
         recvd_frame = np.load(recv_frame_file)
 
@@ -199,6 +204,7 @@ def run_single_experiment(params):
                     --signaling-path /tmp/test.sock \
                     --signaling unix-socket \
                     --fps {fps} \
+                    --reference-update-freq {reference_update_freq} \
                     --save-dir {log_dir}'
     if enable_prediction:
         receiver_cmd += ' --enable-prediction'

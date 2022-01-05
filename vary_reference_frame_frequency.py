@@ -23,7 +23,7 @@ parser.add_argument('--duration', type=int,
                     default=310)
 parser.add_argument('--jacobian-bits', type=int,
                     help='number of bits to assign to jacobian',
-                    default=6)
+                    default=-1)
 parser.add_argument('--window', type=int,
                     help='duration to aggregate bitrate over (in seconds)', 
                     default=1)
@@ -55,7 +55,7 @@ def run_experiments():
     params['executable_dir'] = args.executable_dir 
     params['duration'] = args.duration
     params['jacobian_bits'] = args.jacobian_bits
-    params['enable_prediction'] = False
+    params['enable_prediction'] = True
     
     for freq in args.reference_frame_frequency_list:
         params['save_dir'] = f'{save_prefix}_ref_every_{freq}frames'
