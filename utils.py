@@ -147,7 +147,8 @@ def get_video_quality_latency_over_windows(save_dir, window):
     capturing logs using parameters passed in
 """
 def run_single_experiment(params):
-    log_dir = params['save_dir']
+    total_runs = params['runs']
+    save_dir = params['save_dir']
     duration = params['duration']
     fps = params['fps'] if 'fps' in params else 30
     uplink_trace = params['uplink_trace']
@@ -159,67 +160,73 @@ def run_single_experiment(params):
     reference_update_freq = params['reference_update_freq']
     user = getpass.getuser()
 
-    # dump all parameters
-    param_file = open(f'{log_dir}/params.json', "w")
-    json.dump(params, param_file)
-    param_file.close()
+    for run_num in range(total_runs):
+        print(f'Running {run_num}')
+        params['run_num'] = run_num
+        log_dir = f'{save_dir}/run{run_num}'
+        os.makedirs(log_dir)
+        
+        # dump all parameters
+        param_file = open(f'{log_dir}/params.json', "w")
+        json.dump(params, param_file)
+        param_file.close()
 
-    # environment variable for number of bits if need be
-    base_env = os.environ.copy()
-    if 'jacobian_bits' in params:
-        num_bits = params['jacobian_bits']
-        base_env['JACOBIAN_BITS'] = str(num_bits)
+        # environment variable for number of bits if need be
+        base_env = os.environ.copy()
+        if 'jacobian_bits' in params:
+            num_bits = params['jacobian_bits']
+            base_env['JACOBIAN_BITS'] = str(num_bits)
 
-    # run sender inside mm-shell
-    mm_setup = 'sudo sysctl -w net.ipv4.ip_forward=1'
-    sh.run(mm_setup, shell=True)
+        # run sender inside mm-shell
+        mm_setup = 'sudo sysctl -w net.ipv4.ip_forward=1'
+        sh.run(mm_setup, shell=True)
 
-    mm_cmd = f'mm-link {uplink_trace} {downlink_trace} \
-            ./offer.sh {video_file} {fps} \
-            {log_dir}/sender.log {log_dir} {exec_dir} \
-            {enable_prediction} {reference_update_freq}'
-    mm_args = shlex.split(mm_cmd)
-    mm_proc = sh.Popen(mm_args, env=base_env)
+        mm_cmd = f'mm-link {uplink_trace} {downlink_trace} \
+                ./offer.sh {video_file} {fps} \
+                {log_dir}/sender.log {log_dir} {exec_dir} \
+                {enable_prediction} {reference_update_freq}'
+        mm_args = shlex.split(mm_cmd)
+        mm_proc = sh.Popen(mm_args, env=base_env)
 
-    # get tcpdump
-    time.sleep(5)
-    ifconfig_cmd = 'ifconfig | grep -oh "link-[0-9]*"'
-    link_name = sh.check_output(ifconfig_cmd, shell=True)
-    link_name = link_name.decode("utf-8")[:-1]
-    print("Link Name:", link_name)
+        # get tcpdump
+        time.sleep(5)
+        ifconfig_cmd = 'ifconfig | grep -oh "link-[0-9]*"'
+        link_name = sh.check_output(ifconfig_cmd, shell=True)
+        link_name = link_name.decode("utf-8")[:-1]
+        print("Link Name:", link_name)
 
-    rm_cmd = f'sudo rm {log_dir}/{dump_file}'
-    sh.run(rm_cmd, shell=True)
+        rm_cmd = f'sudo rm {log_dir}/{dump_file}'
+        sh.run(rm_cmd, shell=True)
 
-    tcpdump_cmd = f'sudo tcpdump -Z {user} -i {link_name} \
-            -w {log_dir}/{dump_file}'
-    print(tcpdump_cmd)
-    tcpdump_args = shlex.split(tcpdump_cmd)
-    tcp_proc = sh.Popen(tcpdump_args)
+        tcpdump_cmd = f'sudo tcpdump -Z {user} -i {link_name} \
+                -w {log_dir}/{dump_file}'
+        print(tcpdump_cmd)
+        tcpdump_args = shlex.split(tcpdump_cmd)
+        tcp_proc = sh.Popen(tcpdump_args)
 
-    # start receiver
-    recv_output = open(f'{log_dir}/receiver.log', "w")
-    receiver_cmd = f'python3 {exec_dir}/cli.py answer \
-                    --record-to {log_dir}/received.mp4 \
-                    --signaling-path /tmp/test.sock \
-                    --signaling unix-socket \
-                    --fps {fps} \
-                    --reference-update-freq {reference_update_freq} \
-                    --save-dir {log_dir}'
-    if enable_prediction:
-        receiver_cmd += ' --enable-prediction'
-    receiver_cmd += ' --verbose' 
-    receiver_args = shlex.split(receiver_cmd)
-    recv_proc = sh.Popen(receiver_args, stderr=recv_output, env=base_env) 
+        # start receiver
+        recv_output = open(f'{log_dir}/receiver.log', "w")
+        receiver_cmd = f'python3 {exec_dir}/cli.py answer \
+                        --record-to {log_dir}/received.mp4 \
+                        --signaling-path /tmp/test.sock \
+                        --signaling unix-socket \
+                        --fps {fps} \
+                        --reference-update-freq {reference_update_freq} \
+                        --save-dir {log_dir}'
+        if enable_prediction:
+            receiver_cmd += ' --enable-prediction'
+        receiver_cmd += ' --verbose' 
+        receiver_args = shlex.split(receiver_cmd)
+        recv_proc = sh.Popen(receiver_args, stderr=recv_output, env=base_env) 
 
-    # wait for experiment and kill processes
-    print("PIDS", recv_proc.pid, tcp_proc.pid, mm_proc.pid)
-    time.sleep(duration)
-    os.kill(recv_proc.pid, signal.SIGINT)
-    time.sleep(5)
-    
-    os.kill(mm_proc.pid, signal.SIGTERM)
-    os.system("sudo pkill -9 tcpdump")
-    os.system("sudo pkill -9 python3")
-    recv_output.close()
+        # wait for experiment and kill processes
+        print("PIDS", recv_proc.pid, tcp_proc.pid, mm_proc.pid)
+        time.sleep(duration)
+        os.kill(recv_proc.pid, signal.SIGINT)
+        time.sleep(5)
+        
+        os.kill(mm_proc.pid, signal.SIGTERM)
+        os.system("sudo pkill -9 tcpdump")
+        os.system("sudo pkill -9 python3")
+        recv_output.close()
 
