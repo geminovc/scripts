@@ -226,7 +226,7 @@ def run_single_experiment(params):
         time.sleep(5)
         
         os.kill(mm_proc.pid, signal.SIGTERM)
-        os.system("sudo pkill -9 tcpdump")
-        os.system("sudo pkill -9 python3")
+        os.system(f'pkill -9 tcpdump')
+        os.system(f'pkill -U {user} -9 python3')
         recv_output.close()
 

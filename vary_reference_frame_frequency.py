@@ -100,6 +100,7 @@ def aggregate_data():
             df['kbps'] = df.iloc[:, 0:3].sum(axis=1).round(2) 
             df['jbits'] = args.jacobian_bits
             df['reference_freq'] = freq
+            df['run'] = run
 
             metrics = get_video_quality_latency_over_windows(save_dir, args.window)
             for m in metrics.keys():
