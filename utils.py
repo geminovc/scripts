@@ -96,6 +96,8 @@ def get_video_quality_latency_over_windows(save_dir, window):
     with open(f'{save_dir}/send_times.txt', 'r') as send_times_file:
         for line in send_times_file:
             words = line.split(' ')
+            if len(words) > 5: 
+                continue
             frame_num = int(words[1])
             relevant_time = f'{words[3]} {words[4][:-1]}'
             relevant_time = dt.datetime.strptime(relevant_time, "%Y-%m-%d %H:%M:%S.%f")
