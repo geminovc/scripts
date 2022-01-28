@@ -159,7 +159,7 @@ def run_single_experiment(params):
     exec_dir = params['executable_dir']
     dump_file = 'tcpdump.pcap'
     enable_prediction = params['enable_prediction']
-    reference_update_freq = params['reference_update_freq']
+    reference_update_freq = params.get('reference_update_freq', '0')
     user = getpass.getuser()
 
     for run_num in range(total_runs):
