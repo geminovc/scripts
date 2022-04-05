@@ -16,6 +16,11 @@ loss_fn_vgg = lpips.LPIPS(net='vgg')
 if torch.cuda.is_available():
     loss_fn_vgg = loss_fn_vgg.cuda()
 
+checkpoint_dict = {
+        'generic': '/video-conf/scratch/pantea_experiments_tardy/generic_512_kp_at_256_with_hr_skip_connections\ 29_03_22_17.17.57/',
+        'jen_psaki': '/video-conf/scratch/vibhaa_tardy/jen_psaki_512 28_03_22_21.45.03/00000099-checkpoint.pth.tar'
+}
+
 """ get per frame visual metrics based on predicted and original frame 
 """
 def get_quality(prediction, original):
@@ -178,6 +183,9 @@ def run_single_experiment(params):
         if 'jacobian_bits' in params:
             num_bits = params['jacobian_bits']
             base_env['JACOBIAN_BITS'] = str(num_bits)
+        
+        if 'checkpoint' in params:
+            base_env['CHECKPOINT_PATH'] = params['checkpoint']
 
         # run sender inside mm-shell
         mm_setup = 'sudo sysctl -w net.ipv4.ip_forward=1'
