@@ -1,5 +1,5 @@
 person=$1
-CODE_DIR=/data1/pantea/nets_implementation
+CODE_DIR=$2
 cd $CODE_DIR
 export PYTHONPATH=$PYTHONPATH:$PWD
 cd  first_order_model
