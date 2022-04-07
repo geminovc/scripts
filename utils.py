@@ -124,8 +124,8 @@ def get_video_quality_latency_over_windows(save_dir, window):
             print("Skipping frame", frame_num)
             continue
         
-        sent_frame = np.load(sent_frame_file)
-        recvd_frame = np.load(recv_frame_file)
+        sent_frame = np.load(sent_frame_file, allow_pickle=True)
+        recvd_frame = np.load(recv_frame_file, allow_pickle=True)
 
         qualities = get_quality(recvd_frame, sent_frame)
         latency = (relevant_time - sent_times[frame_num]).total_seconds() * 1000

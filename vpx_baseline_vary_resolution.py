@@ -2,7 +2,7 @@ import pandas as pd
 import subprocess as sh
 import argparse
 import os
-import packet_parser
+import log_parser
 import numpy as np
 from utils import *
 import shutil

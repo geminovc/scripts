@@ -157,4 +157,5 @@ def gather_trace_statistics(pcap_filename, window=1):
 
     print(f'Read {count} packets total {count_kp} kp {count_video} video')
 
+    print(bitrates)
     return {'frame_data': frame_data, 'bitrates': bitrates, 'window': window}
