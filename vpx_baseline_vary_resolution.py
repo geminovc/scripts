@@ -2,7 +2,7 @@ import pandas as pd
 import subprocess as sh
 import argparse
 import os
-import packet_parser
+import log_parser
 import numpy as np
 from utils import *
 import shutil
@@ -27,9 +27,11 @@ parser.add_argument('--window', type=int,
 parser.add_argument('--num-runs', type=int,
                     help='number of runs to average over per experiment',
                     default=10)
-parser.add_argument('--video-file', type=str,
-                    help='name of default video whose resolution will be adjusted', 
+parser.add_argument('--root-dir', type=str,
+                    help='name of default video directory', 
                     default="sundar_pichai.mp4")
+parser.add_argument('--person', type=str,
+                    help='person who will be resized', default='xiran')
 parser.add_argument('--save-prefix', type=str,
                     help='prefix to save logs and files in', 
                     required=True)
@@ -53,23 +55,29 @@ def run_experiments():
     params['downlink_trace'] = args.downlink_trace
     params['executable_dir'] = args.executable_dir 
     params['duration'] = args.duration
+    params['runs'] = 1
     params['enable_prediction'] = False
-    params['runs'] = args.num_runs
+    person = args.person
     
     for resolution in args.resolutions:
-        params['save_dir'] = f'{save_prefix}_resolution{resolution}'
-        params['video_file'] = f'{params["save_dir"]}/{os.path.basename(args.video_file)}'
+        video_dir = os.path.join(args.root_dir, person, "test")
+        
+        for video_name in os.listdir(video_dir):
+            video_file = os.path.join(video_dir, video_name)
+            params['save_dir'] = f'{save_prefix}_vpx/{person}/resolution{resolution}/' + \
+                    f'{os.path.basename(video_name)}'
+            params['video_file'] = f'{params["save_dir"]}/{video_name}'
 
-        shutil.rmtree(params['save_dir'], ignore_errors=True)
-        os.makedirs(params['save_dir'])
+            shutil.rmtree(params['save_dir'], ignore_errors=True)
+            os.makedirs(params['save_dir'])
 
-        width, height = resolution.split("x")
-        ffmpeg_cmd = f'ffmpeg -i {args.video_file} ' + \
-                f'-vf scale={width}:{height} {params["video_file"]}'
-        print(ffmpeg_cmd)
-        os.system(ffmpeg_cmd)
+            width, height = resolution.split("x")
+            ffmpeg_cmd = f'ffmpeg -y -stream_loop {args.num_runs} -i {video_file} ' + \
+                    f'-vf scale={width}:{height} {params["video_file"]}'
+            print(ffmpeg_cmd)
+            os.system(ffmpeg_cmd)
 
-        run_single_experiment(params)
+            run_single_experiment(params)
 
 
 """ gets bitrate info from pcap file 
@@ -78,18 +86,22 @@ def run_experiments():
 def aggregate_data():
     first = True
     save_prefix = args.save_prefix
+    person = args.person
     
     for resolution in args.resolutions:
         combined_df = pd.DataFrame()
 
-        for run in range(args.num_runs):
-            print(f'Run {run} for resolution {resolution}')
-            save_dir = f'{save_prefix}_resolution{resolution}/run{run}' 
-            dump_file = f'{save_dir}/tcpdump.pcap'
+        video_dir = os.path.join(args.root_dir, person, "test")
+            
+        for video_name in os.listdir(video_dir):
+            print(f'Run {video_name} for person {person} resolution {resolution}')
+            save_dir = f'{save_prefix}_vpx/{person}/resolution{resolution}/' + \
+                    f'{os.path.basename(video_name)}/run0/'
+            dump_file = f'{save_dir}/sender.log'
             saved_video_file = f'{save_dir}/received.mp4'
             print(save_dir)
 
-            stats = packet_parser.gather_trace_statistics(dump_file, args.window)
+            stats = log_parser.gather_trace_statistics(dump_file, args.window)
             num_windows = len(stats['bitrates']['video'])
             streams = list(stats['bitrates'].keys())
             stats['bitrates']['time'] = np.arange(1, num_windows + 1)
@@ -99,7 +111,7 @@ def aggregate_data():
             for s in streams:
                 df[s] = (df[s] / 1000.0 / window).round(2)
             df['kbps'] = df.iloc[:, 0:3].sum(axis=1).round(2) 
-            df['run'] = run
+            df['resolution'] = resolution
 
             metrics = get_video_quality_latency_over_windows(save_dir, args.window)
             for m in metrics.keys():
@@ -108,7 +120,7 @@ def aggregate_data():
                 df[m] = metrics[m]
             
             combined_df = pd.concat([df, combined_df], ignore_index=True)
-        
+
         mean_df = pd.DataFrame(combined_df.mean(axis=0).round(2).to_dict(), index=[df.index.values[-1]])
         mean_df['resolution'] = resolution
         if first:

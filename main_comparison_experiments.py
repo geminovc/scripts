@@ -2,7 +2,7 @@ import pandas as pd
 import subprocess as sh
 import argparse
 import os
-import packet_parser
+import log_parser
 import numpy as np
 from utils import *
 import shutil
@@ -97,11 +97,11 @@ def aggregate_data():
             for video_name in os.listdir(video_dir):
                 print(f'Run {video_name} for setting {setting} for person {person}')
                 save_dir = f'{save_prefix}/{person}/{os.path.basename(video_name)}/run0'
-                dump_file = f'{save_dir}/tcpdump.pcap'
+                dump_file = f'{save_dir}/sender.log'
                 saved_video_file = f'{save_dir}/received.mp4'
                 print(save_dir)
 
-                stats = packet_parser.gather_trace_statistics(dump_file, args.window)
+                stats = log_parser.gather_trace_statistics(dump_file, args.window)
                 num_windows = len(stats['bitrates']['video'])
                 streams = list(stats['bitrates'].keys())
                 stats['bitrates']['time'] = np.arange(1, num_windows + 1)

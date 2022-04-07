@@ -26,22 +26,31 @@ checkpoint_dict = {
 def get_quality(prediction, original):
     psnr = peak_signal_noise_ratio(original, prediction)
     ssim = structural_similarity(original, prediction, multichannel=True)
-
-    if np.max(original) > 1 or np.max(prediction) > 1:
-        original = original.astype(np.float32)
-        prediction = prediction.astype(np.float32)
-        original /= 255.0
-        prediction /= 255.0
-
+    
     original = np.transpose(original, [2, 0, 1])
-    original_tensor = torch.unsqueeze(torch.from_numpy(original), 0)
-
     prediction = np.transpose(prediction, [2, 0, 1])
-    prediction_tensor = torch.unsqueeze(torch.from_numpy(prediction), 0)
 
     if torch.cuda.is_available():
+        original_tensor = torch.unsqueeze(torch.from_numpy(original), 0)
         original_tensor = original_tensor.cuda()
+        original_tensor = original_tensor.to(torch.float32)
+        original_tensor = torch.div(original_tensor, 255)
+        
+        prediction_tensor = torch.unsqueeze(torch.from_numpy(prediction), 0)
         prediction_tensor = prediction_tensor.cuda()
+        prediction_tensor = prediction_tensor.to(torch.float32)
+        prediction_tensor = torch.div(prediction_tensor, 255)
+        
+    else:
+        if np.max(original) > 1 or np.max(prediction) > 1:
+            original = original.astype(np.float32)
+            prediction = prediction.astype(np.float32)
+            original /= 255.0
+            prediction /= 255.0
+            original_tensor = original
+            prediction_tensor = prediction
+
+
     lpips_val = loss_fn_vgg(original_tensor, prediction_tensor).data.cpu().numpy().flatten()[0]
 
     return {'psnr': psnr, 'ssim': ssim, 'lpips': lpips_val}
@@ -124,8 +133,8 @@ def get_video_quality_latency_over_windows(save_dir, window):
             print("Skipping frame", frame_num)
             continue
         
-        sent_frame = np.load(sent_frame_file)
-        recvd_frame = np.load(recv_frame_file)
+        sent_frame = np.load(sent_frame_file, allow_pickle=True)
+        recvd_frame = np.load(recv_frame_file, allow_pickle=True)
 
         qualities = get_quality(recvd_frame, sent_frame)
         latency = (relevant_time - sent_times[frame_num]).total_seconds() * 1000
@@ -188,18 +197,19 @@ def run_single_experiment(params):
             base_env['CHECKPOINT_PATH'] = params['checkpoint']
 
         # run sender inside mm-shell
-        mm_setup = 'sudo sysctl -w net.ipv4.ip_forward=1'
-        sh.run(mm_setup, shell=True)
+        # mm_setup = 'sudo sysctl -w net.ipv4.ip_forward=1'
+        # sh.run(mm_setup, shell=True)
 
-        mm_cmd = f'mm-link {uplink_trace} {downlink_trace} \
-                ./offer.sh {video_file} {fps} \
+        #mm_cmd = f'mm-link {uplink_trace} {downlink_trace}' 
+        mm_cmd = f'./offer.sh {video_file} {fps} \
                 {log_dir}/sender.log {log_dir} {exec_dir} \
                 {enable_prediction} {reference_update_freq}'
         mm_args = shlex.split(mm_cmd)
         mm_proc = sh.Popen(mm_args, env=base_env)
 
         # get tcpdump
-        time.sleep(5)
+        time.sleep(10)
+        """
         ifconfig_cmd = 'ifconfig | grep -oh "link-[0-9]*"'
         link_name = sh.check_output(ifconfig_cmd, shell=True)
         link_name = link_name.decode("utf-8")[:-1]
@@ -208,11 +218,12 @@ def run_single_experiment(params):
         rm_cmd = f'sudo rm {log_dir}/{dump_file}'
         sh.run(rm_cmd, shell=True)
 
-        tcpdump_cmd = f'sudo tcpdump -Z {user} -i {link_name} \
+        tcpdump_cmd = f'sudo tcpdump -i {link_name} \
                 -w {log_dir}/{dump_file}'
         print(tcpdump_cmd)
         tcpdump_args = shlex.split(tcpdump_cmd)
         tcp_proc = sh.Popen(tcpdump_args)
+        """
 
         # start receiver
         recv_output = open(f'{log_dir}/receiver.log', "w")
@@ -230,7 +241,7 @@ def run_single_experiment(params):
         recv_proc = sh.Popen(receiver_args, stderr=recv_output, env=base_env) 
 
         # wait for experiment and kill processes
-        print("PIDS", recv_proc.pid, tcp_proc.pid, mm_proc.pid)
+        print("PIDS", recv_proc.pid, mm_proc.pid)
         time.sleep(duration)
         os.kill(recv_proc.pid, signal.SIGINT)
         time.sleep(5)
