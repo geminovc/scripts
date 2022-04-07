@@ -26,22 +26,31 @@ checkpoint_dict = {
 def get_quality(prediction, original):
     psnr = peak_signal_noise_ratio(original, prediction)
     ssim = structural_similarity(original, prediction, multichannel=True)
-
-    if np.max(original) > 1 or np.max(prediction) > 1:
-        original = original.astype(np.float32)
-        prediction = prediction.astype(np.float32)
-        original /= 255.0
-        prediction /= 255.0
-
+    
     original = np.transpose(original, [2, 0, 1])
-    original_tensor = torch.unsqueeze(torch.from_numpy(original), 0)
-
     prediction = np.transpose(prediction, [2, 0, 1])
-    prediction_tensor = torch.unsqueeze(torch.from_numpy(prediction), 0)
 
     if torch.cuda.is_available():
+        original_tensor = torch.unsqueeze(torch.from_numpy(original), 0)
         original_tensor = original_tensor.cuda()
+        original_tensor = original_tensor.to(torch.float32)
+        original_tensor = torch.div(original_tensor, 255)
+        
+        prediction_tensor = torch.unsqueeze(torch.from_numpy(prediction), 0)
         prediction_tensor = prediction_tensor.cuda()
+        prediction_tensor = prediction_tensor.to(torch.float32)
+        prediction_tensor = torch.div(prediction_tensor, 255)
+        
+    else:
+        if np.max(original) > 1 or np.max(prediction) > 1:
+            original = original.astype(np.float32)
+            prediction = prediction.astype(np.float32)
+            original /= 255.0
+            prediction /= 255.0
+            original_tensor = original
+            prediction_tensor = prediction
+
+
     lpips_val = loss_fn_vgg(original_tensor, prediction_tensor).data.cpu().numpy().flatten()[0]
 
     return {'psnr': psnr, 'ssim': ssim, 'lpips': lpips_val}
