@@ -197,18 +197,19 @@ def run_single_experiment(params):
             base_env['CHECKPOINT_PATH'] = params['checkpoint']
 
         # run sender inside mm-shell
-        mm_setup = 'sudo sysctl -w net.ipv4.ip_forward=1'
-        sh.run(mm_setup, shell=True)
+        # mm_setup = 'sudo sysctl -w net.ipv4.ip_forward=1'
+        # sh.run(mm_setup, shell=True)
 
-        mm_cmd = f'mm-link {uplink_trace} {downlink_trace} \
-                ./offer.sh {video_file} {fps} \
+        #mm_cmd = f'mm-link {uplink_trace} {downlink_trace}' 
+        mm_cmd = f'./offer.sh {video_file} {fps} \
                 {log_dir}/sender.log {log_dir} {exec_dir} \
                 {enable_prediction} {reference_update_freq}'
         mm_args = shlex.split(mm_cmd)
         mm_proc = sh.Popen(mm_args, env=base_env)
 
         # get tcpdump
-        time.sleep(5)
+        time.sleep(10)
+        """
         ifconfig_cmd = 'ifconfig | grep -oh "link-[0-9]*"'
         link_name = sh.check_output(ifconfig_cmd, shell=True)
         link_name = link_name.decode("utf-8")[:-1]
@@ -217,11 +218,12 @@ def run_single_experiment(params):
         rm_cmd = f'sudo rm {log_dir}/{dump_file}'
         sh.run(rm_cmd, shell=True)
 
-        tcpdump_cmd = f'sudo tcpdump -Z {user} -i {link_name} \
+        tcpdump_cmd = f'sudo tcpdump -i {link_name} \
                 -w {log_dir}/{dump_file}'
         print(tcpdump_cmd)
         tcpdump_args = shlex.split(tcpdump_cmd)
         tcp_proc = sh.Popen(tcpdump_args)
+        """
 
         # start receiver
         recv_output = open(f'{log_dir}/receiver.log', "w")
@@ -239,7 +241,7 @@ def run_single_experiment(params):
         recv_proc = sh.Popen(receiver_args, stderr=recv_output, env=base_env) 
 
         # wait for experiment and kill processes
-        print("PIDS", recv_proc.pid, tcp_proc.pid, mm_proc.pid)
+        print("PIDS", recv_proc.pid, mm_proc.pid)
         time.sleep(duration)
         os.kill(recv_proc.pid, signal.SIGINT)
         time.sleep(5)
