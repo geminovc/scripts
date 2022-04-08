@@ -159,6 +159,34 @@ def get_video_quality_latency_over_windows(save_dir, window):
     return averaged_metrics
 
 
+""" get throughput aggregated over windows of the experiment
+"""
+def get_throughput_over_windows(save_dir, window):
+    windowed_received = []
+    last_window_start = -1
+    current_window_len = 0
+    total_predicted_frames = 0
+    with open(f'{save_dir}/receiver.log') as receiver_log:
+        for line in receiver_log:
+            words = line.strip()
+            if "Prediction time for received keypoints" in words:
+                total_predicted_frames += 1
+                words_split = words.split()
+                end_of_prediction_time = float(words_split[10])
+                if end_of_prediction_time - last_window_start > window:
+                    if current_window_len > 0:
+                        windowed_received.append(current_window_len)
+                    current_window_len = 1
+                    last_window_start = end_of_prediction_time
+                else:
+                    current_window_len += 1
+
+    if current_window_len > 0:
+        windowed_received.append(current_window_len)
+    windowed_throughput = [i/window for i in windowed_received]
+    return  windowed_throughput
+
+
 """ run a single experiment inside a mahimahi shell, 
     capturing logs using parameters passed in
 """

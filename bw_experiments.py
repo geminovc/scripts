@@ -8,7 +8,7 @@ from utils import *
 import shutil
 
 
-parser = argparse.ArgumentParser(description='Frame Rate Variation.')
+parser = argparse.ArgumentParser(description='Bandwidth  Variation.')
 parser.add_argument('--uplink-bw-list', type=int, nargs='+',
                     help='list of uplink bws to run on (assumes kpbs)', 
                     default=[100, 200, 500, 1000])
@@ -18,6 +18,9 @@ parser.add_argument('--downlink-trace', type=str,
 parser.add_argument('--duration', type=int,
                     help='duration of experiment (in seconds)', 
                     default=310)
+parser.add_argument('--runs', type=int,
+                    help='number of runs to repeat the experiment',
+                    default=1)
 parser.add_argument('--window', type=int,
                     help='duration to aggregate bitrate over (in seconds)', 
                     default=1)
@@ -47,6 +50,8 @@ def run_experiments():
     params['video_file'] = args.video_file
     params['executable_dir'] = args.executable_dir 
     params['duration'] = args.duration
+    params['runs'] = args.runs
+    params['enable_prediction'] = False
     params['fps'] = 30
     
     for bw in args.uplink_bw_list:
