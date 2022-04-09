@@ -50,6 +50,17 @@ num_frames = get_num_frames(video_name)
 print("Number of frames in the video", num_frames)
 source = get_frame(video_name, opt.source_frame_num, ifnormalize=False)
 predictions = []
+video_array = []
+
+# Add original video frames/source-target pair to the strip
+if opt.generate_video:
+    for i in range(0,num_frames):
+        video_array.append(get_frame(video_name, i, ifnormalize=False))
+    predictions.append(video_array)
+else:
+    predictions.append(np.expand_dims(source, axis=0))
+    driving = get_frame(video_name, opt.target_frame_num, ifnormalize=False)
+    predictions.append(np.expand_dims(driving, axis=0))
 
 for config, checkpoint in zip(config_list, checkpoint_list):
     model = FirstOrderModel(config, checkpoint)
