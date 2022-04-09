@@ -28,31 +28,32 @@ def gather_trace_statistics(log_filename, window=1):
             break
         
         parts = line.split(" ")
-        if parts[1] == ">" and parts[2].startswith("RtpPacket"):
-            packet_type = parts[0].split("(")[1][:-1]
-            packet_size = int(line.split(", ")[-1].split(" ")[0])
+        if len(parts) > 1: 
+            if parts[1] == ">" and parts[2].startswith("RtpPacket"):
+                packet_type = parts[0].split("(")[1][:-1]
+                packet_size = int(line.split(", ")[-1].split(" ")[0])
 
-            if packet_type == "video":
-                count_video += 1
-            elif packet_type == "keypoints":
-                count_kp += 1
+                if packet_type == "video":
+                    count_video += 1
+                elif packet_type == "keypoints":
+                    count_kp += 1
 
-            # dump last window's bitrate
-            date_str = line.split(") ")[-1][:-1]
-            if "retransmission" not in date_str:
-                time_object = dt.datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S.%f')
-                if last_window_start == -1:
-                    last_window_start = time_object
-                    first_packet_time = time_object
+                # dump last window's bitrate
+                date_str = line.split(") ")[-1][:-1]
+                if "retransmission" not in date_str:
+                    time_object = dt.datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S.%f')
+                    if last_window_start == -1:
+                        last_window_start = time_object
+                        first_packet_time = time_object
 
-                if ((time_object - last_window_start).seconds > window):
-                    for p in bitrates.keys():
-                        bitrates[p].append(bytes_so_far[p] * 8)
-                        bytes_so_far[p] = 0
-                    last_window_start += dt.timedelta(0, window)
-            
-            bytes_so_far[packet_type] += packet_size
-            count += 1
+                    if ((time_object - last_window_start).seconds > window):
+                        for p in bitrates.keys():
+                            bitrates[p].append(bytes_so_far[p] * 8)
+                            bytes_so_far[p] = 0
+                        last_window_start += dt.timedelta(0, window)
+                
+                bytes_so_far[packet_type] += packet_size
+                count += 1
 
     for p in bitrates.keys():
         bitrates[p].append(bytes_so_far[p] * 8)
