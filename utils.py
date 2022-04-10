@@ -17,8 +17,10 @@ from first_order_model.modules.model import Vgg19
 
 checkpoint_dict = {
         'generic': '/video-conf/scratch/pantea_experiments_tardy/generic_512_kp_at_256_with_hr_skip_connections\ 29_03_22_17.17.57/',
-        'jen_psaki': '/video-conf/scratch/vibhaa_tardy/jen_psaki_512 28_03_22_21.45.03/00000099-checkpoint.pth.tar'
-}
+        'jen_psaki': '/video-conf/scratch/pantea_experiments_tardy/resolution512_with_hr_skip_connections/jen_psaki_resolution512_with_hr_skip_connections 08_04_22_20.34.56/00000069-checkpoint.pth.tar',
+        'kayleigh': '/video-conf/scratch/pantea_experiments_tardy/resolution512_with_hr_skip_connections/kayleigh_resolution512_with_hr_skip_connections 05_04_22_18.23.53/00000069-checkpoint.pth.tar'
+
+        }
 
 vgg_model = Vgg19()
 if torch.cuda.is_available():
@@ -261,6 +263,7 @@ def get_throughput_over_windows(save_dir, window):
     if current_window_len > 0:
         windowed_received.append(current_window_len)
     windowed_throughput = [i/window for i in windowed_received]
+    print("total_predicted_frames", total_predicted_frames)
     return  windowed_throughput
 
 
@@ -311,7 +314,9 @@ def run_single_experiment(params):
         
         if 'checkpoint' in params:
             base_env['CHECKPOINT_PATH'] = params['checkpoint']
-
+        if 'config_path' in params:
+            base_env['CONFIG_PATH'] = params['config_path']
+        
         # run sender inside mm-shell
         # mm_setup = 'sudo sysctl -w net.ipv4.ip_forward=1'
         # sh.run(mm_setup, shell=True)

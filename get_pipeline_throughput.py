@@ -5,6 +5,9 @@ def get_throughput(filepath, window):
     last_window_start = -1
     current_window_len = 0
     total_predicted_frames = 0
+    old_end_of_prediction_time = 0
+    first_prediction_time = 0
+    last_prediction_time = 0
     with open(filepath) as fp:
         line = fp.readline()
         while line:
@@ -13,6 +16,10 @@ def get_throughput(filepath, window):
                 total_predicted_frames += 1
                 x_split = x.split()
                 end_of_prediction_time = float(x_split[10])
+                if first_prediction_time == 0:
+                    first_prediction_time = end_of_prediction_time
+                print("time diff", (end_of_prediction_time - old_end_of_prediction_time) * 1000)
+                old_end_of_prediction_time = end_of_prediction_time
                 if end_of_prediction_time - last_window_start > window:
                     if current_window_len > 0:
                         windowed_throughput.append(current_window_len)
@@ -22,10 +29,13 @@ def get_throughput(filepath, window):
                     current_window_len += 1
 
             line = fp.readline()
+
+    last_prediction_time = end_of_prediction_time
     if current_window_len > 0:
         windowed_throughput.append(current_window_len)
     print("windowed_throughput", [i/window for i in windowed_throughput])
     print("total_predicted_frames", total_predicted_frames)
+    print("total_throughput", total_predicted_frames / (last_prediction_time - first_prediction_time))
 
 def get_throughput_over_windows(save_dir, window):
     windowed_received = []
@@ -53,5 +63,5 @@ def get_throughput_over_windows(save_dir, window):
     print("windowed_throughput", windowed_throughput)
     return  windowed_throughput
 
-get_throughput_over_windows("/video-conf/scratch/pantea/sample_log_files", 3)
-get_throughput("/video-conf/scratch/pantea/sample_log_files/receiver_output", 3)    
+#get_throughput_over_windows("/data4/pantea/aiortc/examples/videostream-cli/test/receiver_output", 10)
+get_throughput("/data4/pantea/aiortc/examples/videostream-cli/debug_receiver_output", 2)    
