@@ -248,6 +248,16 @@ def get_throughput_over_windows(save_dir, window):
     return  windowed_throughput
 
 
+""" check if sender has gathered ice state 
+"""
+def check_sender_ready(filename):
+    while True:
+        result = sh.run(f'grep -i "iceGatheringState gathering -> complete" {filename}', shell=True)
+        if result.returncode == 0:
+            return
+        time.sleep(5)
+
+
 """ run a single experiment inside a mahimahi shell, 
     capturing logs using parameters passed in
 """
@@ -298,7 +308,7 @@ def run_single_experiment(params):
         mm_proc = sh.Popen(mm_args, env=base_env)
 
         # get tcpdump
-        time.sleep(10)
+        check_sender_ready(f'{log_dir}/sender.log')
         """
         ifconfig_cmd = 'ifconfig | grep -oh "link-[0-9]*"'
         link_name = sh.check_output(ifconfig_cmd, shell=True)
