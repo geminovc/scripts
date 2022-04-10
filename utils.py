@@ -1,6 +1,5 @@
 from skimage.metrics import peak_signal_noise_ratio
 from skimage.metrics import structural_similarity
-import lpips
 import numpy as np
 import subprocess as sh
 import shlex
@@ -11,50 +10,41 @@ import datetime as dt
 import torch
 import getpass
 import json
-
-loss_fn_vgg = lpips.LPIPS(net='vgg')
-if torch.cuda.is_available():
-    loss_fn_vgg = loss_fn_vgg.cuda()
+import piq
+import glob
+from skimage import img_as_float32
+from first_order_model.modules.model import Vgg19
 
 checkpoint_dict = {
         'generic': '/video-conf/scratch/pantea_experiments_tardy/generic_512_kp_at_256_with_hr_skip_connections\ 29_03_22_17.17.57/',
         'jen_psaki': '/video-conf/scratch/vibhaa_tardy/jen_psaki_512 28_03_22_21.45.03/00000099-checkpoint.pth.tar'
 }
 
-""" get per frame visual metrics based on predicted and original frame 
+vgg_model = Vgg19()
+if torch.cuda.is_available():
+    vgg_model = vgg_model.cuda()
+
+""" get per frame visual metrics based on predicted and original frame
 """
 def get_quality(prediction, original):
-    psnr = peak_signal_noise_ratio(original, prediction)
-    ssim = structural_similarity(original, prediction, multichannel=True)
+    original = np.expand_dims(img_as_float32(original), 0)
+    prediction = np.expand_dims(img_as_float32(prediction), 0)
     
-    original = np.transpose(original, [2, 0, 1])
-    prediction = np.transpose(prediction, [2, 0, 1])
-
+    original = np.transpose(original, [0, 3, 1, 2])
+    prediction = np.transpose(prediction, [0, 3, 1, 2])
+    
+    original_tensor = torch.from_numpy(original)
+    prediction_tensor = torch.from_numpy(prediction)
     if torch.cuda.is_available():
-        original_tensor = torch.unsqueeze(torch.from_numpy(original), 0)
         original_tensor = original_tensor.cuda()
-        original_tensor = original_tensor.to(torch.float32)
-        original_tensor = torch.div(original_tensor, 255)
-        
-        prediction_tensor = torch.unsqueeze(torch.from_numpy(prediction), 0)
         prediction_tensor = prediction_tensor.cuda()
-        prediction_tensor = prediction_tensor.to(torch.float32)
-        prediction_tensor = torch.div(prediction_tensor, 255)
-        
-    else:
-        if np.max(original) > 1 or np.max(prediction) > 1:
-            original = original.astype(np.float32)
-            prediction = prediction.astype(np.float32)
-            original /= 255.0
-            prediction /= 255.0
-            original_tensor = original
-            prediction_tensor = prediction
 
-
-    lpips_val = loss_fn_vgg(original_tensor, prediction_tensor).data.cpu().numpy().flatten()[0]
+    lpips_val = vgg_model.compute_loss(original_tensor, prediction_tensor).data.cpu().numpy().flatten()[0]
+    ssim = piq.ssim(original_tensor, prediction_tensor, data_range=1.).data.cpu().numpy().flatten()[0]
+    psnr = piq.psnr(original_tensor, prediction_tensor, data_range=1., \
+            reduction='none').data.cpu().numpy().flatten()[0]
 
     return {'psnr': psnr, 'ssim': ssim, 'lpips': lpips_val}
-
 
 """ average out metrics across all frames as aggregated in
     the metrics_dict dictionary element
@@ -141,7 +131,7 @@ def get_video_quality_latency_over_windows(save_dir, window):
         frame_metrics  = qualities.copy()
         frame_metrics.update({'latency': latency})
         window_metrics.append(frame_metrics)
-        
+   
         if last_window_start == -1:
             last_window_start = relevant_time
 
