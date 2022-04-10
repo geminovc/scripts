@@ -146,7 +146,78 @@ def get_video_quality_latency_over_windows(save_dir, window):
     averages = get_average_metrics(window_metrics)
     for i, k in enumerate(window_metrics[0].keys()):
         averaged_metrics[k].append(averages[i])
-    return averaged_metrics
+    return averaged_metrics   
+
+
+""" pickle dump visual metrics and latency for all frames from the experiment
+    and delete them
+"""
+def dump_per_frame_video_quality_latency(save_dir):
+    metrics = {} 
+    sent_times = {}
+    special_frames_list = [1322, 574, 140, 1786, 1048, 839, 761, 2253, 637, 375]  
+
+    # parse send times
+    with open(f'{save_dir}/send_times.txt', 'r') as send_times_file:
+        for line in send_times_file:
+            words = line.split(' ')
+            if len(words) > 5: 
+                continue
+            frame_num = int(words[1])
+            relevant_time = f'{words[3]} {words[4][:-1]}'
+            relevant_time = dt.datetime.strptime(relevant_time, "%Y-%m-%d %H:%M:%S.%f")
+            sent_times[frame_num] = relevant_time
+
+
+    # get receive time, latency, metrics
+    recv_times_file = open(f'{save_dir}/recv_times.txt', 'r')
+    for line in recv_times_file: 
+        words = line.split(' ')
+        frame_num = int(words[1])
+        relevant_time = f'{words[3]} {words[4][:-1]}'
+        relevant_time = dt.datetime.strptime(relevant_time, "%Y-%m-%d %H:%M:%S.%f")
+        
+        sent_frame_file = f'{save_dir}/sender_frame_{frame_num:05d}.npy'
+        recv_frame_file = f'{save_dir}/receiver_frame_{frame_num:05d}.npy'
+
+        if not os.path.exists(sent_frame_file):
+            print("Skipping frame", frame_num)
+            os.remove(recv_frame_file)
+            continue
+
+        sent_frame = np.load(sent_frame_file, allow_pickle=True)
+        recvd_frame = np.load(recv_frame_file, allow_pickle=True)
+
+        if frame_num % 100 == 0:
+            print(f'dumped metrics for {frame_num} frames')
+            np.save(f'{save_dir}/metrics.npy', metrics)
+
+        qualities = get_quality(recvd_frame, sent_frame)
+        latency = (relevant_time - sent_times[frame_num]).total_seconds() * 1000
+        frame_metrics  = qualities.copy()
+        frame_metrics.update({'latency': latency})
+        metrics[frame_num] = frame_metrics
+        
+        del sent_times[frame_num]
+        if frame_num not in special_frames_list:
+            os.remove(sent_frame_file)
+            os.remove(recv_frame_file)
+     
+    recv_times_file.close()
+    
+    # clean up any unremoved sent frames
+    for frame_num in sent_times.keys():
+        sent_frame_file = f'{save_dir}/sender_frame_{frame_num:05d}.npy'
+        os.remove(sent_frame_file)
+    os.system("rm reference_frame*")
+
+    for s in glob.glob(f'{save_dir}/sender*.npy'):
+        frame_num = int(s.split("_")[-1].split(".")[0])
+        if frame_num not in special_frames_list:
+            sent_frame_file = f'{save_dir}/sender_frame_{frame_num:05d}.npy'
+            os.remove(sent_frame_file)
+
+    np.save(f'{save_dir}/metrics.npy', metrics)
 
 
 """ get throughput aggregated over windows of the experiment
@@ -271,3 +342,4 @@ def run_single_experiment(params):
         os.system(f'pkill -U {user} -9 python3')
         recv_output.close()
 
+        dump_per_frame_video_quality_latency(log_dir)

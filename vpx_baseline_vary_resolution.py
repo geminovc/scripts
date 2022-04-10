@@ -124,7 +124,12 @@ def aggregate_data():
                 df['kbps'] = df.iloc[:, 0:3].sum(axis=1).round(2) 
                 df['resolution'] = resolution
 
-                metrics = get_video_quality_latency_over_windows(save_dir, args.window)
+                per_frame_metrics = np.load(f'{save_dir}/metrics.npy', allow_pickle='TRUE').item()
+                averages = get_average_metrics(list(per_frame_metrics.values()))
+                metrics = {'psnr': [], 'ssim': [], 'lpips': [], 'latency': []}
+                for i, k in enumerate(metrics.keys()):
+                        metrics[k].append(averages[i])
+
                 for m in metrics.keys():
                     while len(metrics[m]) < df.shape[0]:
                         metrics[m].append(0)
