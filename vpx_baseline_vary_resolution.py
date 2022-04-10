@@ -12,6 +12,9 @@ parser = argparse.ArgumentParser(description='Compression Factor Variation.')
 parser.add_argument('--resolutions', type=str, nargs='+',
                     help='set of resolutions to try',
                     default=['256x256', '512x512', '768x768', '1024x1024'])
+parser.add_argument('--quantizer-list', type=int, nargs='+',
+                    help='set of quantizers to quantize at',
+                    default=[2, 16, 32, 48, 62])
 parser.add_argument('--uplink-trace', type=str,
                     help='uplink trace path for mahimahi', 
                     default="traces/12mbps_trace")
@@ -72,12 +75,19 @@ def run_experiments():
             os.makedirs(params['save_dir'])
 
             width, height = resolution.split("x")
-            ffmpeg_cmd = f'ffmpeg -y -stream_loop {args.num_runs} -i {video_file} ' + \
+            ffmpeg_cmd = f'ffmpeg -hide_banner -loglevel error -y -i {video_file} ' + \
                     f'-vf scale={width}:{height} {params["video_file"]}'
             print(ffmpeg_cmd)
             os.system(ffmpeg_cmd)
 
-            run_single_experiment(params)
+            for quantizer in args.quantizer_list:
+                params['save_dir'] = f'{save_prefix}_vpx/{person}/resolution{resolution}/quantizer{quantizer}/' + \
+                    f'{os.path.basename(video_name)}'
+                shutil.rmtree(params['save_dir'], ignore_errors=True)
+                os.makedirs(params['save_dir'])
+                
+                params['quantizer'] = quantizer
+                run_single_experiment(params)
 
 
 """ gets bitrate info from pcap file 
@@ -89,45 +99,46 @@ def aggregate_data():
     person = args.person
     
     for resolution in args.resolutions:
-        combined_df = pd.DataFrame()
+        for quantizer in args.quantizer_list:
+            combined_df = pd.DataFrame()
 
-        video_dir = os.path.join(args.root_dir, person, "test")
+            video_dir = os.path.join(args.root_dir, person, "test")
             
-        for video_name in os.listdir(video_dir):
-            print(f'Run {video_name} for person {person} resolution {resolution}')
-            save_dir = f'{save_prefix}_vpx/{person}/resolution{resolution}/' + \
-                    f'{os.path.basename(video_name)}/run0/'
-            dump_file = f'{save_dir}/sender.log'
-            saved_video_file = f'{save_dir}/received.mp4'
-            print(save_dir)
+            for video_name in os.listdir(video_dir):
+                print(f'Run {video_name} for person {person} resolution {resolution}')
+                save_dir = f'{save_prefix}_vpx/{person}/resolution{resolution}/quantizer{quantizer}/' + \
+                        f'{os.path.basename(video_name)}/run0/'
+                dump_file = f'{save_dir}/sender.log'
+                saved_video_file = f'{save_dir}/received.mp4'
+                print(save_dir)
 
-            stats = log_parser.gather_trace_statistics(dump_file, args.window)
-            num_windows = len(stats['bitrates']['video'])
-            streams = list(stats['bitrates'].keys())
-            stats['bitrates']['time'] = np.arange(1, num_windows + 1)
-            window = stats['window']
-            
-            df = pd.DataFrame.from_dict(stats['bitrates'])
-            for s in streams:
-                df[s] = (df[s] / 1000.0 / window).round(2)
-            df['kbps'] = df.iloc[:, 0:3].sum(axis=1).round(2) 
-            df['resolution'] = resolution
+                stats = log_parser.gather_trace_statistics(dump_file, args.window)
+                num_windows = len(stats['bitrates']['video'])
+                streams = list(stats['bitrates'].keys())
+                stats['bitrates']['time'] = np.arange(1, num_windows + 1)
+                window = stats['window']
+                
+                df = pd.DataFrame.from_dict(stats['bitrates'])
+                for s in streams:
+                    df[s] = (df[s] / 1000.0 / window).round(2)
+                df['kbps'] = df.iloc[:, 0:3].sum(axis=1).round(2) 
+                df['resolution'] = resolution
 
-            metrics = get_video_quality_latency_over_windows(save_dir, args.window)
-            for m in metrics.keys():
-                while len(metrics[m]) < df.shape[0]:
-                    metrics[m].append(0)
-                df[m] = metrics[m]
-            
-            combined_df = pd.concat([df, combined_df], ignore_index=True)
+                metrics = get_video_quality_latency_over_windows(save_dir, args.window)
+                for m in metrics.keys():
+                    while len(metrics[m]) < df.shape[0]:
+                        metrics[m].append(0)
+                    df[m] = metrics[m]
+                
+                combined_df = pd.concat([df, combined_df], ignore_index=True)
 
-        mean_df = pd.DataFrame(combined_df.mean(axis=0).round(2).to_dict(), index=[df.index.values[-1]])
-        mean_df['resolution'] = resolution
-        if first:
-            mean_df.to_csv(args.csv_name, header=True, index=False, mode="w")
-            first = False
-        else:
-            mean_df.to_csv(args.csv_name, header=False, index=False, mode="a+")
+            mean_df = pd.DataFrame(combined_df.mean(axis=0).round(2).to_dict(), index=[df.index.values[-1]])
+            mean_df['resolution'] = resolution
+            if first:
+                mean_df.to_csv(args.csv_name, header=True, index=False, mode="w")
+                first = False
+            else:
+                mean_df.to_csv(args.csv_name, header=False, index=False, mode="a+")
 
 
 run_experiments()

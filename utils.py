@@ -202,6 +202,7 @@ def run_single_experiment(params):
     dump_file = 'tcpdump.pcap'
     enable_prediction = params['enable_prediction']
     reference_update_freq = params.get('reference_update_freq', '0')
+    quantizer = params.get('quantizer', 32)
     user = getpass.getuser()
 
     for run_num in range(total_runs):
@@ -231,7 +232,7 @@ def run_single_experiment(params):
         #mm_cmd = f'mm-link {uplink_trace} {downlink_trace}' 
         mm_cmd = f'./offer.sh {video_file} {fps} \
                 {log_dir}/sender.log {log_dir} {exec_dir} \
-                {enable_prediction} {reference_update_freq}'
+                {enable_prediction} {reference_update_freq} {quantizer}'
         mm_args = shlex.split(mm_cmd)
         mm_proc = sh.Popen(mm_args, env=base_env)
 
@@ -257,9 +258,10 @@ def run_single_experiment(params):
         recv_output = open(f'{log_dir}/receiver.log', "w")
         receiver_cmd = f'python3 {exec_dir}/cli.py answer \
                         --record-to {log_dir}/received.mp4 \
-                        --signaling-path /tmp/test.sock \
+                        --signaling-path test.sock \
                         --signaling unix-socket \
                         --fps {fps} \
+                        --quantizer {quantizer} \
                         --reference-update-freq {reference_update_freq} \
                         --save-dir {log_dir}'
         if enable_prediction:
