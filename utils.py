@@ -259,7 +259,7 @@ def get_throughput_over_windows(save_dir, window):
                 end_of_prediction_time = float(words_split[10])
                 if first_prediction_time == 0:
                     first_prediction_time = end_of_prediction_time
-                print("time diff between predictions", (end_of_prediction_time - old_end_of_prediction_time) * 1000)
+                #print("time diff between predictions", (end_of_prediction_time - old_end_of_prediction_time) * 1000)
                 old_end_of_prediction_time = end_of_prediction_time
                 if end_of_prediction_time - last_window_start > window:
                     if current_window_len > 0:
