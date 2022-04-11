@@ -2,12 +2,14 @@ from first_order_model.fom_wrapper import FirstOrderModel
 import imageio 
 import numpy as np
 import time
+import os
 from argparse import ArgumentParser
 from first_order_model.frames_dataset import get_num_frames, get_frame
+from checkpoints import *
 
 parser = ArgumentParser()
-parser.add_argument("--video_path",
-                    default="/data4/pantea/nets_implementation/first_order_model/512_kayleigh_10_second_0_1.mp4",
+parser.add_argument("--root_dir",
+                    default="/video-conf/scratch/pantea",
                     help="path to the test video")
 parser.add_argument("--generate_video",
                     action='store_true',
@@ -17,7 +19,7 @@ parser.add_argument("--source_frame_num",
                     type=int,
                     help="index of the source frame")
 parser.add_argument("--target_frame_num",
-                    default=1,
+                    default=10,
                     type=int,
                     help="index of the target frame")
 parser.add_argument("--output_name",
@@ -29,78 +31,90 @@ parser.add_argument("--output_fps",
 parser.add_argument("--source_update_frequency",
                     default=1800,
                     help="source update frequency if generate_video is set")
-parser.add_argument("--config_list",
-                    type=str,
-                    nargs='+',
-                    default=[ "/data4/pantea/nets_implementation/first_order_model/config/paper_configs/resolution512_with_hr_skip_connections.yaml"],
-                    help="path to configs")
-parser.add_argument('--checkpoint_list',
-                    type=str,
-                    nargs='+',
-                    help='list of checkpoints',
-                    default=['/video-conf/scratch/pantea_experiments_tardy/resolution512_with_hr_skip_connections/kayleigh_resolution512_with_hr_skip_connections 05_04_22_18.23.53/00000069-checkpoint.pth.tar'])
+parser.add_argument('--csv-name', type=str,
+                    help='file to save final data in', 
+                    default="data/structure_comparison")
+parser.add_argument('--resolution', type=str,
+                    help='video resolution',
+                    default="512")
+parser.add_argument("--person",
+                    default="xiran_close_up",
+                    help="name of the person")
 
 parser.set_defaults(verbose=False)
 opt = parser.parse_args()
-checkpoint_list = opt.checkpoint_list
-config_list = opt.config_list
+person = opt.person
 
-video_name = opt.video_path
-num_frames = get_num_frames(video_name)
-print("Number of frames in the video", num_frames)
-source = get_frame(video_name, opt.source_frame_num, ifnormalize=False)
-predictions = []
-video_array = []
+settings = [f"resolution{opt.resolution}_without_hr_skip_connections", f"resolution{opt.resolution}_fom_standard",
+            f"resolution{opt.resolution}_only_upsample_blocks", f"resolution{opt.resolution}_with_hr_skip_connections"]
 
-# Add original video frames/source-target pair to the strip
-if opt.generate_video:
-    for i in range(0,num_frames):
-        video_array.append(get_frame(video_name, i, ifnormalize=False))
-    predictions.append(video_array)
-else:
-    predictions.append(np.expand_dims(source, axis=0))
-    driving = get_frame(video_name, opt.target_frame_num, ifnormalize=False)
-    predictions.append(np.expand_dims(driving, axis=0))
+checkpoint_list = [structure_based_checkpoint_dict[setting][person] for setting in settings]
+config_list = [f'paper_configs/{setting}.yaml' for setting in settings]
 
-for config, checkpoint in zip(config_list, checkpoint_list):
-    model = FirstOrderModel(config, checkpoint)
+video_dir = os.path.join(opt.root_dir, f"fom_personalized_{opt.resolution}" ,person, "test")
+num_videos = 0
+for base_video_name in os.listdir(video_dir):
+    video_name =  os.path.join(video_dir, base_video_name)
+    print(video_name)
+    num_frames = get_num_frames(video_name)
+    print("Number of frames in the video", num_frames)
+    source = get_frame(video_name, opt.source_frame_num, ifnormalize=False)
+    predictions = []
+    video_array = []
 
-    source_kp, _= model.extract_keypoints(source)
-    model.update_source(0, source, source_kp)
-    old_source_index = 0
-    times = []
-    prediction = []
-
+    # Add original video frames/source-target pair to the strip
     if opt.generate_video:
-        for i in range(0, num_frames):
-            if i % opt.source_update_frequency == 0:
-                source = get_frame(video_name, i, ifnormalize=False)
-                source_kp, _= model.extract_keypoints(source)
-                model.update_source(len(model.source_frames), source, source_kp) 
-            
-            driving = get_frame(video_name, i, ifnormalize=False)
+        for i in range(0,num_frames):
+            video_array.append(get_frame(video_name, i, ifnormalize=False))
+        predictions.append(video_array)
+    else:
+        predictions.append(np.expand_dims(source, axis=0))
+        driving = get_frame(video_name, opt.target_frame_num, ifnormalize=False)
+        predictions.append(np.expand_dims(driving, axis=0))
+
+    for config, checkpoint in zip(config_list, checkpoint_list):
+        model = FirstOrderModel(config, checkpoint)
+
+        source_kp, _= model.extract_keypoints(source)
+        model.update_source(0, source, source_kp)
+        old_source_index = 0
+        times = []
+        prediction = []
+
+        if opt.generate_video:
+            for i in range(0, num_frames):
+                if i % opt.source_update_frequency == 0:
+                    source = get_frame(video_name, i, ifnormalize=False)
+                    source_kp, _= model.extract_keypoints(source)
+                    model.update_source(len(model.source_frames), source, source_kp) 
+                
+                driving = get_frame(video_name, i, ifnormalize=False)
+                target_kp, source_index = model.extract_keypoints(driving)
+                target_kp['source_index'] = source_index
+                if source_index == old_source_index:
+                    update_source = False
+                else:
+                    update_source = True
+                    old_source_index = source_index
+                start = time.perf_counter()
+                prediction.append(model.predict(target_kp, update_source))
+                times.append(time.perf_counter() - start)
+        else:
+            driving = get_frame(video_name, opt.target_frame_num, ifnormalize=False)
             target_kp, source_index = model.extract_keypoints(driving)
             target_kp['source_index'] = source_index
-            if source_index == old_source_index:
-                update_source = False
-            else:
-                update_source = True
-                old_source_index = source_index
             start = time.perf_counter()
-            prediction.append(model.predict(target_kp, update_source))
+            prediction.append(model.predict(target_kp, True))
             times.append(time.perf_counter() - start)
-    else:
-        driving = get_frame(video_name, opt.target_frame_num, ifnormalize=False)
-        target_kp, source_index = model.extract_keypoints(driving)
-        target_kp['source_index'] = source_index
-        start = time.perf_counter()
-        prediction.append(model.predict(target_kp, True))
-        times.append(time.perf_counter() - start)
-    
-    predictions.append(prediction)
-    print(f"Average prediction time per frame for {config} is {sum(times)/len(times)}s.")
+        
+        predictions.append(prediction)
+        print(f"Average prediction time per frame for {config} is {sum(times)/len(times)}s.")
 
-if opt.generate_video:
-    imageio.mimsave(f'{opt.output_name}_freq{opt.source_update_frequency}.mp4', np.concatenate(predictions, axis=2), fps = int(opt.output_fps))
-else:
-    imageio.imsave(f'{opt.output_name}.png', np.hstack([image[0] for image in predictions]))
+    if opt.generate_video:
+        imageio.mimsave(f'{opt.output_name}_{os.path.basename(video_name)}_freq{opt.source_update_frequency}.mp4', np.concatenate(predictions, axis=2), fps = int(opt.output_fps))
+    else:
+        imageio.imsave(f'{opt.output_name}_{os.path.basename(video_name)}_{opt.source_frame_num}_{opt.target_frame_num}.png', np.hstack([image[0] for image in predictions]))
+
+    num_videos += 1
+    if num_videos == 1:
+        break
