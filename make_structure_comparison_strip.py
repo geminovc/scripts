@@ -6,6 +6,7 @@ import os
 from argparse import ArgumentParser
 from first_order_model.frames_dataset import get_num_frames, get_frame
 from checkpoints import *
+from utils import *
 
 parser = ArgumentParser()
 parser.add_argument("--root_dir",
@@ -115,8 +116,11 @@ for base_video_name in os.listdir(video_dir):
             target_kp, source_index = model.extract_keypoints(driving)
             target_kp['source_index'] = source_index
             start = time.perf_counter()
-            prediction.append(model.predict(target_kp, True))
+            predicted_driving = model.predict(target_kp, True)
+            prediction.append(predicted_driving)
             times.append(time.perf_counter() - start)
+            metrics = get_quality(predicted_driving, driving)
+            print(metrics)
         
         predictions.append(prediction)
         print(f"Average prediction time per frame for {config} is {sum(times)/len(times)}s.")
