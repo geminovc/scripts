@@ -19,7 +19,7 @@ parser.add_argument('--downlink-trace', type=str,
 parser.add_argument('--duration', type=int,
                     help='duration of experiment (in seconds)', 
                     default=310)
-parser.add_argument('--window', type=int,
+parser.add_argument('--window', type=float,
                     help='duration to aggregate bitrate over (in seconds)', 
                     default=1)
 parser.add_argument('--num-runs', type=int,
@@ -47,7 +47,7 @@ args = parser.parse_args()
     WARNING: overwrites existing data
 """
 def run_experiments():
-    for setting in ["resolution512_with_hr_skip_connections"]:
+    for setting in ["resolution512_without_hr_skip_connections"]:
         params = {}
         save_prefix = f'{args.save_prefix}_{setting}'
         params['uplink_trace'] = args.uplink_trace
@@ -90,7 +90,7 @@ def run_experiments():
 def aggregate_data():
     first = True
     
-    for setting in ["resolution512_with_hr_skip_connections"]:#["personalized", "vpx" "generic", "personalized"]:
+    for setting in ["resolution512_without_hr_skip_connections"]:#["personalized", "vpx" "generic", "personalized"]:
         combined_df = pd.DataFrame()
         save_prefix = f'{args.save_prefix}_{setting}'
 
