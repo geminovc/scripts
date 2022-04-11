@@ -15,7 +15,7 @@ structure_based_checkpoint_dict = {
     'resolution1024_without_hr_skip_connections':{
         'needle_drop':'/video-conf/scratch/pantea_experiments_tardy/resolution1024_without_hr_skip_connections/needle_drop_resolution1024_without_hr_skip_connections 09_04_22_20.18.58/00000069-checkpoint.pth.tar',
 
-        'xiran':''
+        'xiran':'/video-conf/scratch/vibhaa_mm_log_directory/xiran_no_hr_skip_connections 09_04_22_03.27.17/00000061-checkpoint.pth.tar'
         },
 
     'resolution1024_with_hr_skip_connections':{

@@ -39,16 +39,20 @@ parser.add_argument('--executable-dir', type=str,
 parser.add_argument('--csv-name', type=str,
                     help='file to save final data in', 
                     default="data/main_comparison")
-
+parser.add_argument('--resolution', type=str,
+                    help='video resolution',
+                    default="512")
 args = parser.parse_args()
 
 """ runs video conference with different bits per jacobian
     capturing tcpdumps to measure bitrates from
     WARNING: overwrites existing data
 """
+settings = [f"resolution{args.resolution}_with_hr_skip_connections", f"resolution{args.resolution}_without_hr_skip_connections",
+            f"resolution{args.resolution}_fom_standard", f"resolution{args.resolution}_only_upsample_blocks"]
+
 def run_experiments():
-    for setting in ["resolution512_without_hr_skip_connections", "resolution512_with_hr_skip_connections",
-                    "resolution512_fom_standard", "resolution512_only_upsample_blocks"] :
+    for setting in settings:
         params = {}
         save_prefix = f'{args.save_prefix}_{setting}'
         params['uplink_trace'] = args.uplink_trace
@@ -61,7 +65,6 @@ def run_experiments():
         params['reference_update_freq'] = 1000
         nets_implementation_path = os.environ.get('PYTHONPATH', '/data4/pantea/aiortc/nets_implementation')
         params['config_path'] = f'/data4/pantea/aiortc/nets_implementation/first_order_model/config/paper_configs/{setting}.yaml'
-        print("params['config_path']", params['config_path'])
         
         for person in args.person_list:
             video_dir = os.path.join(args.root_dir, person, "test")
@@ -75,7 +78,7 @@ def run_experiments():
                 shutil.rmtree(params['save_dir'], ignore_errors=True)
                 os.makedirs(params['save_dir'])
 
-                ffmpeg_cmd = f'ffmpeg -y -stream_loop {args.num_runs} -i {video_file} ' + \
+                ffmpeg_cmd = f'ffmpeg -hide_banner -loglevel error -y -stream_loop {args.num_runs} -i {video_file} ' + \
                         f'{params["video_file"]}'
                 print(ffmpeg_cmd)
                 os.system(ffmpeg_cmd)
@@ -91,8 +94,7 @@ def run_experiments():
 def aggregate_data():
     first = True
     
-    for setting in ["resolution512_without_hr_skip_connections", "resolution512_with_hr_skip_connections",
-                    "resolution512_fom_standard", "resolution512_only_upsample_blocks"]:
+    for setting in settings:
         combined_df = pd.DataFrame()
         save_prefix = f'{args.save_prefix}_{setting}'
 
@@ -107,28 +109,33 @@ def aggregate_data():
 
                 stats = log_parser.gather_trace_statistics(dump_file, args.window)
                 num_windows = len(stats['bitrates']['video'])
-                print("num_windows", num_windows)
                 streams = list(stats['bitrates'].keys())
                 stats['bitrates']['time'] = np.arange(1, num_windows + 1)
                 window = stats['window']
-                print("window", window)
+                
                 df = pd.DataFrame.from_dict(stats['bitrates'])
                 for s in streams:
                     df[s] = (df[s] / 1000.0 / window).round(2)
                 df['kbps'] = df.iloc[:, 0:3].sum(axis=1).round(2) 
                 df['video_name'] = video_name
+                
+                per_frame_metrics = np.load(f'{save_dir}/metrics.npy', allow_pickle='TRUE').item()
+                averages = get_average_metrics(list(per_frame_metrics.values()))
+                metrics = {'psnr': [], 'ssim': [], 'lpips': [], 'latency': []}
+                for i, k in enumerate(metrics.keys()):
+                        metrics[k].append(averages[i])
+                
+                for m in metrics.keys():
+                    while len(metrics[m]) < df.shape[0]:
+                        metrics[m].append(metrics[m][0])
+                    df[m] = metrics[m]
 
-                metrics = get_video_quality_latency_over_windows(save_dir, args.window)
-                print(metrics)
                 windowed_throughput = get_throughput_over_windows(save_dir, args.window)
-                print(windowed_throughput)
-                #import pdb
-                #pdb.set_trace()
-                #for m in metrics.keys():
-                #    while len(metrics[m]) < df.shape[0]:
-                #        metrics[m].append(0)
-                #    df[m] = metrics[m]
-                df['average_throughput'] = windowed_throughput
+                averaged_throughput_accross_windows = [np.average(windowed_throughput)]
+                print("averaged_throughput_accross_windows", averaged_throughput_accross_windows)
+                while len(averaged_throughput_accross_windows) < df.shape[0]:
+                    averaged_throughput_accross_windows.append(averaged_throughput_accross_windows[0])
+                df['average_throughput'] = averaged_throughput_accross_windows
                 combined_df = pd.concat([df, combined_df], ignore_index=True)
 
                 break
