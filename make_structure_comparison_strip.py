@@ -23,7 +23,7 @@ parser.add_argument("--target_frame_num",
                     type=int,
                     help="index of the target frame")
 parser.add_argument("--output_name",
-                    default="comparison",
+                    default="structure_comparison",
                     help="name of the output file to be saved")
 parser.add_argument("--output_fps",
                     default=30,
@@ -45,8 +45,8 @@ parser.set_defaults(verbose=False)
 opt = parser.parse_args()
 person = opt.person
 
-settings = [f"resolution{opt.resolution}_without_hr_skip_connections", f"resolution{opt.resolution}_fom_standard",
-            f"resolution{opt.resolution}_only_upsample_blocks", f"resolution{opt.resolution}_with_hr_skip_connections"]
+settings = [f"resolution{opt.resolution}_fom_standard", f"resolution{opt.resolution}_only_upsample_blocks",
+            f"resolution{opt.resolution}_without_hr_skip_connections", f"resolution{opt.resolution}_with_hr_skip_connections"]
 
 checkpoint_list = [structure_based_checkpoint_dict[setting][person] for setting in settings]
 config_list = [f'paper_configs/{setting}.yaml' for setting in settings]
@@ -111,9 +111,9 @@ for base_video_name in os.listdir(video_dir):
         print(f"Average prediction time per frame for {config} is {sum(times)/len(times)}s.")
 
     if opt.generate_video:
-        imageio.mimsave(f'{opt.output_name}_{os.path.basename(video_name)}_freq{opt.source_update_frequency}.mp4', np.concatenate(predictions, axis=2), fps = int(opt.output_fps))
+        imageio.mimsave(f'{opt.output_name}_{person}_{os.path.basename(video_name)}_freq{opt.source_update_frequency}.mp4', np.concatenate(predictions, axis=2), fps = int(opt.output_fps))
     else:
-        imageio.imsave(f'{opt.output_name}_{os.path.basename(video_name)}_{opt.source_frame_num}_{opt.target_frame_num}.png', np.hstack([image[0] for image in predictions]))
+        imageio.imsave(f'{opt.output_name}_{person}_{os.path.basename(video_name)}_{opt.source_frame_num}_{opt.target_frame_num}.png', np.hstack([image[0] for image in predictions]))
 
     num_videos += 1
     if num_videos == 1:
