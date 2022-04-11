@@ -71,7 +71,7 @@ def run_experiments():
             for person in args.person_list:
                 video_dir = os.path.join(args.root_dir, person, "test")
                 params['checkpoint'] = structure_based_checkpoint_dict[setting][person]
-                
+                num_videos = 0 
                 for video_name in os.listdir(video_dir):
                     video_file = os.path.join(video_dir, video_name)
                     params['save_dir'] = f'{save_prefix}/{person}/{os.path.basename(video_name)}'
@@ -86,8 +86,9 @@ def run_experiments():
                     os.system(ffmpeg_cmd)
 
                     run_single_experiment(params)
-
-                    break
+                    num_videos += 1
+                    if num_videos == 3:
+                        break
         except Exception as e:
             print(e)
 
