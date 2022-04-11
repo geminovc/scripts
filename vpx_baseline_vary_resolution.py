@@ -139,6 +139,7 @@ def aggregate_data():
 
             mean_df = pd.DataFrame(combined_df.mean(axis=0).round(2).to_dict(), index=[df.index.values[-1]])
             mean_df['resolution'] = resolution
+            mean_df['quantizer'] = quantizer
             if first:
                 mean_df.to_csv(args.csv_name, header=True, index=False, mode="w")
                 first = False

@@ -171,6 +171,7 @@ def dump_per_frame_video_quality_latency(save_dir):
 
     # get receive time, latency, metrics
     recv_times_file = open(f'{save_dir}/recv_times.txt', 'r')
+    highest_frame_so_far = -1
     for line in recv_times_file: 
         words = line.split(' ')
         frame_num = int(words[1])
@@ -180,11 +181,19 @@ def dump_per_frame_video_quality_latency(save_dir):
         sent_frame_file = f'{save_dir}/sender_frame_{frame_num:05d}.npy'
         recv_frame_file = f'{save_dir}/receiver_frame_{frame_num:05d}.npy'
 
-        if not os.path.exists(sent_frame_file):
-            print("Skipping frame", frame_num)
-            os.remove(recv_frame_file)
+        if frame_num <= highest_frame_so_far:
+            continue
+        
+        if frame_num > highest_frame_so_far + 100:
             continue
 
+        if not os.path.exists(recv_frame_file) or not os.path.exists(sent_frame_file):
+            print("Skipping frame", frame_num)
+            if os.path.exists(recv_frame_file):
+                os.remove(recv_frame_file)
+            continue
+
+        highest_frame_so_far = frame_num
         sent_frame = np.load(sent_frame_file, allow_pickle=True)
         recvd_frame = np.load(recv_frame_file, allow_pickle=True)
 
@@ -216,6 +225,13 @@ def dump_per_frame_video_quality_latency(save_dir):
         if frame_num not in special_frames_list:
             sent_frame_file = f'{save_dir}/sender_frame_{frame_num:05d}.npy'
             os.remove(sent_frame_file)
+
+    for s in glob.glob(f'{save_dir}/receiver*.npy'):
+        frame_num = int(s.split("_")[-1].split(".")[0])
+        if frame_num not in special_frames_list:
+            recv_frame_file = f'{save_dir}/receiver_frame_{frame_num:05d}.npy'
+            os.remove(recv_frame_file)
+
 
     np.save(f'{save_dir}/metrics.npy', metrics)
 
