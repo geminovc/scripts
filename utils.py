@@ -245,6 +245,11 @@ def get_throughput_over_windows(save_dir, window):
     last_window_start = -1
     current_window_len = 0
     total_predicted_frames = 0
+
+    old_end_of_prediction_time = 0
+    first_prediction_time = 0
+    last_prediction_time = 1
+
     with open(f'{save_dir}/receiver.log') as receiver_log:
         for line in receiver_log:
             words = line.strip()
@@ -252,6 +257,10 @@ def get_throughput_over_windows(save_dir, window):
                 total_predicted_frames += 1
                 words_split = words.split()
                 end_of_prediction_time = float(words_split[10])
+                if first_prediction_time == 0:
+                    first_prediction_time = end_of_prediction_time
+                print("time diff between predictions", (end_of_prediction_time - old_end_of_prediction_time) * 1000)
+                old_end_of_prediction_time = end_of_prediction_time
                 if end_of_prediction_time - last_window_start > window:
                     if current_window_len > 0:
                         windowed_received.append(current_window_len)
@@ -259,11 +268,13 @@ def get_throughput_over_windows(save_dir, window):
                     last_window_start = end_of_prediction_time
                 else:
                     current_window_len += 1
-
+    
+    last_prediction_time = end_of_prediction_time
     if current_window_len > 0:
         windowed_received.append(current_window_len)
     windowed_throughput = [i/window for i in windowed_received]
     print("total_predicted_frames", total_predicted_frames)
+    print("total_throughput over the experiment", total_predicted_frames / (last_prediction_time - first_prediction_time))
     return  windowed_throughput
 
 

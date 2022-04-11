@@ -63,5 +63,6 @@ def get_throughput_over_windows(save_dir, window):
     print("windowed_throughput", windowed_throughput)
     return  windowed_throughput
 
-#get_throughput_over_windows("/data4/pantea/aiortc/examples/videostream-cli/test/receiver_output", 10)
-get_throughput("/data4/pantea/aiortc/examples/videostream-cli/debug_receiver_output", 2)    
+window = 1
+get_throughput("/data4/pantea/aiortc/examples/videostream-cli/kayleigh_2/receiver_output", window)
+#get_throughput("/data4/pantea/nets_scripts/original_resolution512_with_hr_skip_connections/kayleigh/512_kayleigh_10_second_0_1.mp4/run0/receiver.log", window)    

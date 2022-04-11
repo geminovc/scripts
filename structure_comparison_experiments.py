@@ -47,7 +47,7 @@ args = parser.parse_args()
     WARNING: overwrites existing data
 """
 def run_experiments():
-    for setting in ["resolution512_fom_standard"]:
+    for setting in ["resolution512_with_hr_skip_connections"]:
         params = {}
         save_prefix = f'{args.save_prefix}_{setting}'
         params['uplink_trace'] = args.uplink_trace
@@ -59,7 +59,7 @@ def run_experiments():
         params['checkpoint'] = 'None' if setting != "generic" else checkpoint_dict['generic']
         params['reference_update_freq'] = 1000
         nets_implementation_path = os.environ.get('PYTHONPATH', '/data4/pantea/nets_implementation')
-        params['config_path'] = f'{nets_implementation_path}/first_order_model/config/paper_configs/{setting}.yaml'
+        params['config_path'] = f'/data4/pantea/nets_implementation/first_order_model/config/paper_configs/{setting}.yaml'
         print("params['config_path']", params['config_path'])
         
         for person in args.person_list:
@@ -90,7 +90,7 @@ def run_experiments():
 def aggregate_data():
     first = True
     
-    for setting in ["resolution512_fom_standard"]:#["personalized", "vpx" "generic", "personalized"]:
+    for setting in ["resolution512_with_hr_skip_connections"]:#["personalized", "vpx" "generic", "personalized"]:
         combined_df = pd.DataFrame()
         save_prefix = f'{args.save_prefix}_{setting}'
 
