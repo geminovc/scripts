@@ -47,7 +47,8 @@ args = parser.parse_args()
     WARNING: overwrites existing data
 """
 def run_experiments():
-    for setting in ["resolution512_without_hr_skip_connections"]:
+    for setting in ["resolution512_without_hr_skip_connections", "resolution512_with_hr_skip_connections",
+                    "resolution512_fom_standard", "resolution512_only_upsample_blocks"] :
         params = {}
         save_prefix = f'{args.save_prefix}_{setting}'
         params['uplink_trace'] = args.uplink_trace
@@ -58,8 +59,8 @@ def run_experiments():
         params['runs'] = 1
         params['checkpoint'] = 'None' if setting != "generic" else checkpoint_dict['generic']
         params['reference_update_freq'] = 1000
-        nets_implementation_path = os.environ.get('PYTHONPATH', '/data4/pantea/nets_implementation')
-        params['config_path'] = f'/data4/pantea/nets_implementation/first_order_model/config/paper_configs/{setting}.yaml'
+        nets_implementation_path = os.environ.get('PYTHONPATH', '/data4/pantea/aiortc/nets_implementation')
+        params['config_path'] = f'/data4/pantea/aiortc/nets_implementation/first_order_model/config/paper_configs/{setting}.yaml'
         print("params['config_path']", params['config_path'])
         
         for person in args.person_list:
@@ -90,7 +91,8 @@ def run_experiments():
 def aggregate_data():
     first = True
     
-    for setting in ["resolution512_without_hr_skip_connections"]:#["personalized", "vpx" "generic", "personalized"]:
+    for setting in ["resolution512_without_hr_skip_connections", "resolution512_with_hr_skip_connections",
+                    "resolution512_fom_standard", "resolution512_only_upsample_blocks"]:
         combined_df = pd.DataFrame()
         save_prefix = f'{args.save_prefix}_{setting}'
 
@@ -116,8 +118,8 @@ def aggregate_data():
                 df['kbps'] = df.iloc[:, 0:3].sum(axis=1).round(2) 
                 df['video_name'] = video_name
 
-                #metrics = get_video_quality_latency_over_windows(save_dir, args.window)
-                #print(metrics)
+                metrics = get_video_quality_latency_over_windows(save_dir, args.window)
+                print(metrics)
                 windowed_throughput = get_throughput_over_windows(save_dir, args.window)
                 print(windowed_throughput)
                 #import pdb
