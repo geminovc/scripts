@@ -48,44 +48,48 @@ args = parser.parse_args()
     capturing tcpdumps to measure bitrates from
     WARNING: overwrites existing data
 """
-settings = [f"resolution{args.resolution}_with_hr_skip_connections", f"resolution{args.resolution}_without_hr_skip_connections",
-            f"resolution{args.resolution}_fom_standard", f"resolution{args.resolution}_only_upsample_blocks"]
+settings = [f"resolution{args.resolution}_without_hr_skip_connections", f"resolution{args.resolution}_fom_standard",
+            f"resolution{args.resolution}_only_upsample_blocks", f"resolution{args.resolution}_with_hr_skip_connections"]
 
 def run_experiments():
     for setting in settings:
-        params = {}
-        save_prefix = f'{args.save_prefix}_{setting}'
-        params['uplink_trace'] = args.uplink_trace
-        params['downlink_trace'] = args.downlink_trace
-        params['executable_dir'] = args.executable_dir 
-        params['duration'] = args.duration
-        params['enable_prediction'] = False if setting == "vpx" else True
-        params['runs'] = 1
-        params['checkpoint'] = 'None' if setting != "generic" else checkpoint_dict['generic']
-        params['reference_update_freq'] = 1000
-        nets_implementation_path = os.environ.get('PYTHONPATH', '/data4/pantea/aiortc/nets_implementation')
-        params['config_path'] = f'/data4/pantea/aiortc/nets_implementation/first_order_model/config/paper_configs/{setting}.yaml'
-        
-        for person in args.person_list:
-            video_dir = os.path.join(args.root_dir, person, "test")
-            params['checkpoint'] = structure_based_checkpoint_dict[setting][person]
+        print(setting)
+        try:
+            params = {}
+            save_prefix = f'{args.save_prefix}_{setting}'
+            params['uplink_trace'] = args.uplink_trace
+            params['downlink_trace'] = args.downlink_trace
+            params['executable_dir'] = args.executable_dir 
+            params['duration'] = args.duration
+            params['enable_prediction'] = False if setting == "vpx" else True
+            params['runs'] = 1
+            params['checkpoint'] = 'None' if setting != "generic" else checkpoint_dict['generic']
+            params['reference_update_freq'] = 1000
+            nets_implementation_path = os.environ.get('PYTHONPATH', '/data4/pantea/aiortc/nets_implementation')
+            params['config_path'] = f'/data4/pantea/aiortc/nets_implementation/first_order_model/config/paper_configs/{setting}.yaml'
             
-            for video_name in os.listdir(video_dir):
-                video_file = os.path.join(video_dir, video_name)
-                params['save_dir'] = f'{save_prefix}/{person}/{os.path.basename(video_name)}'
-                params['video_file'] = f'{params["save_dir"]}/{video_name}'
+            for person in args.person_list:
+                video_dir = os.path.join(args.root_dir, person, "test")
+                params['checkpoint'] = structure_based_checkpoint_dict[setting][person]
+                
+                for video_name in os.listdir(video_dir):
+                    video_file = os.path.join(video_dir, video_name)
+                    params['save_dir'] = f'{save_prefix}/{person}/{os.path.basename(video_name)}'
+                    params['video_file'] = f'{params["save_dir"]}/{video_name}'
 
-                shutil.rmtree(params['save_dir'], ignore_errors=True)
-                os.makedirs(params['save_dir'])
+                    shutil.rmtree(params['save_dir'], ignore_errors=True)
+                    os.makedirs(params['save_dir'])
 
-                ffmpeg_cmd = f'ffmpeg -hide_banner -loglevel error -y -stream_loop {args.num_runs} -i {video_file} ' + \
-                        f'{params["video_file"]}'
-                print(ffmpeg_cmd)
-                os.system(ffmpeg_cmd)
+                    ffmpeg_cmd = f'ffmpeg -hide_banner -loglevel error -y -stream_loop {args.num_runs} -i {video_file} ' + \
+                            f'{params["video_file"]}'
+                    print(ffmpeg_cmd)
+                    os.system(ffmpeg_cmd)
 
-                run_single_experiment(params)
+                    run_single_experiment(params)
 
-                break
+                    break
+        except Exception as e:
+            print(e)
 
 
 """ gets bitrate info from pcap file 
