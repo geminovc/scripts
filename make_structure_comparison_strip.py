@@ -26,7 +26,7 @@ parser.add_argument("--target_frame_num",
                     type=int,
                     help="index of the target frame")
 parser.add_argument("--max_frame_num",
-                    default=300,
+                    default=5400,
                     type=int,
                     help="maximum frame number if generating video")
 parser.add_argument("--save_prefix",
@@ -95,11 +95,11 @@ for base_video_name in os.listdir(video_dir):
             for i in range(0, min(num_frames, opt.max_frame_num)):
                 print(i)
                 if i % opt.source_update_frequency == 0:
-                    source = video_array[i] #get_frame(video_name, i, ifnormalize=False)
+                    source = video_array[i]
                     source_kp, _= model.extract_keypoints(source)
                     model.update_source(len(model.source_frames), source, source_kp) 
                 
-                driving = video_array[i] #get_frame(video_name, i, ifnormalize=False)
+                driving = video_array[i]
                 target_kp, source_index = model.extract_keypoints(driving)
                 target_kp['source_index'] = source_index
                 if source_index == old_source_index:
@@ -122,7 +122,7 @@ for base_video_name in os.listdir(video_dir):
         print(f"Average prediction time per frame for {config} is {sum(times)/len(times)}s.")
 
     if opt.generate_video:
-        imageio.mimsave(f'{save_dir}/max_frame_num{max_frame_num}_freq{opt.source_update_frequency}.mp4', np.concatenate(predictions, axis=2), fps = int(opt.output_fps))
+        imageio.mimsave(f'{save_dir}/max_frame_num{opt.max_frame_num}_freq{opt.source_update_frequency}.mp4', np.concatenate(predictions, axis=2), fps = int(opt.output_fps))
     else:
         imageio.imsave(f'{save_dir}/{opt.source_frame_num}_{opt.target_frame_num}.png', np.hstack([image[0] for image in predictions]))
 
