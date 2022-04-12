@@ -1,0 +1,8 @@
+1. Run download.sh
+2. Run get_average_frame.sh
+3. Run draw_bbox.sh
+4. Run spatially_crop.sh
+5. Run shorten_train.sh
+6. Run recombine_test.sh
+7. Run the cleanup_script.sh code
+8. Go through the videos for strange stuff
