@@ -28,7 +28,7 @@ parser.add_argument("--target_frame_num",
                     type=int,
                     help="index of the target frame")
 parser.add_argument("--max_frame_num",
-                    default=5400,
+                    default=5250,
                     type=int,
                     help="maximum frame number if generating video")
 parser.add_argument("--save_prefix",
@@ -38,11 +38,8 @@ parser.add_argument("--output_fps",
                     default=30,
                     help="fps of the final video if generate_video is set")
 parser.add_argument("--source_update_frequency",
-                    default=1800,
+                    default=8000,
                     help="source update frequency if generate_video is set")
-parser.add_argument('--csv-name', type=str,
-                    help='file to save final data in', 
-                    default="data/structure_comparison")
 parser.add_argument('--resolution', type=str,
                     help='video resolution',
                     default="512")
@@ -83,27 +80,41 @@ for base_video_name in os.listdir(video_dir):
         predictions.append(np.expand_dims(source, axis=0))
         driving = get_frame(video_name, opt.target_frame_num, ifnormalize=False)
         predictions.append(np.expand_dims(driving, axis=0))
+    
+    try:
+        for config, checkpoint in zip(config_list, checkpoint_list):
+            setting = settings[config_list.index(config)]
+            print(setting)
+            model = FirstOrderModel(config, checkpoint)
+       
+            source_kp, _= model.extract_keypoints(source)
+            model.update_source(0, source, source_kp)
+            prediction = []
+            per_frame_metrics = []
 
-    for config, checkpoint in zip(config_list, checkpoint_list):
-        setting = settings[config_list.index(config)]
-        print(setting)
-        model = FirstOrderModel(config, checkpoint)
-   
-        source_kp, _= model.extract_keypoints(source)
-        model.update_source(0, source, source_kp)
-        prediction = []
-        per_frame_metrics = []
-
-        if opt.generate_video:
-            save_suffix = f'max_frame_num{opt.max_frame_num}_freq{opt.source_update_frequency}' 
-            for i in range(0, min(num_frames, opt.max_frame_num)):
-                print(i)
-                if i % opt.source_update_frequency == 0:
-                    source = video_array[i]
-                    source_kp, _= model.extract_keypoints(source)
-                    model.update_source(len(model.source_frames), source, source_kp) 
-                
-                driving = video_array[i]
+            if opt.generate_video:
+                save_suffix = f'max_frame_num{opt.max_frame_num}_freq{opt.source_update_frequency}' 
+                for i in range(0, min(num_frames, opt.max_frame_num)):
+                    print(i)
+                    if i % opt.source_update_frequency == 0:
+                        source = video_array[i]
+                        source_kp, _= model.extract_keypoints(source)
+                        model.update_source(len(model.source_frames), source, source_kp) 
+                    
+                    driving = video_array[i]
+                    target_kp, source_index = model.extract_keypoints(driving)
+                    target_kp['source_index'] = source_index
+                    start = time.perf_counter()
+                    predicted_driving = model.predict(target_kp)
+                    prediction_time = 1000 * (time.perf_counter() - start)
+                    prediction.append(predicted_driving)
+                    metrics = get_quality(predicted_driving, driving)
+                    metrics['latency'] = prediction_time
+                    metrics['frame_num'] = i
+                    per_frame_metrics.append(metrics)
+            else:
+                save_suffix = f'src{opt.source_frame_num}_target{opt.target_frame_num}'
+                driving = get_frame(video_name, opt.target_frame_num, ifnormalize=False)
                 target_kp, source_index = model.extract_keypoints(driving)
                 target_kp['source_index'] = source_index
                 start = time.perf_counter()
@@ -112,30 +123,20 @@ for base_video_name in os.listdir(video_dir):
                 prediction.append(predicted_driving)
                 metrics = get_quality(predicted_driving, driving)
                 metrics['latency'] = prediction_time
-                metrics['frame_num'] = i
+                metrics['frame_num'] = opt.target_frame_num
                 per_frame_metrics.append(metrics)
-        else:
-            save_suffix = f'src{opt.source_frame_num}_target{opt.target_frame_num}'
-            driving = get_frame(video_name, opt.target_frame_num, ifnormalize=False)
-            target_kp, source_index = model.extract_keypoints(driving)
-            target_kp['source_index'] = source_index
-            start = time.perf_counter()
-            predicted_driving = model.predict(target_kp)
-            prediction_time = 1000 * (time.perf_counter() - start)
-            prediction.append(predicted_driving)
-            metrics = get_quality(predicted_driving, driving)
-            metrics['latency'] = prediction_time
-            metrics['frame_num'] = opt.target_frame_num
-            per_frame_metrics.append(metrics)
-        
-        # saving info per setting    
-        np.save(f'{save_dir}/{setting}_per_frame_metrics_{save_suffix}.npy', per_frame_metrics)
-        predictions.append(prediction)
-        averages = get_average_metrics(per_frame_metrics)
-        cross_setting_metrics[setting] = {}
-        for index, name in enumerate(['psnr', 'ssim', 'lpip', 'latency']):
-            cross_setting_metrics[setting][name] = averages[index]
-    
+            
+            # saving info per setting    
+            np.save(f'{save_dir}/{setting}_per_frame_metrics_{save_suffix}.npy', per_frame_metrics)
+            predictions.append(prediction)
+            averages = get_average_metrics(per_frame_metrics)
+            cross_setting_metrics[setting] = {}
+            for index, name in enumerate(['psnr', 'ssim', 'lpip', 'latency']):
+                cross_setting_metrics[setting][name] = averages[index]
+    except Exception as e:
+        print(e)
+
+
     # saving info per video
     df = pd.DataFrame.from_dict(cross_setting_metrics)
     df.to_csv(f'{save_dir}/{save_suffix}.csv', header=True, index=False, mode="w")
@@ -145,5 +146,5 @@ for base_video_name in os.listdir(video_dir):
         imageio.imsave(f'{save_dir}/{save_suffix}.png', np.hstack([image[0] for image in predictions]))
 
     num_videos += 1
-    if num_videos == 1:
-        break
+    #if num_videos == 1:
+    #    break
