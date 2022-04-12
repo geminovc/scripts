@@ -6,12 +6,13 @@ import log_parser
 import numpy as np
 from utils import *
 import shutil
+from time import perf_counter
 
 
-parser = argparse.ArgumentParser(description='Compression Factor Variation.')
+parser = argparse.ArgumentParser(description='Reference Frame Frequency Variation.')
 parser.add_argument('--reference-frame-frequency-list', type=int, nargs='+',
                     help='interval between reference frame in frames',
-                    default=[10, 20, 30, 50, 100, 200])
+                    default=[10, 60, 300, 900, 30000])
 parser.add_argument('--uplink-trace', type=str,
                     help='uplink trace path for mahimahi', 
                     default="traces/12mbps_trace")
@@ -29,9 +30,11 @@ parser.add_argument('--window', type=int,
                     default=1)
 parser.add_argument('--num-runs', type=int,
                     help='number of runs to average over per experiment',
-                    default=10)
-parser.add_argument('--video-file', type=str,
-                    help='name of video', 
+                    default=1)
+parser.add_argument('--people', type=str, nargs='+',
+                    help='person who will be resized', default=['xiran'])
+parser.add_argument('--root-dir', type=str,
+                    help='name of default video directory', 
                     default="sundar_pichai.mp4")
 parser.add_argument('--save-prefix', type=str,
                     help='prefix to save logs and files in', 
@@ -42,6 +45,11 @@ parser.add_argument('--executable-dir', type=str,
 parser.add_argument('--csv-name', type=str,
                     help='file to save final data in', 
                     default="data/frame_rate_data")
+parser.add_argument('--quantizer', type=int,
+                    help='quantizer to quantize video stream at',
+                    default=32)
+parser.add_argument('--video-num-range', type=int, nargs=2,
+                    help='video start and end range', default=[0, 4])
 
 args = parser.parse_args()
 
@@ -54,21 +62,49 @@ def run_experiments():
     save_prefix = args.save_prefix
     params['uplink_trace'] = args.uplink_trace
     params['downlink_trace'] = args.downlink_trace
-    params['video_file'] = args.video_file
     params['executable_dir'] = args.executable_dir 
     params['duration'] = args.duration
     params['jacobian_bits'] = args.jacobian_bits
     params['enable_prediction'] = True
-    params['runs'] = args.num_runs
+    params['runs'] = 1
+    setting = 'personalized'
+    params['quantizer'] = args.quantizer
+    params['socket_path'] = f'{setting}.sock'
+    vid_start, vid_end = args.video_num_range
+    assert(vid_end >= vid_start)
     
     for freq in args.reference_frame_frequency_list:
-        params['save_dir'] = f'{save_prefix}_ref_every_{freq}frames'
         params['reference_update_freq'] = freq
+        for person in args.people:
+            video_dir = os.path.join(args.root_dir, person, "test")
+            params['checkpoint'] = checkpoint_dict[person]
+            
+            for i, video_name in enumerate(os.listdir(video_dir)):
+                if i not in range(vid_start, vid_end + 1):
+                    continue
+                
+                video_file = os.path.join(video_dir, video_name)
+                params['save_dir'] = f'{save_prefix}_{setting}/{person}/reference_freq{freq}/' + \
+                        f'{os.path.basename(video_name)}'
+                params['video_file'] = f'{params["save_dir"]}/{video_name}'
 
-        shutil.rmtree(params['save_dir'], ignore_errors=True)
-        os.makedirs(params['save_dir'])
+                start = perf_counter()
+                shutil.rmtree(params['save_dir'], ignore_errors=True)
+                os.makedirs(params['save_dir'])
+                end = perf_counter()
+                print("rm command took", end - start)
 
-        run_single_experiment(params)
+                start = perf_counter()
+                cp_cmd = f'cp {video_file} {params["video_file"]}'
+                print(cp_cmd)
+                os.system(cp_cmd)
+                end = perf_counter()
+                print("video copy command took", end - start)
+
+                print(f'Run {video_name} for person {person} reference frame freq {freq}')
+                run_single_experiment(params)
+                end = perf_counter()
+                print("single experiment took", end - start)
 
 
 """ gets bitrate info from pcap file 
@@ -77,45 +113,63 @@ def run_experiments():
 def aggregate_data():
     first = True
     save_prefix = args.save_prefix
+    setting = 'personalized'
+    vid_start, vid_end = args.video_num_range
+    assert(vid_end >= vid_start)
     
     for freq in args.reference_frame_frequency_list:
         combined_df = pd.DataFrame()
 
-        for run in range(args.num_runs):
-            print(f'Run {run} for reference frame every {freq} frames')
-            save_dir = f'{save_prefix}_ref_every_{freq}frames/run{run}'
-            dump_file = f'{save_dir}/sender.log'
-            saved_video_file = f'{save_dir}/received.mp4'
-            print(save_dir)
+        for person in args.people:
+            video_dir = os.path.join(args.root_dir, person, "test")
 
-            stats = log_parser.gather_trace_statistics(dump_file, args.window)
-            num_windows = len(stats['bitrates']['video'])
-            streams = list(stats['bitrates'].keys())
-            stats['bitrates']['time'] = np.arange(1, num_windows + 1)
-            window = stats['window']
-            
-            df = pd.DataFrame.from_dict(stats['bitrates'])
-            for s in streams:
-                df[s] = (df[s] / 1000.0 / window).round(2)
-            df['kbps'] = df.iloc[:, 0:3].sum(axis=1).round(2) 
-            df['jbits'] = args.jacobian_bits
-            df['reference_freq'] = freq
-            df['run'] = run
+            for i, video_name in enumerate(os.listdir(video_dir)):
+                if i not in range(vid_start, vid_end + 1):
+                    continue
+                
+                start = perf_counter()
+                print(f'Run {video_name} for person {person} reference frame freq {freq}')
+                save_dir = f'{save_prefix}_{setting}/{person}/reference_freq{freq}/' + \
+                        f'{os.path.basename(video_name)}/run0'
+                dump_file = f'{save_dir}/sender.log'
+                saved_video_file = f'{save_dir}/received.mp4'
+                print(save_dir)
 
-            metrics = get_video_quality_latency_over_windows(save_dir, args.window)
-            for m in metrics.keys():
-                while len(metrics[m]) < df.shape[0]:
-                    metrics[m].append(0)
-                df[m] = metrics[m]
-            
-            combined_df = pd.concat([df, combined_df], ignore_index=True)
-        
-        mean_df = pd.DataFrame(combined_df.mean(axis=0).round(2).to_dict(), index=[df.index.values[-1]])
-        if first:
-            mean_df.to_csv(args.csv_name, header=True, index=False, mode="w")
-            first = False
-        else:
-            mean_df.to_csv(args.csv_name, header=False, index=False, mode="a+")
+                stats = log_parser.gather_trace_statistics(dump_file, args.window)
+                num_windows = len(stats['bitrates']['video'])
+                streams = list(stats['bitrates'].keys())
+                stats['bitrates']['time'] = np.arange(1, num_windows + 1)
+                window = stats['window']
+                
+                df = pd.DataFrame.from_dict(stats['bitrates'])
+                for s in streams:
+                    df[s] = (df[s] / 1000.0 / window).round(2)
+                df['kbps'] = df.iloc[:, 0:3].sum(axis=1).round(2) 
+                df['jbits'] = args.jacobian_bits
+
+                per_frame_metrics = np.load(f'{save_dir}/metrics.npy', allow_pickle='TRUE').item()
+                averages = get_average_metrics(list(per_frame_metrics.values()))
+                metrics = {'psnr': [], 'ssim': [], 'lpips': [], 'latency': []}
+                for i, k in enumerate(metrics.keys()):
+                        metrics[k].append(averages[i])
+
+                for m in metrics.keys():
+                    while len(metrics[m]) < df.shape[0]:
+                        metrics[m].append(metrics[m][0])
+                    df[m] = metrics[m]
+                
+                combined_df = pd.concat([df, combined_df], ignore_index=True)
+                end = perf_counter()
+                print("aggregating one piece of data", end - start)
+
+
+            mean_df = pd.DataFrame(combined_df.mean(axis=0).round(2).to_dict(), index=[df.index.values[-1]])
+            mean_df['reference_freq'] = freq
+            if first:
+                mean_df.to_csv(args.csv_name, header=True, index=False, mode="w")
+                first = False
+            else:
+                mean_df.to_csv(args.csv_name, header=False, index=False, mode="a+")
 
 run_experiments()
 aggregate_data()
