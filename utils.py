@@ -343,11 +343,20 @@ def run_single_experiment(params):
         # sh.run(mm_setup, shell=True)
 
         #mm_cmd = f'mm-link {uplink_trace} {downlink_trace}' 
-        mm_cmd = f'./offer.sh {video_file} {fps} \
-                {log_dir}/sender.log {log_dir} {exec_dir} \
-                {enable_prediction} {reference_update_freq} {quantizer} {socket_path}'
-        mm_args = shlex.split(mm_cmd)
-        mm_proc = sh.Popen(mm_args, env=base_env)
+        sender_output = open(f'{log_dir}/sender.log', "w")
+        sender_cmd = f'python {exec_dir}/cli.py offer \
+                        --play-from {video_file} \
+                        --signaling-path {socket_path} \
+                        --signaling unix-socket \
+                        --fps {fps} \
+                        --quantizer {quantizer} \
+                        --reference-update-freq {reference_update_freq} \
+                        --save-dir {log_dir}'
+        if enable_prediction:
+            sender_cmd += ' --enable-prediction'
+        sender_cmd += ' --verbose' 
+        sender_args = shlex.split(sender_cmd)
+        sender_proc = sh.Popen(sender_args, stderr=sender_output, env=base_env)
 
         # get tcpdump
         check_sender_ready(f'{log_dir}/sender.log')
@@ -369,7 +378,7 @@ def run_single_experiment(params):
 
         # start receiver
         recv_output = open(f'{log_dir}/receiver.log', "w")
-        receiver_cmd = f'python3 {exec_dir}/cli.py answer \
+        receiver_cmd = f'python {exec_dir}/cli.py answer \
                         --record-to {log_dir}/received.mp4 \
                         --signaling-path {socket_path} \
                         --signaling unix-socket \
@@ -384,14 +393,14 @@ def run_single_experiment(params):
         recv_proc = sh.Popen(receiver_args, stderr=recv_output, env=base_env) 
 
         # wait for experiment and kill processes
-        print("PIDS", recv_proc.pid, mm_proc.pid)
+        print("PIDS", recv_proc.pid, sender_proc.pid)
         time.sleep(duration)
         os.kill(recv_proc.pid, signal.SIGINT)
         time.sleep(5)
         
-        os.kill(mm_proc.pid, signal.SIGTERM)
+        os.kill(sender_proc.pid, signal.SIGTERM)
         os.system(f'pkill -9 tcpdump')
-        os.system(f'pkill -U {user} -9 python3')
         recv_output.close()
+        sender_output.close()
 
         dump_per_frame_video_quality_latency(log_dir)
