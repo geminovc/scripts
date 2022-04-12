@@ -53,6 +53,11 @@ parser.add_argument('--video-num-range', type=int, nargs=2,
 parser.add_argument('--setting', type=str,
                     help='personalized vs. generic', 
                     default="personalized")
+parser.add_argument('--aggregate', action='store_true',
+                    help='only aggregate final stats')
+parser.add_argument('--run', action='store_true',
+                    help='only run experiments')
+
 
 args = parser.parse_args()
 
@@ -155,6 +160,9 @@ def aggregate_data():
                 df['jbits'] = args.jacobian_bits
 
                 per_frame_metrics = np.load(f'{save_dir}/metrics.npy', allow_pickle='TRUE').item()
+                if len(per_frame_metrics) == 0:
+                    print("PROBLEM!!!!")
+                    continue
                 averages = get_average_metrics(list(per_frame_metrics.values()))
                 metrics = {'psnr': [], 'ssim': [], 'lpips': [], 'latency': []}
                 for i, k in enumerate(metrics.keys()):
@@ -170,14 +178,19 @@ def aggregate_data():
                 print("aggregating one piece of data", end - start)
 
 
-            mean_df = pd.DataFrame(combined_df.mean(axis=0).round(2).to_dict(), index=[df.index.values[-1]])
-            mean_df['reference_freq'] = freq
-            mean_df['setting'] = args.setting
-            if first:
-                mean_df.to_csv(args.csv_name, header=True, index=False, mode="w")
-                first = False
-            else:
-                mean_df.to_csv(args.csv_name, header=False, index=False, mode="a+")
+        mean_df = pd.DataFrame(combined_df.mean(axis=0).round(2).to_dict(), index=[df.index.values[-1]])
+        mean_df['reference_freq'] = freq
+        mean_df['setting'] = args.setting
+        if first:
+            mean_df.to_csv(args.csv_name, header=True, index=False, mode="w")
+            first = False
+        else:
+            mean_df.to_csv(args.csv_name, header=False, index=False, mode="a+")
 
-run_experiments()
-aggregate_data()
+if args.aggregate:
+    aggregate_data()
+elif args.run:
+    run_experiments()
+else:
+    run_experiments()
+    aggregate_data()
