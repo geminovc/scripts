@@ -66,13 +66,13 @@ for base_video_name in os.listdir(video_dir):
     print("video name ", video_name)
     num_frames = get_num_frames(video_name)
     print("Number of frames in the video", num_frames)
-    save_dir = f'{opt.save_prefix}/{person}/{os.path.basename(video_name)}'
+    save_dir = f'{opt.save_prefix}/{opt.resolution}/{person}/{os.path.basename(video_name)}'
     print("save_dir", save_dir)
     os.makedirs(save_dir, exist_ok=True)
     source = get_frame(video_name, opt.source_frame_num, ifnormalize=False)
     predictions = []
     video_array = []
-
+    cross_setting_metrics = {}
     # Add original video frames/source-target pair to the strip
     if opt.generate_video:
         for i in range(0, min(num_frames, opt.max_frame_num)):
@@ -84,15 +84,17 @@ for base_video_name in os.listdir(video_dir):
         predictions.append(np.expand_dims(driving, axis=0))
 
     for config, checkpoint in zip(config_list, checkpoint_list):
+        setting = settings[config_list.index(config)]
+        print(setting)
         model = FirstOrderModel(config, checkpoint)
-
+   
         source_kp, _= model.extract_keypoints(source)
         model.update_source(0, source, source_kp)
-        old_source_index = 0
-        times = []
         prediction = []
+        per_frame_metrics = {}
 
         if opt.generate_video:
+            save_suffix = f'max_frame_num{opt.max_frame_num}_freq{opt.source_update_frequency}' 
             for i in range(0, min(num_frames, opt.max_frame_num)):
                 print(i)
                 if i % opt.source_update_frequency == 0:
@@ -103,32 +105,34 @@ for base_video_name in os.listdir(video_dir):
                 driving = video_array[i]
                 target_kp, source_index = model.extract_keypoints(driving)
                 target_kp['source_index'] = source_index
-                if source_index == old_source_index:
-                    update_source = False
-                else:
-                    update_source = True
-                    old_source_index = source_index
                 start = time.perf_counter()
-                prediction.append(model.predict(target_kp, update_source))
-                times.append(time.perf_counter() - start)
+                predicted_driving = model.predict(target_kp)
+                prediction_time = 1000 * (time.perf_counter() - start)
+                prediction.append(predicted_driving)
+                per_frame_metrics[i] = get_quality(predicted_driving, driving)
+                per_frame_metrics[i]['latency'] = prediction_time
         else:
+            save_suffix = f'src{opt.source_frame_num}_target{opt.target_frame_num}'
             driving = get_frame(video_name, opt.target_frame_num, ifnormalize=False)
             target_kp, source_index = model.extract_keypoints(driving)
             target_kp['source_index'] = source_index
             start = time.perf_counter()
-            predicted_driving = model.predict(target_kp, True)
+            predicted_driving = model.predict(target_kp)
+            prediction_time = 1000 * (time.perf_counter() - start)
             prediction.append(predicted_driving)
-            times.append(time.perf_counter() - start)
-            metrics = get_quality(predicted_driving, driving)
-            print(metrics)
+            per_frame_metrics[opt.target_frame_num] = get_quality(predicted_driving, driving)
+            per_frame_metrics[opt.target_frame_num]['latency'] = prediction_time
         
+        # saving info per setting    
+        np.save(f'{save_dir}/{setting}_per_frame_metrics_{save_suffix}.npy', per_frame_metrics)
+        print(per_frame_metrics)
         predictions.append(prediction)
-        print(f"Average prediction time per frame for {config} is {sum(times)/len(times)}s.")
-
+        #cross_setting_metrics[setting]
+    # saving info per video    
     if opt.generate_video:
-        imageio.mimsave(f'{save_dir}/max_frame_num{opt.max_frame_num}_freq{opt.source_update_frequency}.mp4', np.concatenate(predictions, axis=2), fps = int(opt.output_fps))
+        imageio.mimsave(f'{save_dir}/{save_suffix}.mp4', np.concatenate(predictions, axis=2), fps = int(opt.output_fps))
     else:
-        imageio.imsave(f'{save_dir}/{opt.source_frame_num}_{opt.target_frame_num}.png', np.hstack([image[0] for image in predictions]))
+        imageio.imsave(f'{save_dir}/{save_suffix}.png', np.hstack([image[0] for image in predictions]))
 
     num_videos += 1
     if num_videos == 1:
