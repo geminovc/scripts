@@ -18,9 +18,11 @@ from first_order_model.modules.model import Vgg19
 checkpoint_dict = {
         'generic': '/video-conf/scratch/pantea_experiments_tardy/generic_512_kp_at_256_with_hr_skip_connections\ 29_03_22_17.17.57/',
         'jen_psaki': '/video-conf/scratch/pantea_experiments_tardy/resolution512_with_hr_skip_connections/jen_psaki_resolution512_with_hr_skip_connections 08_04_22_20.34.56/00000069-checkpoint.pth.tar',
+        'seth_meyer': '/video-conf/scratch/vibhaa_mm_log_directory/seth_meyers_512 05_04_22_19.07.24/00000069-checkpoint.pth.tar',
+        'trever_noah': '/video-conf/scratch/pantea_experiments_tardy/resolution512_with_hr_skip_connections/trever_noah_resolution512_with_hr_skip_connections 08_04_22_16.14.52/00000069-checkpoint.pth.tar',
+        'tucker': '/video-conf/scratch/pantea_experiments_tardy/resolution512_with_hr_skip_connections/tucker_resolution512_with_hr_skip_connections 08_04_22_18.02.06/00000069-checkpoint.pth.tar',
         'kayleigh': '/video-conf/scratch/pantea_experiments_tardy/resolution512_with_hr_skip_connections/kayleigh_resolution512_with_hr_skip_connections 05_04_22_18.23.53/00000069-checkpoint.pth.tar'
-
-        }
+}
 
 vgg_model = Vgg19()
 if torch.cuda.is_available():
@@ -106,6 +108,7 @@ def get_video_quality_latency_over_windows(save_dir, window):
                 continue
             frame_num = int(words[1])
             relevant_time = f'{words[3]} {words[4][:-1]}'
+            relevant_time = relevant_time + '.0' if '.' not in relevant_time else relevant_time
             relevant_time = dt.datetime.strptime(relevant_time, "%Y-%m-%d %H:%M:%S.%f")
             sent_times[frame_num] = relevant_time
 
@@ -116,6 +119,7 @@ def get_video_quality_latency_over_windows(save_dir, window):
         words = line.split(' ')
         frame_num = int(words[1])
         relevant_time = f'{words[3]} {words[4][:-1]}'
+        relevant_time = relevant_time + '.0' if '.' not in relevant_time else relevant_time
         relevant_time = dt.datetime.strptime(relevant_time, "%Y-%m-%d %H:%M:%S.%f")
         
         sent_frame_file = f'{save_dir}/sender_frame_{frame_num:05d}.npy'
@@ -124,9 +128,13 @@ def get_video_quality_latency_over_windows(save_dir, window):
         if not os.path.exists(sent_frame_file):
             print("Skipping frame", frame_num)
             continue
-        
-        sent_frame = np.load(sent_frame_file, allow_pickle=True)
-        recvd_frame = np.load(recv_frame_file, allow_pickle=True)
+       
+        try:
+            sent_frame = np.load(sent_frame_file, allow_pickle=True)
+            recvd_frame = np.load(recv_frame_file, allow_pickle=True)
+        except IOError:
+            print("Skipping frame", frame_num, "due to IO error")
+            continue
 
         qualities = get_quality(recvd_frame, sent_frame)
         latency = (relevant_time - sent_times[frame_num]).total_seconds() * 1000
@@ -200,9 +208,11 @@ def dump_per_frame_video_quality_latency(save_dir):
         recvd_frame = np.load(recv_frame_file, allow_pickle=True)
 
         if frame_num % 100 == 0:
-            print(f'dumped metrics for {frame_num} frames')
             np.save(f'{save_dir}/metrics.npy', metrics)
 
+        if frame_num % 500 == 0:
+            print(f'dumped metrics for {frame_num} frames')
+        
         qualities = get_quality(recvd_frame, sent_frame)
         latency = (relevant_time - sent_times[frame_num]).total_seconds() * 1000
         frame_metrics  = qualities.copy()
@@ -220,7 +230,7 @@ def dump_per_frame_video_quality_latency(save_dir):
     for frame_num in sent_times.keys():
         sent_frame_file = f'{save_dir}/sender_frame_{frame_num:05d}.npy'
         os.remove(sent_frame_file)
-    os.system("rm reference_frame*")
+    os.system(f'rm {save_dir}/reference_frame*')
 
     for s in glob.glob(f'{save_dir}/sender*.npy'):
         frame_num = int(s.split("_")[-1].split(".")[0])
@@ -233,7 +243,6 @@ def dump_per_frame_video_quality_latency(save_dir):
         if frame_num not in special_frames_list:
             recv_frame_file = f'{save_dir}/receiver_frame_{frame_num:05d}.npy'
             os.remove(recv_frame_file)
-
 
     np.save(f'{save_dir}/metrics.npy', metrics)
 
