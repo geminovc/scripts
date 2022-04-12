@@ -7,7 +7,7 @@ structure_based_checkpoint_dict = {
         },
 
     'resolution1024_only_upsample_blocks':{
-        'needle_drop':'/video-conf/scratch/pantea_experiments_tardy/needle_drop_resolution1024_only_upsample_blocks 09_04_22_20.21.59/00000069-checkpoint.pth.tar',
+        'needle_drop':'/video-conf/scratch/pantea_experiments_tardy/resolution1024_only_upsample_blocks/needle_drop_resolution1024_only_upsample_blocks 09_04_22_20.21.59/00000069-checkpoint.pth.tar',
 
         'xiran':'/video-conf/scratch/pantea_experiments_tardy/resolution1024_only_upsample_blocks/xiran_resolution1024_only_upsample_blocks 05_04_22_19.40.44/00000063-checkpoint.pth.tar'
         },
