@@ -41,6 +41,7 @@ def gather_trace_statistics(log_filename, window=1):
                 # dump last window's bitrate
                 date_str = line.split(") ")[-1][:-1]
                 if "retransmission" not in date_str:
+                    date_str = date_str + '.0' if '.' not in date_str else date_str
                     time_object = dt.datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S.%f')
                     if last_window_start == -1:
                         last_window_start = time_object

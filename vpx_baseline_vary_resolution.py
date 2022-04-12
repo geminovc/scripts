@@ -47,6 +47,8 @@ parser.add_argument('--csv-name', type=str,
                     default="data/frame_rate_data")
 parser.add_argument('--video-num-range', type=int, nargs=2,
                     help='video start and end range', default=[0, 4])
+parser.add_argument('--aggregate', action='store_true',
+                    help='only aggregate final stats')
 
 args = parser.parse_args()
 
@@ -173,6 +175,8 @@ def aggregate_data():
                 else:
                     mean_df.to_csv(args.csv_name, header=False, index=False, mode="a+")
 
-
-run_experiments()
-aggregate_data()
+if args.aggregate:
+    aggregate_data()
+else:
+    run_experiments()
+    aggregate_data()

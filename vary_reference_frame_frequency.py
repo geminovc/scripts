@@ -50,6 +50,9 @@ parser.add_argument('--quantizer', type=int,
                     default=32)
 parser.add_argument('--video-num-range', type=int, nargs=2,
                     help='video start and end range', default=[0, 4])
+parser.add_argument('--setting', type=str,
+                    help='personalized vs. generic', 
+                    default="personalized")
 
 args = parser.parse_args()
 
@@ -67,17 +70,21 @@ def run_experiments():
     params['jacobian_bits'] = args.jacobian_bits
     params['enable_prediction'] = True
     params['runs'] = 1
-    setting = 'personalized'
+    setting = args.setting 
     params['quantizer'] = args.quantizer
     params['socket_path'] = f'{setting}.sock'
     vid_start, vid_end = args.video_num_range
     assert(vid_end >= vid_start)
     
-    for freq in args.reference_frame_frequency_list:
-        params['reference_update_freq'] = freq
-        for person in args.people:
+    for person in args.people:
+        for freq in args.reference_frame_frequency_list:
+            params['reference_update_freq'] = freq
+            
             video_dir = os.path.join(args.root_dir, person, "test")
-            params['checkpoint'] = checkpoint_dict[person]
+            if setting == 'personalized':
+                params['checkpoint'] = checkpoint_dict[person]
+            else:
+                params['checkpoint'] = checkpoint_dict['generic']
             
             for i, video_name in enumerate(os.listdir(video_dir)):
                 if i not in range(vid_start, vid_end + 1):
@@ -101,7 +108,7 @@ def run_experiments():
                 end = perf_counter()
                 print("video copy command took", end - start)
 
-                print(f'Run {video_name} for person {person} reference frame freq {freq}')
+                print(f'Run {video_name} for person {person} reference frame freq {freq} setting {setting}')
                 run_single_experiment(params)
                 end = perf_counter()
                 print("single experiment took", end - start)
@@ -113,7 +120,7 @@ def run_experiments():
 def aggregate_data():
     first = True
     save_prefix = args.save_prefix
-    setting = 'personalized'
+    setting = args.setting
     vid_start, vid_end = args.video_num_range
     assert(vid_end >= vid_start)
     
@@ -128,7 +135,7 @@ def aggregate_data():
                     continue
                 
                 start = perf_counter()
-                print(f'Run {video_name} for person {person} reference frame freq {freq}')
+                print(f'Run {video_name} for person {person} reference frame freq {freq} setting {setting}')
                 save_dir = f'{save_prefix}_{setting}/{person}/reference_freq{freq}/' + \
                         f'{os.path.basename(video_name)}/run0'
                 dump_file = f'{save_dir}/sender.log'
@@ -165,6 +172,7 @@ def aggregate_data():
 
             mean_df = pd.DataFrame(combined_df.mean(axis=0).round(2).to_dict(), index=[df.index.values[-1]])
             mean_df['reference_freq'] = freq
+            mean_df['setting'] = args.setting
             if first:
                 mean_df.to_csv(args.csv_name, header=True, index=False, mode="w")
                 first = False

@@ -16,7 +16,7 @@ from skimage import img_as_float32
 from first_order_model.modules.model import Vgg19
 
 checkpoint_dict = {
-        'generic': '/video-conf/scratch/pantea_experiments_tardy/generic_512_kp_at_256_with_hr_skip_connections\ 29_03_22_17.17.57/',
+        'generic': '/video-conf/scratch/pantea_experiments_tardy/generic_512_kp_at_256_with_hr_skip_connections 29_03_22_17.17.57/00000059-checkpoint.pth.tar',
         'jen_psaki': '/video-conf/scratch/pantea_experiments_tardy/resolution512_with_hr_skip_connections/jen_psaki_resolution512_with_hr_skip_connections 08_04_22_20.34.56/00000069-checkpoint.pth.tar',
         'seth_meyer': '/video-conf/scratch/vibhaa_mm_log_directory/seth_meyers_512 05_04_22_19.07.24/00000069-checkpoint.pth.tar',
         'trever_noah': '/video-conf/scratch/pantea_experiments_tardy/resolution512_with_hr_skip_connections/trever_noah_resolution512_with_hr_skip_connections 08_04_22_16.14.52/00000069-checkpoint.pth.tar',
