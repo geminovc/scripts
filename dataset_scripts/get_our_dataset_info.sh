@@ -1,7 +1,7 @@
 DIR="/video-conf/scratch/pantea/fom_personalized_512"
-SAVE_PREFIX="/data1/pantea/paper_results"
+SAVE_PREFIX="/video-conf/scratch/pantea/fom_personalized_dataset_info2"
 
-for speaker in "tucker" "jen_psaki" "xiran" "xiran_close_up" "needle_drop" "fancy_fueko" "seth_meyer"  "kayleigh" "trever_noah"
+for speaker in "tucker"  "jen_psaki" "xiran" "xiran_close_up" "needle_drop" "fancy_fueko" "seth_meyer"  "kayleigh" "trever_noah"
 do
     for phase in train test
     do
@@ -12,7 +12,7 @@ do
     done
 done
 
- DIR="/video-conf/scratch/pantea/fom_personalized_1024"
+DIR="/video-conf/scratch/pantea/fom_personalized_1024"
 for speaker in "xiran" "needle_drop" "fancy_fueko" "kayleigh"
 do
     for phase in train test

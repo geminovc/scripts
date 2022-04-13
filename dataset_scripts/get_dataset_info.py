@@ -99,7 +99,7 @@ if __name__ == '__main__':
             num_frames.append(num_frame)
             widths.append(width)
             heights.append(height)
-	    count += 1
+            count += 1
         except Exception as e:
             print(e)
 
@@ -109,7 +109,7 @@ if __name__ == '__main__':
         'avg_num_frames','max_num_frames', 'min_frame_rate','avg_frame_rate','max_frame_rate',
         'min_bit_rate','avg_bit_rate', 'max_bit_rate', 'min_duration','avg_duration', 'max_duration'))
 
-        f.write("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n" % (count, np.average(widths), np.average(heights), min(num_frames), 
+        f.write("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n" % (count, np.average(widths), np.average(heights), min(num_frames), 
                     np.average(num_frames), max(num_frames), min(frame_rates), np.average(frame_rates), max(frame_rates),
                     min(bit_rates), np.average(bit_rates), max(bit_rates), min(durations), np.average(durations), max(durations)))
 
