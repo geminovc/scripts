@@ -177,7 +177,7 @@ try:
                         np.hstack([image[0] for image in predictions]))
 
             num_videos += 1
-            if num_videos == 5:
+            if num_videos == 3:
                 break
 
 except Exception as e:
