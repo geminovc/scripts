@@ -2,27 +2,25 @@
 structure_based_checkpoint_dict = {
     'resolution1024_fom_standard':{
         'needle_drop':'/video-conf/scratch/pantea_experiments_tardy/resolution1024_fom_standard/needle_drop_resolution1024_fom_standard 09_04_22_20.14.28/00000169-checkpoint.pth.tar',
-
-        'xiran':'/video-conf/scratch/pantea_experiments_tardy/resolution1024_fom_standard/xiran_resolution1024_fom_standard 05_04_22_17.46.15/00000169-checkpoint.pth.tar'
+        'xiran':'/video-conf/scratch/pantea_experiments_tardy/resolution1024_fom_standard/xiran_resolution1024_fom_standard 05_04_22_17.46.15/00000169-checkpoint.pth.tar',
+        'fancy_fueko': ''
         },
 
     'resolution1024_only_upsample_blocks':{
         'needle_drop':'/video-conf/scratch/pantea_experiments_tardy/resolution1024_only_upsample_blocks/needle_drop_resolution1024_only_upsample_blocks 09_04_22_20.21.59/00000069-checkpoint.pth.tar',
-
-        'xiran':'/video-conf/scratch/pantea_experiments_tardy/resolution1024_only_upsample_blocks/xiran_resolution1024_only_upsample_blocks 05_04_22_19.40.44/00000063-checkpoint.pth.tar'
+        'xiran':'/video-conf/scratch/pantea_experiments_tardy/resolution1024_only_upsample_blocks/xiran_resolution1024_only_upsample_blocks 05_04_22_19.40.44/00000063-checkpoint.pth.tar',
+        'fancy_fueko': ''
         },
 
     'resolution1024_without_hr_skip_connections':{
         'needle_drop':'/video-conf/scratch/pantea_experiments_tardy/resolution1024_without_hr_skip_connections/needle_drop_resolution1024_without_hr_skip_connections 09_04_22_20.18.58/00000069-checkpoint.pth.tar',
-
-        'xiran':'/video-conf/scratch/vibhaa_mm_log_directory/xiran_no_hr_skip_connections 11_04_22_16.52.42/00000066-checkpoint.pth.tar'
+        'xiran':'/video-conf/scratch/vibhaa_mm_log_directory/xiran_no_hr_skip_connections 11_04_22_16.52.42/00000066-checkpoint.pth.tar',
+        'fancy_fueko': ''
         },
 
     'resolution1024_with_hr_skip_connections':{
         'needle_drop':'/video-conf/scratch/vibhaa_mm_arjun_directory/needle_drop_with_hr_skip_connections 11_04_22_16.54.29/00000069-checkpoint.pth.tar',
-
         'xiran':'/video-conf/scratch/pantea_experiments_tardy/resolution1024_with_hr_skip_connections/xiran_resolution1024_with_hr_skip_connections 08_04_22_13.43.30/00000069-checkpoint.pth.tar',
-
         'fancy_fueko': '/video-conf/scratch/pantea_experiments_tardy/resolution1024_with_hr_skip_connections/fancy_fueko_resolution1024_with_hr_skip_connections 10_04_22_01.06.51/00000069-checkpoint.pth.tar'
         },
 
@@ -32,7 +30,11 @@ structure_based_checkpoint_dict = {
         'kayleigh': '/video-conf/scratch/pantea_experiments_tardy/resolution512_fom_standard/kayleigh_resolution512_fom_standard 05_04_22_18.14.52/00000169-checkpoint.pth.tar',
         'seth_meyer': '/video-conf/scratch/pantea_experiments_tardy/resolution512_fom_standard/seth_meyer_resolution512_fom_standard 08_04_22_13.36.35/00000169-checkpoint.pth.tar',
         'xiran_close_up': '/video-conf/scratch/pantea_experiments_tardy/resolution512_fom_standard/xiran_close_up_resolution512_fom_standard 08_04_22_20.13.38/00000169-checkpoint.pth.tar',
-        'xiran': '/video-conf/scratch/pantea_experiments_tardy/resolution512_fom_standard/xiran_resolution512_fom_standard 08_04_22_13.28.47/00000169-checkpoint.pth.tar'
+        'xiran': '/video-conf/scratch/pantea_experiments_tardy/resolution512_fom_standard/xiran_resolution512_fom_standard 08_04_22_13.28.47/00000169-checkpoint.pth.tar',
+        'needle_drop': '',
+        'trever_noah': '',
+        'tucker': '',
+        
         },
 
     'resolution512_only_upsample_blocks':{
@@ -41,7 +43,10 @@ structure_based_checkpoint_dict = {
         'kayleigh': '/video-conf/scratch/pantea_experiments_tardy/resolution512_only_upsample_blocks/kayleigh_resolution512_only_upsample_blocks 05_04_22_19.51.51/00000069-checkpoint.pth.tar',
         'seth_meyer': '',
         'xiran_close_up': '/video-conf/scratch/pantea_experiments_tardy/resolution512_only_upsample_blocks/xiran_close_up_resolution512_only_upsample_blocks 08_04_22_21.10.14/00000069-checkpoint.pth.tar',
-        'xiran': ''
+        'xiran': '',
+        'needle_drop': '',
+        'trever_noah': '',
+        'tucker': '',
         },
 
     'resolution512_without_hr_skip_connections':{
@@ -50,7 +55,10 @@ structure_based_checkpoint_dict = {
         'kayleigh': '/video-conf/scratch/pantea_experiments_tardy/resolution512_without_hr_skip_connections/kayleigh_resolution512_without_hr_skip_connections 05_04_22_18.18.40/00000069-checkpoint.pth.tar',
         'seth_meyer': '',
         'xiran_close_up': '/video-conf/scratch/pantea_experiments_mapmaker/resolution512_without_hr_skip_connections/xiran_close_up_resolution512_without_hr_skip_connections 05_04_22_21.45.48/00000069-checkpoint.pth.tar',
-        'xiran': ''
+        'xiran': '',
+        'needle_drop': '',
+        'trever_noah': '',
+        'tucker': '',
         },
 
     'resolution512_with_hr_skip_connections':{
