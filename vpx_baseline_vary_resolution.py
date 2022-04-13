@@ -121,6 +121,7 @@ def aggregate_data():
     save_prefix = args.save_prefix
     vid_start, vid_end = args.video_num_range
     assert(vid_end >= vid_start)
+    fps = 30
     
     for resolution in args.resolutions:
         for quantizer in args.quantizer_list:
@@ -146,10 +147,13 @@ def aggregate_data():
                     stats['bitrates']['time'] = np.arange(1, num_windows + 1)
                     window = stats['window']
                     
+                    width, height = resolution.split("x")
+                    frame_size = float(width) * float(height)
                     df = pd.DataFrame.from_dict(stats['bitrates'])
                     for s in streams:
-                        df[s] = (df[s] / 1000.0 / window).round(2)
-                    df['kbps'] = df.iloc[:, 0:3].sum(axis=1).round(2) 
+                        df[s] = (df[s] / float(window) / 1000)
+                    df['kbps'] = df.iloc[:, 0:3].sum(axis=1) 
+                    df['bpp'] = df['kbps'] * 1000 / fps /frame_size
                     df['resolution'] = resolution
 
                     per_frame_metrics = np.load(f'{save_dir}/metrics.npy', allow_pickle='TRUE').item()
@@ -171,7 +175,7 @@ def aggregate_data():
                     print("aggregating one piece of data", end - start)
 
 
-            mean_df = pd.DataFrame(combined_df.mean(axis=0).round(2).to_dict(), index=[df.index.values[-1]])
+            mean_df = pd.DataFrame(combined_df.mean(axis=0).to_dict(), index=[df.index.values[-1]])
             mean_df['resolution'] = resolution
             mean_df['quantizer'] = quantizer
             if first:
