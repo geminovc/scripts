@@ -5,9 +5,25 @@ import time
 import os
 import pandas as pd
 from argparse import ArgumentParser
-from first_order_model.frames_dataset import get_num_frames, get_frame
+#from first_order_model.frames_dataset import get_num_frames, get_frame
 from checkpoints import *
 from utils import *
+import imageio
+
+def get_num_frames(filename):
+    cmd = f"ffprobe -v error -select_streams v:0 -count_frames -show_entries stream=nb_read_frames -print_format csv {filename}"
+    num_frames = os.popen(cmd).read()
+    num_frames = int(num_frames.split(',')[1])
+    return num_frames
+
+def get_frame(filename, frame_num, ifnormalize=True):
+    reader = imageio.get_reader(filename, "ffmpeg")
+    reader.set_image_index(frame_num)
+    frame = np.array(reader.get_next_data())
+    if ifnormalize:
+        frame = img_as_float32(frame)
+    reader.close()
+    return frame
 
 parser = ArgumentParser()
 parser.add_argument("--root_dir",
