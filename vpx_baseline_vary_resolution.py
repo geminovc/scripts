@@ -6,6 +6,7 @@ import log_parser
 import numpy as np
 from utils import *
 import shutil
+import math
 from time import perf_counter
 
 
@@ -89,12 +90,25 @@ def run_experiments():
 
                 start = perf_counter()
                 width, height = resolution.split("x")
-                ffmpeg_cmd = f'ffmpeg -hide_banner -loglevel error -y -i {video_file} ' + \
-                        f'-vf scale={width}:{height} {params["video_file"]}'
-                print(ffmpeg_cmd)
-                os.system(ffmpeg_cmd)
-                end = perf_counter()
-                print("ffmpeg command took", end - start)
+                
+                ffprobe_cmd = f'ffprobe -v error -select_streams v -show_entries ' + \
+                        f'stream=width,height -of csv=p=0:s=x {video_file}'
+                original_resolution = sh.check_output(ffprobe_cmd, shell=True).decode("utf-8")[:-1]
+                original_width, original_height = original_resolution.split("x")
+
+                if original_height == height and original_width == width:
+                    cp_cmd = f'cp {video_file} {params["video_file"]}'
+                    print(cp_cmd)
+                    os.system(cp_cmd)
+                    end = perf_counter()
+                    print("cp command took", end - start)
+                else:
+                    ffmpeg_cmd = f'ffmpeg -hide_banner -loglevel error -y -i {video_file} ' + \
+                            f'-vf scale={width}:{height} {params["video_file"]}'
+                    print(ffmpeg_cmd)
+                    os.system(ffmpeg_cmd)
+                    end = perf_counter()
+                    print("ffmpeg command took", end - start)
 
                 for quantizer in args.quantizer_list:
                     params['save_dir'] = f'{save_prefix}_vpx/{person}/resolution{resolution}/quantizer{quantizer}/' + \
@@ -178,6 +192,7 @@ def aggregate_data():
             mean_df = pd.DataFrame(combined_df.mean(axis=0).to_dict(), index=[df.index.values[-1]])
             mean_df['resolution'] = resolution
             mean_df['quantizer'] = quantizer
+            mean_df['ssim_db'] = 10 * math.log10(1 / (1-mean_df['ssim']))
             if first:
                 mean_df.to_csv(args.csv_name, header=True, index=False, mode="w")
                 first = False
