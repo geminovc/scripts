@@ -5,33 +5,32 @@
 source("style.R")
 
 args <- commandArgs(trailingOnly=TRUE)
-file <- "data/baseline_diff_resolutions"
-plot_filename <- "pdfs/baseline_resolution_bitrate_tradeoff.pdf"
+file <- "data/aggregate_comparison_data"
+plot_filename <- "pdfs/main_bpp_quality.pdf"
 data<-read.csv(file)
-data$resolution <-factor(data$resolution, levels = c("64x64", "256x256", "512x512", "1024x1024"))
 
-ssim_plot <- ggplot(data, aes(x=kbps,y=ssim_db,color=resolution,linetype=resolution)) + 
+ssim_plot <- ggplot(data, aes(x=kbps,y=ssim_db,color=setting,linetype=setting)) + 
         geom_line(size=0.8) +
-        geom_point(size=2) + 
-        xlim(0, 1000) +
+        geom_point(size=2) +
+        xlim(0, 1000) +  
 
         labs(y="SSIM (dB)", x="Kbps") 
 ggsave(plot_filename, width=12.2,height=5)
   
-psnr_plot <- ggplot(data, aes(x=kbps,y=psnr,color=resolution,linetype=resolution)) + 
+psnr_plot <- ggplot(data, aes(x=kbps,y=psnr,color=setting,linetype=setting)) + 
         geom_line(size=0.8) +
         geom_point(size=2) +
-        xlim(0, 1000) +
+        xlim(0, 1000) +  
 
         theme(legend.text=element_text(size=rel(1)), legend.key.size=unit(15,"points"), legend.position="none",
               legend.box.margin=margin(-10,-10,-10,-10), legend.title=element_blank(),
               legend.margin=margin(c(0,0,0,0))) + 
         labs(y="PSNR (dB)", x="Kbps") 
 
-lpips_plot <- ggplot(data, aes(x=kbps,y=lpips,color=resolution,linetype=resolution)) + 
+lpips_plot <- ggplot(data, aes(x=kbps,y=lpips,color=setting,linetype=setting)) + 
         geom_line(size=0.8) +
         geom_point(size=2) + 
-        xlim(0, 1000) +
+        xlim(0, 1000) +  
 
         labs(y="LPIPS", x="Kbps") 
  

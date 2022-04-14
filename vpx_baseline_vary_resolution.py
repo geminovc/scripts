@@ -175,7 +175,7 @@ def aggregate_data():
                         print("PROBLEM!!!!")
                         continue
                     averages = get_average_metrics(list(per_frame_metrics.values()))
-                    metrics = {'psnr': [], 'ssim': [], 'lpips': [], 'latency': []}
+                    metrics = {'psnr': [], 'ssim': [], 'lpips': [], 'latency': [], 'old_lpips': []}
                     for i, k in enumerate(metrics.keys()):
                             metrics[k].append(averages[i])
 

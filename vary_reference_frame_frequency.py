@@ -7,6 +7,7 @@ import numpy as np
 from utils import *
 import shutil
 from time import perf_counter
+import math
 
 
 parser = argparse.ArgumentParser(description='Reference Frame Frequency Variation.')
@@ -48,6 +49,9 @@ parser.add_argument('--csv-name', type=str,
 parser.add_argument('--quantizer', type=int,
                     help='quantizer to quantize video stream at',
                     default=32)
+parser.add_argument('--resolution', type=str,
+                    help='resolution of the image',
+                    default='512x512')
 parser.add_argument('--video-num-range', type=int, nargs=2,
                     help='video start and end range', default=[0, 4])
 parser.add_argument('--setting', type=str,
@@ -80,6 +84,7 @@ def run_experiments():
     params['socket_path'] = f'{setting}.sock'
     vid_start, vid_end = args.video_num_range
     assert(vid_end >= vid_start)
+    width, height = args.resolution.split("x")
     
     for person in args.people:
         for freq in args.reference_frame_frequency_list:
@@ -87,16 +92,16 @@ def run_experiments():
             
             video_dir = os.path.join(args.root_dir, person, "test")
             if setting == 'personalized':
-                params['checkpoint'] = checkpoint_dict[person]
+                params['checkpoint'] = checkpoint_dict[width][person]
             else:
-                params['checkpoint'] = checkpoint_dict['generic']
+                params['checkpoint'] = checkpoint_dict[width]['generic']
             
             for i, video_name in enumerate(os.listdir(video_dir)):
                 if i not in range(vid_start, vid_end + 1):
                     continue
                 
                 video_file = os.path.join(video_dir, video_name)
-                params['save_dir'] = f'{save_prefix}_{setting}/{person}/reference_freq{freq}/' + \
+                params['save_dir'] = f'{save_prefix}_{setting}/resolution{args.resolution}/{person}/reference_freq{freq}/' + \
                         f'{os.path.basename(video_name)}'
                 params['video_file'] = f'{params["save_dir"]}/{video_name}'
 
@@ -127,6 +132,9 @@ def aggregate_data():
     save_prefix = args.save_prefix
     setting = args.setting
     vid_start, vid_end = args.video_num_range
+    fps = 30
+    width, height = args.resolution.split("x")
+    frame_size = float(width) * float(height)
     assert(vid_end >= vid_start)
     
     for freq in args.reference_frame_frequency_list:
@@ -141,7 +149,7 @@ def aggregate_data():
                 
                 start = perf_counter()
                 print(f'Run {video_name} for person {person} reference frame freq {freq} setting {setting}')
-                save_dir = f'{save_prefix}_{setting}/{person}/reference_freq{freq}/' + \
+                save_dir = f'{save_prefix}_{setting}/resolution{args.resolution}/{person}/reference_freq{freq}/' + \
                         f'{os.path.basename(video_name)}/run0'
                 dump_file = f'{save_dir}/sender.log'
                 saved_video_file = f'{save_dir}/received.mp4'
@@ -155,8 +163,9 @@ def aggregate_data():
                 
                 df = pd.DataFrame.from_dict(stats['bitrates'])
                 for s in streams:
-                    df[s] = (df[s] / 1000.0 / window).round(2)
-                df['kbps'] = df.iloc[:, 0:3].sum(axis=1).round(2) 
+                    df[s] = (df[s] / 1000.0 / window)
+                df['kbps'] = df.iloc[:, 0:3].sum(axis=1)
+                df['bpp'] = df['kbps'] * 1000 / fps /frame_size
                 df['jbits'] = args.jacobian_bits
 
                 per_frame_metrics = np.load(f'{save_dir}/metrics.npy', allow_pickle='TRUE').item()
@@ -164,7 +173,7 @@ def aggregate_data():
                     print("PROBLEM!!!!")
                     continue
                 averages = get_average_metrics(list(per_frame_metrics.values()))
-                metrics = {'psnr': [], 'ssim': [], 'lpips': [], 'latency': []}
+                metrics = {'psnr': [], 'ssim': [], 'lpips': [], 'latency': [], 'old_lpips': []}
                 for i, k in enumerate(metrics.keys()):
                         metrics[k].append(averages[i])
 
@@ -178,9 +187,10 @@ def aggregate_data():
                 print("aggregating one piece of data", end - start)
 
 
-        mean_df = pd.DataFrame(combined_df.mean(axis=0).round(2).to_dict(), index=[df.index.values[-1]])
+        mean_df = pd.DataFrame(combined_df.mean(axis=0).to_dict(), index=[df.index.values[-1]])
         mean_df['reference_freq'] = freq
         mean_df['setting'] = args.setting
+        mean_df['ssim_db'] = 10 * math.log10(1 / (1-mean_df['ssim']))
         if first:
             mean_df.to_csv(args.csv_name, header=True, index=False, mode="w")
             first = False

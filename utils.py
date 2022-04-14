@@ -1,5 +1,3 @@
-from skimage.metrics import peak_signal_noise_ratio
-from skimage.metrics import structural_similarity
 import numpy as np
 import subprocess as sh
 import shlex
@@ -14,19 +12,31 @@ import piq
 import glob
 from skimage import img_as_float32
 from first_order_model.modules.model import Vgg19
+import lpips
 
 checkpoint_dict = {
+        '512': {
         'generic': '/video-conf/scratch/pantea_experiments_tardy/generic_512_kp_at_256_with_hr_skip_connections 29_03_22_17.17.57/00000059-checkpoint.pth.tar',
         'jen_psaki': '/video-conf/scratch/pantea_experiments_tardy/resolution512_with_hr_skip_connections/jen_psaki_resolution512_with_hr_skip_connections 08_04_22_20.34.56/00000069-checkpoint.pth.tar',
         'seth_meyer': '/video-conf/scratch/vibhaa_mm_log_directory/seth_meyers_512 05_04_22_19.07.24/00000069-checkpoint.pth.tar',
         'trever_noah': '/video-conf/scratch/pantea_experiments_tardy/resolution512_with_hr_skip_connections/trever_noah_resolution512_with_hr_skip_connections 08_04_22_16.14.52/00000069-checkpoint.pth.tar',
         'tucker': '/video-conf/scratch/pantea_experiments_tardy/resolution512_with_hr_skip_connections/tucker_resolution512_with_hr_skip_connections 08_04_22_18.02.06/00000069-checkpoint.pth.tar',
-        'kayleigh': '/video-conf/scratch/pantea_experiments_tardy/resolution512_with_hr_skip_connections/kayleigh_resolution512_with_hr_skip_connections 05_04_22_18.23.53/00000069-checkpoint.pth.tar'
+        'kayleigh': '/video-conf/scratch/pantea_experiments_tardy/resolution512_with_hr_skip_connections/kayleigh_resolution512_with_hr_skip_connections 05_04_22_18.23.53/00000069-checkpoint.pth.tar'},
+        
+        '1024': {
+            'needle_drop': '/video-conf/scratch/vibhaa_mm_arjun_directory/needle_drop_with_hr_skip_connections 11_04_22_16.54.29/00000069-checkpoint.pth.tar',
+            'fancy_fueko': '/video-conf/scratch/pantea_experiments_tardy/resolution1024_with_hr_skip_connections/fancy_fueko_resolution1024_with_hr_skip_connections 10_04_22_01.06.51/00000069-checkpoint.pth.tar',
+            'xiran': '/video-conf/scratch/pantea_experiments_tardy/resolution1024_with_hr_skip_connections/xiran_resolution1024_with_hr_skip_connections 08_04_22_13.43.30/00000069-checkpoint.pth.tar',
+            'kayleigh': '', 
+            }
 }
 
 vgg_model = Vgg19()
+loss_fn_vgg = lpips.LPIPS(net='vgg')
 if torch.cuda.is_available():
     vgg_model = vgg_model.cuda()
+    loss_fn_vgg = loss_fn_vgg.cuda()
+
 
 """ get per frame visual metrics based on predicted and original frame
 """
@@ -48,7 +58,13 @@ def get_quality(prediction, original):
     psnr = piq.psnr(original_tensor, prediction_tensor, data_range=1., \
             reduction='none').data.cpu().numpy().flatten()[0]
 
-    return {'psnr': psnr, 'ssim': ssim, 'lpips': lpips_val}
+    # normalize to -1 to + 1 for old lpips
+    original_tensor = torch.sub(torch.mul(original_tensor, 2), 1)
+    prediction_tensor = torch.sub(torch.mul(prediction_tensor, 2), 1)
+    old_lpips = loss_fn_vgg(original_tensor, prediction_tensor).data.cpu().numpy().flatten()[0]
+
+    return {'psnr': psnr, 'ssim': ssim, 'lpips': lpips_val, 'old_lpips': old_lpips}
+
 
 """ average out metrics across all frames as aggregated in
     the metrics_dict dictionary element
@@ -63,13 +79,16 @@ def get_average_metrics(metrics_dict):
     lpips = [m['lpips'] for m in metrics_dict]
     lpip = np.average(lpips)
 
+    old_lpips = [m['old_lpips'] for m in metrics_dict]
+    old_lpip = np.average(old_lpips)
+
     if 'latency' in metrics_dict[0]:
         latencies = [m['latency'] for m in metrics_dict]
         latency = np.average(latencies)
     else:
         latency = 0
 
-    return psnr, ssim, lpip, latency
+    return psnr, ssim, lpip, latency, old_lpip
 
 
 """ get the fps of a video by running ffprobe
@@ -165,7 +184,9 @@ def get_video_quality_latency_over_windows(save_dir, window):
 def dump_per_frame_video_quality_latency(save_dir):
     metrics = {} 
     sent_times = {}
-    special_frames_list = [1322, 574, 140, 1786, 1048, 839, 761, 2253, 637, 375]  
+    special_frames_list = [1322, 574, 140, 1786, 1048, 839, 761, 2253, 637, 375, \
+            1155, 2309, 1524, 1486, 1207, 315, 1952, 2111, 2148, 1530, \
+            112, 939, 1211, 403, 2225, 1900, 207, 1634, 2006, 28]  
 
     # parse send times
     with open(f'{save_dir}/send_times.txt', 'r') as send_times_file:
@@ -175,6 +196,7 @@ def dump_per_frame_video_quality_latency(save_dir):
                 continue
             frame_num = int(words[1])
             relevant_time = f'{words[3]} {words[4][:-1]}'
+            relevant_time = relevant_time + '.0' if '.' not in relevant_time else relevant_time
             relevant_time = dt.datetime.strptime(relevant_time, "%Y-%m-%d %H:%M:%S.%f")
             sent_times[frame_num] = relevant_time
 
@@ -186,6 +208,7 @@ def dump_per_frame_video_quality_latency(save_dir):
         words = line.split(' ')
         frame_num = int(words[1])
         relevant_time = f'{words[3]} {words[4][:-1]}'
+        relevant_time = relevant_time + '.0' if '.' not in relevant_time else relevant_time
         relevant_time = dt.datetime.strptime(relevant_time, "%Y-%m-%d %H:%M:%S.%f")
         
         sent_frame_file = f'{save_dir}/sender_frame_{frame_num:05d}.npy'
