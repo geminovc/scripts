@@ -7,3 +7,6 @@ python vary_reference_frame_frequency.py --duration 350 --window 350 --num-runs 
 
 
 python vpx_baseline_vary_resolution.py --resolutions 512x512 --duration 230 --window 230 --num-runs 1 --root-dir /video-conf/scratch/pantea/fom_personalized_512 --people kayleigh seth_meyer trever_noah jen_psaki tucker --save-prefix logs_512_comparison --executable-dir /data1/vibhaa/aiortc/examples/videostream-cli --csv data/vpx_512_diff_quantizers --quantizer-list 2 16 32 48 63 --video-num-range 0 2
+
+# needs some careful aggregation of data from the top three manually into a single file
+./main_comparison.R
