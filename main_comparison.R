@@ -1,6 +1,5 @@
 #!/usr/bin/env Rscript
-# This script produces a timeseries of bitrate consumption 
-# at different fps levels
+# This script compares quality bpp for all schemes
 
 source("style.R")
 

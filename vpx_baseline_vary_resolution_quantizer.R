@@ -1,7 +1,6 @@
 #!/usr/bin/env Rscript
-# This script produces a timeseries of bitrate consumption 
-# at different fps levels
-
+# This script compares quality bpp for different resolutions 
+# for VPX
 source("style.R")
 
 args <- commandArgs(trailingOnly=TRUE)

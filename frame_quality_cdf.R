@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
-# This script produces a timeseries of bitrate consumption 
-# at different fps levels
+# This script produces a cdf of per frame metrics 
+# for the same video with different schemes
 
 source("style.R")
 
