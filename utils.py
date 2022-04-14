@@ -422,6 +422,13 @@ def run_single_experiment(params):
         time.sleep(5)
         
         os.kill(sender_proc.pid, signal.SIGTERM)
+        
+        time.sleep(5)
+        try:
+            os.kill(recv_proc.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            print("couldn't find receive process")
+
         os.system(f'pkill -9 tcpdump')
         recv_output.close()
         sender_output.close()

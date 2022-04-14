@@ -16,7 +16,7 @@ parser.add_argument('--resolutions', type=str, nargs='+',
                     default=['256x256', '512x512', '768x768', '1024x1024'])
 parser.add_argument('--quantizer-list', type=int, nargs='+',
                     help='set of quantizers to quantize at',
-                    default=[2, 16, 32, 48, 62])
+                    default=[2, 16, 32, 48, 63])
 parser.add_argument('--uplink-trace', type=str,
                     help='uplink trace path for mahimahi', 
                     default="traces/12mbps_trace")
