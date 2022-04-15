@@ -6,9 +6,6 @@ import math
 from time import perf_counter
 
 parser = argparse.ArgumentParser(description='Collect per frame stats.')
-parser.add_argument('--num-runs', type=int,
-                    help='number of runs to average over per experiment',
-                    default=10)
 parser.add_argument('--person', type=str,
                     help='person who will be resized', default='xiran')
 parser.add_argument('--save-prefix', type=str,
@@ -76,7 +73,7 @@ def aggregate_data():
     
     for freq in args.reference_frame_frequency_list:
         print(f'Run {video_name} for person {person} reference frame freq {freq} setting {setting}')
-        save_dir = f'{save_prefix}_{setting}/{person}/reference_freq{freq}/' + \
+        save_dir = f'{save_prefix}_{setting}/resolution{resolution}/{person}/reference_freq{freq}/' + \
                 f'{os.path.basename(video_name)}/run0'
         print(save_dir)
 
@@ -87,7 +84,13 @@ def aggregate_data():
     for quantizer in args.vpx_quantizer_list:
         setting = 'vpx'
         print(f'Run {video_name} for person {person} reference frame freq {freq} setting {setting}')
-        save_dir = f'{save_prefix}_{width}_comparison_{setting}/{person}/resolution{resolution}/quantizer{quantizer}/' + \
+        if resolution == "512x512":
+            save_dir = f'{save_prefix}_{width}_comparison_{setting}/{person}/' + \
+                    f'resolution{resolution}/quantizer{quantizer}/' + \
+                f'{os.path.basename(video_name)}/run0'
+        else:
+            save_dir = f'{save_prefix}_{setting}/{person}/' + \
+                    f'resolution{resolution}/quantizer{quantizer}/' + \
                 f'{os.path.basename(video_name)}/run0'
         print(save_dir)
 

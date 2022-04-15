@@ -4,8 +4,8 @@
 source("style.R")
 
 args <- commandArgs(trailingOnly=TRUE)
-file <- "data/aggregate_comparison_data"
-plot_filename <- "pdfs/main_bpp_quality.pdf"
+file <- "../data/aggregate_1024_comparison_data"
+plot_filename <- "pdfs/main_bpp_quality_1024.pdf"
 data<-read.csv(file)
 
 ssim_plot <- ggplot(data, aes(x=kbps,y=ssim_db,color=setting,linetype=setting)) + 

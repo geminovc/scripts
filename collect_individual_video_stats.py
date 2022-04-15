@@ -104,11 +104,17 @@ def aggregate_data():
             
             print(f'Run {video_name} for person {person} reference frame freq {freq} setting {setting}')
             if setting in ["personalized", "generic"]:
-                save_dir = f'{save_prefix}_{setting}/{person}/reference_freq{freq}/' + \
+                save_dir = f'{save_prefix}_{setting}/resolution{resolution}/' + \
+                    f'{person}/reference_freq{freq}/' + \
                     f'{os.path.basename(video_name)}/run0'
             else:
-                save_dir = f'{save_prefix}_{width}_comparison_{setting}/{person}/resolution{resolution}/' + \
-                    f'quantizer{quantizer}/{os.path.basename(video_name)}/run0'
+                if resolution == "512x512":
+                    save_dir = f'{save_prefix}_{width}_comparison_{setting}/{person}/resolution{resolution}/' + \
+                        f'quantizer{quantizer}/{os.path.basename(video_name)}/run0'
+                else:
+                    save_dir = f'{save_prefix}_{setting}/{person}/resolution{resolution}/' + \
+                        f'quantizer{quantizer}/{os.path.basename(video_name)}/run0'
+
             print(save_dir)
 
             setting_info = f'{person}_{i}'
