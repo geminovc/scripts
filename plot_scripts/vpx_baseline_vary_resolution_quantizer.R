@@ -4,17 +4,17 @@
 source("style.R")
 
 args <- commandArgs(trailingOnly=TRUE)
-file <- "data/baseline_diff_resolutions"
+file <- "../data/baseline_diff_resolutions"
 plot_filename <- "pdfs/baseline_resolution_bitrate_tradeoff.pdf"
 data<-read.csv(file)
 data$resolution <-factor(data$resolution, levels = c("64x64", "256x256", "512x512", "1024x1024"))
 
-ssim_plot <- ggplot(data, aes(x=kbps,y=ssim_db,color=resolution,linetype=resolution)) + 
+ssim_plot <- ggplot(data, aes(x=kbps,y=ssim,color=resolution,linetype=resolution)) + 
         geom_line(size=0.8) +
         geom_point(size=2) + 
         xlim(0, 1000) +
 
-        labs(y="SSIM (dB)", x="Kbps") 
+        labs(y="SSIM", x="Kbps") 
 ggsave(plot_filename, width=12.2,height=5)
   
 psnr_plot <- ggplot(data, aes(x=kbps,y=psnr,color=resolution,linetype=resolution)) + 

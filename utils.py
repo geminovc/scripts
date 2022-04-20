@@ -25,9 +25,9 @@ checkpoint_dict = {
         
         '1024': {
             'needle_drop': '/video-conf/scratch/vibhaa_mm_arjun_directory/needle_drop_with_hr_skip_connections 11_04_22_16.54.29/00000069-checkpoint.pth.tar',
-            'fancy_fueko': '/video-conf/scratch/pantea_experiments_tardy/resolution1024_with_hr_skip_connections/fancy_fueko_resolution1024_with_hr_skip_connections 10_04_22_01.06.51/00000069-checkpoint.pth.tar',
+            'fancy_fueko': '/video-conf/scratch/pantea_experiments_tardy/resolution1024_with_hr_skip_connections/fancy_fueko_resolution1024_with_hr_skip_connections 10_04_22_01.06.51/00000069-cyheckpoint.pth.tar',
             'xiran': '/video-conf/scratch/pantea_experiments_tardy/resolution1024_with_hr_skip_connections/xiran_resolution1024_with_hr_skip_connections 08_04_22_13.43.30/00000069-checkpoint.pth.tar',
-            'kayleigh': '', 
+            'kayleigh': '/video-conf/scratch/vibhaa_mm_log_directory/kayleigh_resolution1024_with_hr_skip_connections 14_04_22_05.24.11/00000069-checkpoint.pth.tar', 
             }
 }
 
