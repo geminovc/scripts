@@ -1,12 +1,9 @@
-# generates the average frame to drop a crop box on for each of the original
-# videos for the specified speakers
-# from the sppech to gesture dataset
+# Draw the bounding boxes on the average and record the box coordinates
 
-DIR="/Users/panteababaahmadi/Documents/GitHub/nets_meta/youtube_dataset/dataset"
-for speaker in "needle_drop" #"jen_psaki" #"xiran" # "fancy_fueko" "seth_meyer" "tucker" #"trever_noah" "kayleigh"
+DIR=$1
+speaker=$2
+for phase in train test
 do
-	for phase in train test
-	do
-    	python3 ds_bbox_ui.py --folder ${DIR}/${speaker} --name ${speaker} --resolution 512 --phase $phase
-    done
+	python3 ds_bbox_ui.py --folder ${DIR}/${speaker} \
+	--name ${speaker} --resolution 512 --phase $phase
 done
