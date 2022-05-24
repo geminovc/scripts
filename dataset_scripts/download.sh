@@ -10,6 +10,3 @@ do
     --output_folder ${DIR}/${speaker}/original_youtube/${phase} \
     --urls_path ${DIR}/${speaker}/urls_${phase}.txt 
 done
-
-
-
