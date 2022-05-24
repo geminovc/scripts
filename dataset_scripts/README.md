@@ -54,3 +54,7 @@ bash draw_bbox.sh <ROOT_DIR> speaker <resolution>
 After running this, python will pop up the average frames of `speaker` both in the test and train folders, and you can choose the top-left corner of the box you want to crop. You can modify your box selection multiple times. The title of the pop-up image will show the height and width of the box you have chosen. For a square box, you want both of these values to be equal to resolution, so be careful with choosing your box corners. After choosing your box, press `'a'` to record the coordinates of the box. 
 
 All the coordinates will be saved in `<ROOT_DIR>/speaker/speaker_{train, test}.pkl`. Make sure this file does not exists if you want to rerun the `draw_bbox.sh`. 
+
+## Crop the videos
+
+Now, we crop the videos based on the useing the pickle file per speaker with annotations on what square to cut and cuts
