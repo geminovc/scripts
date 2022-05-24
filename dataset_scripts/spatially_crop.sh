@@ -2,14 +2,12 @@
 # square to cut and cuts all the input "temporally cropped" videos
 # to that square, essentially spatially cropping them also
 
-DIR="/Users/panteababaahmadi/Documents/GitHub/nets_meta/youtube_dataset/dataset"
-for speaker in "tucker" #"jen_psaki" #"xiran" # "fancy_fueko" "seth_meyer" "tucker" #"kayleigh" "trever_noah"
+DIR=$1
+speaker=$2
+for phase in train test
 do
-    for phase in train test
-    do
-        python3 crop_coordinates.py \
-            --data-dir ${DIR}/${speaker} \
-            --pickle-name ${DIR}/${speaker}/${speaker}_${phase}.pkl \
-            --phase ${phase}
-    done
+    python3 crop_coordinates.py \
+        --data-dir ${DIR}/${speaker} \
+        --pickle-name ${DIR}/${speaker}/${speaker}_${phase}.pkl \
+        --phase ${phase}
 done
