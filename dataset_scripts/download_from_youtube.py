@@ -32,7 +32,8 @@ for line in lines:
             video_id += 1
             session_id = 0
         name = f'{session_id}_{video_id}'
-        download_command = 'yt-dlp -i -f ' + str(quality) + ' --merge-output-format mp4 --external-downloader ffmpeg --external-downloader-args \"ffmpeg_i:-ss ' + \
+        download_command = 'yt-dlp -i -f ' + str(quality) + \
+        ' --merge-output-format mp4 --external-downloader ffmpeg --external-downloader-args \"ffmpeg_i:-ss ' + \
         start + ' -to ' + stop + '\" ' + url + ' -P ' + output_folder + ' -o ' + '\"' + f'{name}.%(ext)s' + '\"'
         os.system(download_command)
     except Exception as e:
