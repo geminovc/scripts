@@ -3,6 +3,8 @@
     Needs a video strip from the FOM model reconstruction to read frames
     and residuals from
 """
+import sys
+sys.path.append('../')
 import os
 import numpy as np
 import cv2
