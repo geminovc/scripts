@@ -1,3 +1,16 @@
+"""
+Takes a single person, and a single video and setting and collects the per
+frame qualities across a set of methods to then plot a cdf to 
+see the variability.
+
+Example usage:
+python collect_per_frame_stats.py 
+       --save-prefix logs --person kayleigh --video-name 0_2.mp4
+       --setting personalized --reference-frame-frequency-list 10 60 
+       --vpx-quantizer-list 2 32 63 --csv-name data/kayleigh_video0_2_per_frame_data
+../plot_scripts/frame_quality_cdf.R data/kayleigh_video0_2_per_frame_data pdfs/kayleigh_metrics_cdf.pdf
+"""
+
 import sys
 sys.path.append('../')
 import pandas as pd
