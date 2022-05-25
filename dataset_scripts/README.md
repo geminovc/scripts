@@ -23,7 +23,7 @@ https://youtu.be/SmDls15895I,00:02:37,00:05:37
 
 Note that there is no extra space between elements in the text files and the files do not end with a new line. You can pick multiple start and stop times for a video. For the train videos, each of them will be treated as a separate video and cut into smaller sessions, but for the test videos they different sessions of the same video (same `youtube_url`) will be attached in the end to make a longer test video. Make sure to use the correct resolution when you are seaching for the videos.
 
-The process of collecting the videos is time-consuming. I also suggest to use private mode in the browser if you don't want to mess up with your feeds:) The list of the `speaker`s that I used is:
+The process of collecting the videos is time-consuming. We collected 5 test videos and about 15 train videos for each person. I also suggest to use private mode in the browser if you don't want to mess up with your feeds:) The list of the `speaker`s that I used is:
 
 ```
 "tucker", "xiran", "fancy_fueko", "seth_meyer", "kayleigh", "jen_psaki", "needle_drop", "trever_noah"
@@ -51,10 +51,46 @@ In this part, we draw the bounding boxes on the average frames and record the bo
 ```bash
 bash draw_bbox.sh <ROOT_DIR> speaker <resolution>
 ```
-After running this, python will pop up the average frames of `speaker` both in the test and train folders, and you can choose the top-left corner of the box you want to crop. You can modify your box selection multiple times. The title of the pop-up image will show the height and width of the box you have chosen. For a square box, you want both of these values to be equal to resolution, so be careful with choosing your box corners. After choosing your box, press `'a'` to record the coordinates of the box. 
+After running this, python will pop up the average frames of `speaker` both in the test and train folders, and you can choose the top-left corner of the box you want to crop. You can modify your box selection multiple times to capture most of the face. The title of the pop-up image will show the height and width of the box you have chosen. For a square box, you want both of these values to be equal to resolution, so be careful with choosing your box corners. After choosing your box, press `'a'` to record the coordinates of the box. 
 
 All the coordinates will be saved in `<ROOT_DIR>/speaker/speaker_{train, test}.pkl`. Make sure this file does not exists if you want to rerun the `draw_bbox.sh`. 
 
 ## Crop the videos
 
-Now, we crop the videos based on the useing the pickle file per speaker with annotations on what square to cut and cuts
+Now, we crop the videos based on the useing the pickle file per speaker with annotations on what square to cut.
+```bash
+bash spatially_crop.sh <ROOT_DIR> speaker <resolution>
+```
+
+Cropped videos will be saved in `<ROOT_DIR>/speaker/spatially_cropped/{train, test}`.
+
+## Shorten train videos
+We divide each train video into 10-second clips. Run:
+
+```bash
+bash shorten_train.sh <ROOT_DIR> speaker
+```
+The videos are saved in `<ROOT_DIR>/speaker/speaker/train`.
+
+## Combine test sessions into a video
+We combine all sessions (clips) from the same url into a single video for test videos. Run:
+
+```bash
+bash recombine_test.sh <ROOT_DIR> speaker
+```
+The videos are saved in `<ROOT_DIR>/speaker/speaker/test`.
+
+## Dataset clean up
+After putting the dataset for all of the people in the same directory (for example `/dataset_1024`), you should use the clean_up script:
+
+```bash
+bash cleanup_script.sh
+```
+It currently points to my directory and datasets. 
+
+### Downsize 1024x1024 dataset 
+You can downsize 1024x1024 datasets using:
+```bash
+bash resize1024_to_resolution.sh DATASETs_PATH speaker resolution
+```
+Where `DATASETs_PATH` is where all datasets are stored (for example `/dataset_1024`).
