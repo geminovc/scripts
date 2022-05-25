@@ -1,4 +1,4 @@
-cd ..
+cd ../../post_experiment_process
 
 for person in "needle_drop" "xiran" "kayleigh" "fancy_fueko"
 do

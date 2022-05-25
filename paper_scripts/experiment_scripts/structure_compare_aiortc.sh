@@ -1,4 +1,4 @@
-cd ../end2end_experiments
+cd ../../end2end_experiments
 # xiran
 python structure_comparison_experiments.py --duration 300 \
 --csv-name ./xiran_1024_diget.csv --save-prefix ./xiran_1024 \
