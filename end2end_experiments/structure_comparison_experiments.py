@@ -1,3 +1,5 @@
+import sys
+sys.path.append('../')
 import pandas as pd
 import subprocess as sh
 import argparse
@@ -9,7 +11,7 @@ import shutil
 from checkpoints import structure_based_checkpoint_dict
 
 
-parser = argparse.ArgumentParser(description='Compare VPX to learned method.')
+parser = argparse.ArgumentParser(description='Compare different structures of the learned models.')
 parser.add_argument('--uplink-trace', type=str,
                     help='uplink trace path for mahimahi', 
                     default="traces/12mbps_trace")
@@ -33,6 +35,9 @@ parser.add_argument('--person-list', type=str, nargs='+',
 parser.add_argument('--save-prefix', type=str,
                     help='prefix to save logs and files in', 
                     required=True)
+parser.add_argument('--configs-dir', type=str,
+                    help='path to config files', 
+                    default='../paper_configs')
 parser.add_argument('--executable-dir', type=str,
                     help='folder where the video-stream cli.py executable lies', 
                     required=True)
@@ -66,7 +71,7 @@ def run_experiments():
             params['checkpoint'] = 'None' if setting != "generic" else checkpoint_dict['generic']
             params['reference_update_freq'] = 1000
             nets_implementation_path = os.environ.get('PYTHONPATH', '/data4/pantea/aiortc/nets_implementation')
-            params['config_path'] = f'/data4/pantea/aiortc/nets_implementation/first_order_model/config/paper_configs/{setting}.yaml'
+            params['config_path'] = f'{args.configs_dir}/{setting}.yaml'
             
             for person in args.person_list:
                 video_dir = os.path.join(args.root_dir, person, "test")
