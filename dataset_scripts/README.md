@@ -101,4 +101,10 @@ You can downsize 1024x1024 datasets using:
 ```bash
 bash resize1024_to_resolution.sh DATASETs_PATH speaker resolution
 ```
+### Get dataset information
 
+To get the dataset information, use:
+```
+bash get_our_dataset_info.sh SAVE_PREFIX
+```
+Where `SAVE_PREFIX` is where the output csv files are stored. The script currently points to my directory and datasets. The information contains speaker/phase,	num_videos,	width,	height,	min_num_frames,	avg_num_frames,	max_num_frames,	min_frame_rate,	avg_frame_rate,	max_frame_rate,	min_bit_rate,	avg_bit_rate,	max_bit_rate,	min_duration,	avg_duration, and	max_duration.
