@@ -1,3 +1,5 @@
+import sys
+sys.path.append('../')
 from first_order_model.fom_wrapper import FirstOrderModel
 import imageio 
 import numpy as np
@@ -5,7 +7,6 @@ import time
 import os
 import pandas as pd
 from argparse import ArgumentParser
-#from first_order_model.frames_dataset import get_num_frames, get_frame
 from checkpoints import *
 from utils import *
 import imageio
