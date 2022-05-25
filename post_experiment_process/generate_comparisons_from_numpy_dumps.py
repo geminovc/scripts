@@ -1,3 +1,8 @@
+"""
+Generates visual compariosn for a frame
+across all methods at different reference frame 
+frequencies and VPX compression levels
+"""
 import argparse
 import numpy as np
 import os
