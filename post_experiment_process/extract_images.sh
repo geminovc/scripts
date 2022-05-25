@@ -1,4 +1,8 @@
 #!/bin/sh
+# useful for generating strips for presentations by taking videos
+# from https://drive.google.com/drive/folders/1O0viPTI-az_pW8fyKaC5x8DaxuamsE7K
+# and extracting the corresponding subframes
+# to produce a source | target | method1 | method2..
 person=$1
 
 ffmpeg -y -i ${person}_src.jpg -filter:v "crop=1024:1024:0:0" ${person}_source.jpg
