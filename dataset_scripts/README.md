@@ -87,10 +87,18 @@ After putting the dataset for all of the people in the same directory (for examp
 bash cleanup_script.sh
 ```
 It currently points to my directory and datasets. 
+### Re-encode videos to 30 fps
+
+Some of the train or test videos could be encoded at fps other than 30. Currently, we use 30 fps in our pipeline. To re-encode videos use:
+
+```bash
+bash reencode_at_30fps.sh DATASETs_PATH
+```
+Where `DATASETs_PATH` is where all datasets are stored (for example `/dataset_1024`).
 
 ### Downsize 1024x1024 dataset 
 You can downsize 1024x1024 datasets using:
 ```bash
 bash resize1024_to_resolution.sh DATASETs_PATH speaker resolution
 ```
-Where `DATASETs_PATH` is where all datasets are stored (for example `/dataset_1024`).
+
