@@ -1,3 +1,17 @@
+"""
+Produces per frame statistics of each video of each person
+in the saved logs. Converts it all into a csv ready to be
+processed by ../plot_scrips/box_plot_per_video_stats.R
+
+Example usage:
+python collect_individual_video_stats.py --save-prefix logs 
+       --people fancy_fueko needle_drop xiran 
+       --setting personalized --reference-frame-frequency 60 
+       --vpx-quantizer 63 --video-num-range 0 4
+       --csv-name data/personalized1024_ref_frame60_video_aggregate_data 
+       --root-dir /video-conf/scratch/pantea/fom_personalized_1024 
+       --resolution 1024x1024
+"""
 import sys
 sys.path.append('../')
 import pandas as pd
