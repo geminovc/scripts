@@ -1,5 +1,7 @@
 """ Extracts the desired frame number from the videos and compares their PSNR
 """
+import sys
+sys.path.append('../')
 import os
 import numpy as np 
 import cv2
