@@ -1,3 +1,5 @@
+import sys
+sys.path.append('../')
 import pandas as pd
 import subprocess as sh
 import argparse
@@ -6,7 +8,7 @@ import log_parser
 import numpy as np
 from utils import *
 import shutil
-
+print(checkpoint_dict)
 
 parser = argparse.ArgumentParser(description='Compare VPX to learned method.')
 parser.add_argument('--uplink-trace', type=str,
@@ -27,6 +29,9 @@ parser.add_argument('--num-runs', type=int,
 parser.add_argument('--root-dir', type=str,
                     help='name of default video directory', 
                     default="sundar_pichai.mp4")
+parser.add_argument('--resolution', type=str,
+                    help='video resolution', 
+                    default=1024)
 parser.add_argument('--person-list', type=str, nargs='+',
                     help='list of people', default=['jen_psaki'])
 parser.add_argument('--save-prefix', type=str,
@@ -55,13 +60,13 @@ def run_experiments():
         params['duration'] = args.duration
         params['enable_prediction'] = False if setting == "vpx" else True
         params['runs'] = 1
-        params['checkpoint'] = 'None' if setting != "generic" else checkpoint_dict['generic']
+        params['checkpoint'] = 'None' if setting != "generic" else checkpoint_dict[args.resolution]['generic']
         params['reference_update_freq'] = 30
         
         for person in args.person_list:
             video_dir = os.path.join(args.root_dir, person, "test")
             if setting == "personalized":
-                params['checkpoint'] = checkpoint_dict[person]
+                params['checkpoint'] = checkpoint_dict[args.resolution][person]
             
             for video_name in os.listdir(video_dir):
                 video_file = os.path.join(video_dir, video_name)
