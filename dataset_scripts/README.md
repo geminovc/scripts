@@ -34,14 +34,14 @@ The process of collecting the videos is time-consuming. We collected 5 test vide
 To download the train and test videos use:
 ```bash
 cd dataset_scripts
-bash download.sh <ROOT_DIR> speaker
+./download.sh <ROOT_DIR> speaker
 ```
 The output videos will be saved in `<ROOT_DIR>/speaker/original_youtube/{train, test}`. 
 
 ## Getting the average frame
 Next, we generates the average frame for each video to find a crop box for each of the orignal videos. To get the average frames, run:
 ```bash
-bash get_average_frame.sh <ROOT_DIR> speaker
+./get_average_frame.sh <ROOT_DIR> speaker
 ```
 The output average frames will be saved in `<ROOT_DIR>/speaker/averages/{train, test}`. 
 
@@ -49,7 +49,7 @@ The output average frames will be saved in `<ROOT_DIR>/speaker/averages/{train, 
 
 In this part, we draw the bounding boxes on the average frames and record the box coordinates: 
 ```bash
-bash draw_bbox.sh <ROOT_DIR> speaker <resolution>
+./draw_bbox.sh <ROOT_DIR> speaker <resolution>
 ```
 After running this, python will pop up the average frames of `speaker` both in the test and train folders, and you can choose the top-left corner of the box you want to crop. You can modify your box selection multiple times to capture most of the face. The title of the pop-up image will show the height and width of the box you have chosen. For a square box, you want both of these values to be equal to resolution, so be careful with choosing your box corners. After choosing your box, press `'a'` to record the coordinates of the box. 
 
@@ -59,7 +59,7 @@ All the coordinates will be saved in `<ROOT_DIR>/speaker/speaker_{train, test}.p
 
 Now, we crop the videos based on the useing the pickle file per speaker with annotations on what square to cut.
 ```bash
-bash spatially_crop.sh <ROOT_DIR> speaker <resolution>
+./spatially_crop.sh <ROOT_DIR> speaker <resolution>
 ```
 
 Cropped videos will be saved in `<ROOT_DIR>/speaker/spatially_cropped/{train, test}`.
@@ -68,7 +68,7 @@ Cropped videos will be saved in `<ROOT_DIR>/speaker/spatially_cropped/{train, te
 We divide each train video into 10-second clips. Run:
 
 ```bash
-bash shorten_train.sh <ROOT_DIR> speaker
+./shorten_train.sh <ROOT_DIR> speaker
 ```
 The videos are saved in `<ROOT_DIR>/speaker/speaker/train`.
 
@@ -76,7 +76,7 @@ The videos are saved in `<ROOT_DIR>/speaker/speaker/train`.
 We combine all sessions (clips) from the same url into a single video for test videos. Run:
 
 ```bash
-bash recombine_test.sh <ROOT_DIR> speaker
+./recombine_test.sh <ROOT_DIR> speaker
 ```
 The videos are saved in `<ROOT_DIR>/speaker/speaker/test`.
 
@@ -84,7 +84,7 @@ The videos are saved in `<ROOT_DIR>/speaker/speaker/test`.
 After putting the dataset for all of the people in the same directory (for example `/dataset_1024`), you should use the clean_up script:
 
 ```bash
-bash cleanup_script.sh
+./cleanup_script.sh
 ```
 It currently points to my directory and datasets. 
 ### Re-encode videos to 30 fps
@@ -92,19 +92,19 @@ It currently points to my directory and datasets.
 Some of the train or test videos could be encoded at fps other than 30. Currently, we use 30 fps in our pipeline. To re-encode videos use:
 
 ```bash
-bash reencode_at_30fps.sh DATASETs_PATH
+./reencode_at_30fps.sh DATASETs_PATH
 ```
 Where `DATASETs_PATH` is where all datasets are stored (for example `/dataset_1024`).
 
 ### Downsize 1024x1024 dataset 
 You can downsize 1024x1024 datasets using:
 ```bash
-bash resize1024_to_resolution.sh DATASETs_PATH speaker resolution
+./resize1024_to_resolution.sh DATASETs_PATH speaker resolution
 ```
 ### Get dataset information
 
 To get the dataset information, use:
 ```
-bash get_our_dataset_info.sh SAVE_PREFIX
+./get_our_dataset_info.sh SAVE_PREFIX
 ```
 Where `SAVE_PREFIX` is where the output csv files are stored. The script currently points to my directory and datasets. The information contains speaker/phase,	num_videos,	width,	height,	min_num_frames,	avg_num_frames,	max_num_frames,	min_frame_rate,	avg_frame_rate,	max_frame_rate,	min_bit_rate,	avg_bit_rate,	max_bit_rate,	min_duration,	avg_duration, and	max_duration.
