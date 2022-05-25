@@ -1,3 +1,4 @@
+# Delete very short clips (containing less than 3 frames) that are created while dividing the videos in shorter clips
 DIR_PATH=/video-conf/scratch/pantea
 for person in "needle_drop" "xiran" "fancy_fueko"  "jen_psaki"  "kayleigh"  "seth_meyer"  "trever_noah"  "tucker" "xiran_close_up";
 do
