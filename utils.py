@@ -362,28 +362,33 @@ def run_single_experiment(params):
             base_env['CONFIG_PATH'] = params['config_path']
         
         # run sender inside mm-shell
-        # mm_setup = 'sudo sysctl -w net.ipv4.ip_forward=1'
-        # sh.run(mm_setup, shell=True)
+        mm_setup = 'sudo sysctl -w net.ipv4.ip_forward=1'
+        sh.run(mm_setup, shell=True)
 
-        #mm_cmd = f'mm-link {uplink_trace} {downlink_trace}' 
+        #mm_cmd = f'mm-link {uplink_trace} {downlink_trace} ' 
         sender_output = open(f'{log_dir}/sender.log', "w")
-        sender_cmd = f'python {exec_dir}/cli.py offer \
-                        --play-from {video_file} \
-                        --signaling-path {socket_path} \
-                        --signaling unix-socket \
-                        --fps {fps} \
-                        --quantizer {quantizer} \
-                        --reference-update-freq {reference_update_freq} \
-                        --save-dir {log_dir}'
-        if enable_prediction:
-            sender_cmd += ' --enable-prediction'
-        sender_cmd += ' --verbose' 
+        sender_cmd = f'mm-link {uplink_trace} {downlink_trace} \
+            ./offer.sh {video_file} {fps} \
+            {log_dir}/sender.log {log_dir} {exec_dir} \
+            False {reference_update_freq} {quantizer} {socket_path}'
+
+#        sender_cmd =  f'python {exec_dir}/cli.py offer \
+#                        --play-from {video_file} \
+#                        --signaling-path {socket_path} \
+#                        --signaling unix-socket \
+#                        --fps {fps} \
+#                        --quantizer {quantizer} \
+#                        --reference-update-freq {reference_update_freq} \
+#                        --save-dir {log_dir}'
+#        if enable_prediction:
+#            sender_cmd += ' --enable-prediction'
+#        sender_cmd += ' --verbose' 
         sender_args = shlex.split(sender_cmd)
         sender_proc = sh.Popen(sender_args, stderr=sender_output, env=base_env)
 
         # get tcpdump
         check_sender_ready(f'{log_dir}/sender.log')
-        """
+        
         ifconfig_cmd = 'ifconfig | grep -oh "link-[0-9]*"'
         link_name = sh.check_output(ifconfig_cmd, shell=True)
         link_name = link_name.decode("utf-8")[:-1]
@@ -397,8 +402,7 @@ def run_single_experiment(params):
         print(tcpdump_cmd)
         tcpdump_args = shlex.split(tcpdump_cmd)
         tcp_proc = sh.Popen(tcpdump_args)
-        """
-
+        
         # start receiver
         recv_output = open(f'{log_dir}/receiver.log', "w")
         receiver_cmd = f'python {exec_dir}/cli.py answer \
@@ -434,3 +438,4 @@ def run_single_experiment(params):
         sender_output.close()
 
         dump_per_frame_video_quality_latency(log_dir)
+        
