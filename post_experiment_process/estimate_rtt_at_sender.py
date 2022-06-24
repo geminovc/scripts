@@ -4,10 +4,8 @@
 import numpy as np
 import datetime as dt
 from scipy import stats
-import matplotlib.pyplot as plt
 import argparse
-from process_utils import get_emwa
-import os
+from process_utils import get_emwa, plot_graph
 
 
 parser = argparse.ArgumentParser(description='Collect logs info.')
@@ -60,17 +58,9 @@ if __name__ == "__main__":
     try:
         estimated_rtts = get_rtt_over_windows(args.log_path)
         if len(estimated_rtts) > 0:
-            os.makedirs(args.save_dir, exist_ok=True)
-            plt.figure()
-            plt.plot(estimated_rtts , \
-                    label = 'Webrtc sender_log', color='b')
-            plt.plot(get_emwa(estimated_rtts) , \
-                    label = 'EWMA of Webrtc sender_log', color='g')
-            plt.xlabel('time')
-            plt.ylabel('estimated rtt (s)')
-            #plt.title(f'max estimated bitrate (kbps)')
-            plt.legend()
-            plt.savefig(f'{args.save_dir}/{args.output_name}.png')
+            plot_graph(range(1, len(estimated_rtts) + 1), [estimated_rtts, get_emwa(estimated_rtts)], \
+                    ['estimated rtt', 'emwa rtt'], ['b', 'g'], 'time', 'rtt (s)', 'Estimation of rtt in log', \
+                    args.save_dir, args.output_name)
     except Exception as e:
         print(e)
         pass

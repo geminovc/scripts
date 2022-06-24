@@ -5,3 +5,4 @@ residuals/*
 logs*/*
 post_experiment_process/rtt_results/
 post_experiment_process/bw_results/
+end2end_experiments/*kbps

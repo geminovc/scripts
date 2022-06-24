@@ -1,3 +1,5 @@
+import matplotlib.pyplot as plt
+import os
 
 class RtcpSrPacket:
     def __init__(self, rtp_timestamp=0, packet_count=0, octet_count=0, arrival_time=0):
@@ -102,3 +104,15 @@ def get_emwa(array, alpha = 0.9):
         ewma.append(alpha * array[i] + (1 - alpha) * ewma[i-1])
     return ewma
 
+
+def plot_graph(x, y_list, label_list, color_list, x_label, y_label, title, save_dir, output_name):
+    print("Plotting")
+    os.makedirs(save_dir, exist_ok=True)
+    plt.figure()
+    for i in range(0, len(y_list)):
+        plt.plot(x, y_list[i] , label=label_list[i], color=color_list[i])
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.title(title)
+    plt.legend()
+    plt.savefig(f'{save_dir}/{output_name}.png')
