@@ -453,3 +453,6 @@ def run_single_experiment(params):
 
         dump_per_frame_video_quality_latency(log_dir)
         
+        if os.path.isfile(f'{log_dir}/mahimahi.log'):
+            sh.run(f'mm-graph {log_dir}/mahimahi.log {duration} --no-port \
+                    > {log_dir}/mahimahi.eps 2> {log_dir}/mmgraph.log', shell=True)
