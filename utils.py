@@ -244,28 +244,41 @@ def dump_per_frame_video_quality_latency(save_dir):
         
         del sent_times[frame_num]
         if frame_num not in special_frames_list:
-            os.remove(sent_frame_file)
-            os.remove(recv_frame_file)
+            try:
+                os.remove(sent_frame_file)
+                os.remove(recv_frame_file)
+            except:
+                pass
      
     recv_times_file.close()
     
     # clean up any unremoved sent frames
-    for frame_num in sent_times.keys():
-        sent_frame_file = f'{save_dir}/sender_frame_{frame_num:05d}.npy'
-        os.remove(sent_frame_file)
-    os.system(f'rm {save_dir}/reference_frame*')
-
-    for s in glob.glob(f'{save_dir}/sender*.npy'):
-        frame_num = int(s.split("_")[-1].split(".")[0])
-        if frame_num not in special_frames_list:
+    try:
+        for frame_num in sent_times.keys():
             sent_frame_file = f'{save_dir}/sender_frame_{frame_num:05d}.npy'
             os.remove(sent_frame_file)
-
-    for s in glob.glob(f'{save_dir}/receiver*.npy'):
-        frame_num = int(s.split("_")[-1].split(".")[0])
-        if frame_num not in special_frames_list:
-            recv_frame_file = f'{save_dir}/receiver_frame_{frame_num:05d}.npy'
-            os.remove(recv_frame_file)
+    except:
+        pass
+    try:
+        os.system(f'rm {save_dir}/reference_frame*')
+    except:
+        pass
+    try:
+        for s in glob.glob(f'{save_dir}/sender*.npy'):
+            frame_num = int(s.split("_")[-1].split(".")[0])
+            if frame_num not in special_frames_list:
+                sent_frame_file = f'{save_dir}/sender_frame_{frame_num:05d}.npy'
+                os.remove(sent_frame_file)
+    except:
+        pass
+    try:
+        for s in glob.glob(f'{save_dir}/receiver*.npy'):
+            frame_num = int(s.split("_")[-1].split(".")[0])
+            if frame_num not in special_frames_list:
+                recv_frame_file = f'{save_dir}/receiver_frame_{frame_num:05d}.npy'
+                os.remove(recv_frame_file)
+    except:
+        pass
 
     np.save(f'{save_dir}/metrics.npy', metrics)
 
@@ -365,13 +378,13 @@ def run_single_experiment(params):
         mm_setup = 'sudo sysctl -w net.ipv4.ip_forward=1'
         sh.run(mm_setup, shell=True)
 
-        #mm_cmd = f'mm-link {uplink_trace} {downlink_trace} ' 
         sender_output = open(f'{log_dir}/sender.log', "w")
-        sender_cmd = f'mm-link {uplink_trace} {downlink_trace} \
+        sender_cmd = f'mm-delay 2000 mm-link {uplink_trace} {downlink_trace} --uplink-log="{log_dir}/mahimahi.log" \
             ./offer.sh {video_file} {fps} \
             {log_dir}/sender.log {log_dir} {exec_dir} \
             False {reference_update_freq} {quantizer} {socket_path}'
 
+#        mm_cmd = f'mm-link {uplink_trace} {downlink_trace} ' 
 #        sender_cmd =  f'python {exec_dir}/cli.py offer \
 #                        --play-from {video_file} \
 #                        --signaling-path {socket_path} \
@@ -385,10 +398,10 @@ def run_single_experiment(params):
 #        sender_cmd += ' --verbose' 
         sender_args = shlex.split(sender_cmd)
         sender_proc = sh.Popen(sender_args, stderr=sender_output, env=base_env)
-
-        # get tcpdump
         check_sender_ready(f'{log_dir}/sender.log')
-        
+
+        ''' 
+        # get tcpdump
         ifconfig_cmd = 'ifconfig | grep -oh "link-[0-9]*"'
         link_name = sh.check_output(ifconfig_cmd, shell=True)
         link_name = link_name.decode("utf-8")[:-1]
@@ -402,7 +415,7 @@ def run_single_experiment(params):
         print(tcpdump_cmd)
         tcpdump_args = shlex.split(tcpdump_cmd)
         tcp_proc = sh.Popen(tcpdump_args)
-        
+        '''
         # start receiver
         recv_output = open(f'{log_dir}/receiver.log', "w")
         receiver_cmd = f'python {exec_dir}/cli.py answer \
