@@ -28,8 +28,8 @@ def gather_trace_statistics(log_filename, window=1):
             break
         
         parts = line.split(" ")
-        if len(parts) > 2: 
-            if parts[1] == ">" and parts[2].startswith("RtpPacket"):
+        if len(parts) > 3:
+            if parts[1] == ">" and parts[3].startswith("RtpPacket"):
                 packet_type = parts[0].split("(")[1][:-1]
                 packet_size = int(line.split(", ")[-1].split(" ")[0])
 

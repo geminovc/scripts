@@ -74,33 +74,33 @@ def aggregate_data():
     save_prefix = args.save_prefix
     
     for bw in args.uplink_bw_list:
-        save_dir = f'{save_prefix}_{bw}kbps'
-        dump_file = f'{save_dir}/sender.log'
-        saved_video_file = f'{save_dir}/received.mp4'
+        for run_num in range(args.runs):
+            save_dir = f'{save_prefix}_{bw}kbps/run{run_num}'
+            dump_file = f'{save_dir}/sender.log'
+            saved_video_file = f'{save_dir}/received.mp4'
+            stats = log_parser.gather_trace_statistics(dump_file, args.window)
+            num_windows = len(stats['bitrates']['video'])
+            streams = list(stats['bitrates'].keys())
+            stats['bitrates']['time'] = np.arange(1, num_windows + 1)
+            
+            df = pd.DataFrame.from_dict(stats['bitrates'])
+            for s in streams:
+                df[s] = (df[s] / 1000.0 / args.window).round(2)
+            df['kbps'] = df.iloc[:, 0:3].sum(axis=1).round(2) 
+            df['fps'] = get_fps_from_video(saved_video_file)
+            df['uplink_bw'] = bw
 
-        stats = log_parser.gather_trace_statistics(dump_file, args.window)
-        num_windows = len(stats['bitrates']['video'])
-        streams = list(stats['bitrates'].keys())
-        stats['bitrates']['time'] = np.arange(1, num_windows + 1)
-        
-        df = pd.DataFrame.from_dict(stats['bitrates'])
-        for s in streams:
-            df[s] = (df[s] / 1000.0 / args.window).round(2)
-        df['kbps'] = df.iloc[:, 0:3].sum(axis=1).round(2) 
-        df['fps'] = get_fps_from_video(saved_video_file)
-        df['uplink_bw'] = bw
+            metrics = get_video_quality_latency_over_windows(save_dir, args.window)
+            for m in metrics.keys():
+                while len(metrics[m]) < df.shape[0]:
+                    metrics[m].append(0)
+                df[m] = metrics[m]
 
-        metrics = get_video_quality_latency_over_windows(save_dir, args.window)
-        for m in metrics.keys():
-            while len(metrics[m]) < df.shape[0]:
-                metrics[m].append(0)
-            df[m] = metrics[m]
-
-        if first:
-            df.to_csv(args.csv_name, header=True, index=False, mode="w")
-            first = False
-        else:
-            df.to_csv(args.csv_name, header=False, index=False, mode="a+")
+            if first:
+                df.to_csv(args.csv_name, header=True, index=False, mode="w")
+                first = False
+            else:
+                df.to_csv(args.csv_name, header=False, index=False, mode="a+")
 
 run_experiments()
 aggregate_data()

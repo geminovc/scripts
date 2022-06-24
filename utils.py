@@ -115,7 +115,7 @@ def get_fps_from_video(video_name):
 """
 def get_video_quality_latency_over_windows(save_dir, window):
     window_metrics = [] 
-    averaged_metrics = {'psnr': [], 'ssim': [], 'lpips': [], 'latency': []}
+    averaged_metrics = {'psnr': [], 'ssim': [], 'lpips': [], 'old_lpips': [], 'latency': []}
     sent_times = {}
     last_window_start = -1
 
@@ -154,7 +154,7 @@ def get_video_quality_latency_over_windows(save_dir, window):
         except IOError:
             print("Skipping frame", frame_num, "due to IO error")
             continue
-
+ 
         qualities = get_quality(recvd_frame, sent_frame)
         latency = (relevant_time - sent_times[frame_num]).total_seconds() * 1000
         frame_metrics  = qualities.copy()
@@ -172,9 +172,10 @@ def get_video_quality_latency_over_windows(save_dir, window):
             last_window_start += dt.timedelta(0, window)
 
     recv_times_file.close()
-    averages = get_average_metrics(window_metrics)
-    for i, k in enumerate(window_metrics[0].keys()):
-        averaged_metrics[k].append(averages[i])
+    if len(window_metrics) > 0:
+        averages = get_average_metrics(window_metrics)
+        for i, k in enumerate(window_metrics[0].keys()):
+            averaged_metrics[k].append(averages[i])
     return averaged_metrics   
 
 
