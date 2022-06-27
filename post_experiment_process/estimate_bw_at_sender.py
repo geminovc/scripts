@@ -27,7 +27,7 @@ parser.add_argument('--uplink-bw-list', type=int, nargs='+',
 args = parser.parse_args()
 
 
-def get_bw_over_windows(save_dir, window=1):
+def get_bw_logs(save_dir):
     sent_rtp_packets = []
     received_rtp_packets = []
     sent_rtcp_packets = []
@@ -118,6 +118,14 @@ def get_full_trace(trace_path, length):
     return kbits_per_ms
 
 
+def get_kbits_per_ms(estimated_max_bws, received_estimated_time, is_ms=False, is_kbits=True):
+    kbits_per_ms = {}
+    for i in range(len(received_estimated_time)):
+        t = received_estimated_time[i]
+        kbits_per_ms[int(((1- int(is_ms)) * 900 + 1) * t)] =  ((1-int(is_kbits)) * 900 + 1) * estimated_max_bws[i]
+    return kbits_per_ms
+
+
 def get_trace_samples(kbits_per_ms, received_estimated_time):
     bws = []
     for i in received_estimated_time:
@@ -152,7 +160,7 @@ if __name__ == "__main__":
         for bw in args.uplink_bw_list:
             try:
                 print(os.path.join(args.log_path, f'{args.output_name}_{bw}kbps', 'run0/sender.log'))
-                estimated_max_bws, received_estimated_time = get_bw_over_windows(
+                estimated_max_bws, received_estimated_time = get_bw_logs(
                         os.path.join(args.log_path, f'{args.output_name}_{bw}kbps', 'run0/sender.log')
                         )
                 if len(estimated_max_bws) > 0:
@@ -177,7 +185,7 @@ if __name__ == "__main__":
 
     else:
         try:
-            estimated_max_bws, received_estimated_time = get_bw_over_windows(args.log_path)
+            estimated_max_bws, received_estimated_time = get_bw_logs(args.log_path)
             if len(estimated_max_bws) > 0:
                 trace_bws = get_trace_samples(
                         get_full_trace(args.trace_path,

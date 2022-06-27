@@ -380,7 +380,7 @@ def run_single_experiment(params):
         sh.run(mm_setup, shell=True)
 
         sender_output = open(f'{log_dir}/sender.log', "w")
-        sender_cmd = f'mm-delay 2000 mm-link {uplink_trace} {downlink_trace} --uplink-log="{log_dir}/mahimahi.log" \
+        sender_cmd = f'mm-link {uplink_trace} {downlink_trace} --uplink-log="{log_dir}/mahimahi.log" \
             ./offer.sh {video_file} {fps} \
             {log_dir}/sender.log {log_dir} {exec_dir} \
             False {reference_update_freq} {quantizer} {socket_path}'
@@ -401,7 +401,7 @@ def run_single_experiment(params):
         sender_proc = sh.Popen(sender_args, stderr=sender_output, env=base_env)
         check_sender_ready(f'{log_dir}/sender.log')
 
-        ''' 
+        #''' 
         # get tcpdump
         ifconfig_cmd = 'ifconfig | grep -oh "link-[0-9]*"'
         link_name = sh.check_output(ifconfig_cmd, shell=True)
@@ -416,7 +416,7 @@ def run_single_experiment(params):
         print(tcpdump_cmd)
         tcpdump_args = shlex.split(tcpdump_cmd)
         tcp_proc = sh.Popen(tcpdump_args)
-        '''
+        #'''
         # start receiver
         recv_output = open(f'{log_dir}/receiver.log', "w")
         receiver_cmd = f'python {exec_dir}/cli.py answer \
