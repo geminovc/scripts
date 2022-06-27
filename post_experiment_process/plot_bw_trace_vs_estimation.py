@@ -21,7 +21,7 @@ parser.add_argument('--trace-path', type=str,
                     help='path to the trace file', required=True)
 parser.add_argument('--window', type=int,
                     help='duration to aggregate bitrate over (in ms)',
-                    default=500)
+                    default=200)
 args = parser.parse_args()
 
 
@@ -44,11 +44,11 @@ if __name__ == "__main__":
             windowed_trace_bw = get_average_bw_over_window(full_trace, window=args.window)
             windowed_trace_bw, sent_video_bitrates, windowed_estimated_bw = get_common_intervals(windowed_trace_bw,\
                                                                 sent_video_bitrates, windowed_estimated_bw)
-            plot_graph(range(0, len(windowed_trace_bw)),\
+            plot_graph(np.linspace(0, args.window * len(windowed_trace_bw)/1000, len(windowed_trace_bw)),\
                       [windowed_trace_bw, sent_video_bitrates, windowed_estimated_bw],\
-                      ['original', 'sent video bitrates', 'estimated bw from receiver'], \
-                      ['r', 'b', 'g'], 'time (ms)', 'bitrate (kbps)', 'sent vs original vs estimated bitrate',\
-                      args.save_dir, args.output_name)
+                      ['link', 'sent video bitrates', 'estimated bw from receiver'], \
+                      ['r', 'b', 'g'], 'time (s)', 'bitrate (kbps)', 'sent vs original vs estimated bitrate',\
+                      args.save_dir, f'{args.output_name}_w{args.window}_ms')
     except Exception as e:
         print(e)
         pass
