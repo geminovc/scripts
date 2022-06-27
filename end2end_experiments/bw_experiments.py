@@ -37,7 +37,7 @@ parser.add_argument('--executable-dir', type=str,
                     required=True)
 parser.add_argument('--csv-name', type=str,
                     help='file to save final data in', 
-                    default="data/bw_data")
+                    default="bw_data")
 
 args = parser.parse_args()
 
@@ -97,10 +97,10 @@ def aggregate_data():
                 df[m] = metrics[m]
 
             if first:
-                df.to_csv(args.csv_name, header=True, index=False, mode="w")
+                df.to_csv(f'{save_dir}/{args.csv_name}', header=True, index=False, mode="w")
                 first = False
             else:
-                df.to_csv(args.csv_name, header=False, index=False, mode="a+")
+                df.to_csv(f'{save_dir}/{args.csv_name}', header=False, index=False, mode="a+")
 
 run_experiments()
 aggregate_data()
