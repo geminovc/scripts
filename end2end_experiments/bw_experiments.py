@@ -101,6 +101,11 @@ def aggregate_data():
                 first = False
             else:
                 df.to_csv(f'{save_dir}/{args.csv_name}', header=False, index=False, mode="a+")
+            
+            os.system(f'python3 ../post_experiment_process/plot_bw_trace_vs_estimation.py \
+                    --log-path {save_dir}/sender.log --trace-path ../traces/fixed/{bw}kbps_trace \
+                    --save-dir {save_dir} --output-name link_vs_sent_vs_estimation')
+
 
 run_experiments()
 aggregate_data()

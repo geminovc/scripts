@@ -1,14 +1,11 @@
 import argparse
 import sys
 sys.path.append('../')
-import pandas as pd
-import subprocess as sh
 import argparse
-import os
 import log_parser
 import numpy as np
 from utils import *
-from estimate_bw_at_sender import *
+from estimate_bw_at_sender import get_average_bw_over_window, get_kbits_per_ms, get_full_trace, get_bw_logs
 
 parser = argparse.ArgumentParser(description='Collect bw logs info.')
 parser.add_argument('--save-dir', type=str,
@@ -47,7 +44,7 @@ if __name__ == "__main__":
             plot_graph(np.linspace(0, args.window * len(windowed_trace_bw)/1000, len(windowed_trace_bw)),\
                       [windowed_trace_bw, sent_video_bitrates, windowed_estimated_bw],\
                       ['link', 'sent video bitrates', 'estimated bw from receiver'], \
-                      ['r', 'b', 'g'], 'time (s)', 'bitrate (kbps)', 'sent vs original vs estimated bitrate',\
+                      ['r', 'b', 'g'], 'time (s)', 'bitrate (kbps)', 'sent vs link vs estimated bitrate',\
                       args.save_dir, f'{args.output_name}_w{args.window}_ms')
     except Exception as e:
         print(e)
