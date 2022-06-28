@@ -56,9 +56,10 @@ def run_experiments():
     params['runs'] = args.runs
     params['enable_prediction'] = False
     params['fps'] = 30
+    params['disable_mahimahi'] = args.disable_mahimahi
     
     for bw in args.uplink_bw_list:
-        params['uplink_trace'] = f'traces/{bw}kbps_trace'
+        params['uplink_trace'] = f'../traces/fixed/{bw}kbps_trace'
         params['save_dir'] = f'{save_prefix}_{bw}kbps'
 
         shutil.rmtree(params['save_dir'], ignore_errors=True)
@@ -105,8 +106,14 @@ def aggregate_data():
             
             os.system(f'python3 ../post_experiment_process/plot_bw_trace_vs_estimation.py \
                     --log-path {save_dir}/sender.log --trace-path ../traces/fixed/{bw}kbps_trace \
-                    --save-dir {save_dir} --output-name link_vs_sent_vs_estimation')
+                    --save-dir {save_dir} --output-name link_vs_sent_vs_estimation --window 200')
 
+            os.system(f'python3 ../post_experiment_process/estimate_rtt_at_sender.py \
+                    --log-path {save_dir}/sender.log \
+                    --save-dir {save_dir} --output-name rtt_estimation_at_sender')
 
+            os.system(f'python3 ../post_experiment_process/estimate_rtt_at_sender.py \
+                    --log-path {save_dir}/receiver.log \
+                    --save-dir {save_dir} --output-name rtt_estimation_at_receiver')
 run_experiments()
 aggregate_data()
