@@ -6,6 +6,7 @@ import log_parser
 import numpy as np
 from utils import *
 from estimate_bw_at_sender import get_average_bw_over_window, get_kbits_per_ms, get_full_trace, get_bw_logs
+from process_utils import plot_graph
 
 parser = argparse.ArgumentParser(description='Collect bw logs info.')
 parser.add_argument('--save-dir', type=str,
