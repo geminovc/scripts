@@ -350,6 +350,7 @@ def run_single_experiment(params):
     enable_prediction = params['enable_prediction']
     reference_update_freq = params.get('reference_update_freq', '0')
     quantizer = params.get('quantizer', 32)
+    disable_mahimahi = params.get('disable_mahimahi', True)
     socket_path = params.get('socket_path', 'test.sock')
     user = getpass.getuser()
 
@@ -374,49 +375,53 @@ def run_single_experiment(params):
             base_env['CHECKPOINT_PATH'] = params['checkpoint']
         if 'config_path' in params:
             base_env['CONFIG_PATH'] = params['config_path']
-        
-        # run sender inside mm-shell
-        mm_setup = 'sudo sysctl -w net.ipv4.ip_forward=1'
-        sh.run(mm_setup, shell=True)
 
+        # Start sender
         sender_output = open(f'{log_dir}/sender.log', "w")
-        sender_cmd = f'mm-link {uplink_trace} {downlink_trace} --uplink-log="{log_dir}/mahimahi.log" \
-            ./offer.sh {video_file} {fps} \
-            {log_dir}/sender.log {log_dir} {exec_dir} \
-            False {reference_update_freq} {quantizer} {socket_path}'
+        if not disable_mahimahi:
+            # run sender inside mm-shell
+            mm_setup = 'sudo sysctl -w net.ipv4.ip_forward=1'
+            sh.run(mm_setup, shell=True)
+            sender_cmd = f'mm-link {uplink_trace} {downlink_trace} --uplink-log="{log_dir}/mahimahi.log" \
+                 ./offer.sh {video_file} {fps} \
+                 {log_dir}/sender.log {log_dir} {exec_dir} \
+                 False {reference_update_freq} {quantizer} {socket_path}'
+        else:
+            sender_cmd =  f'python {exec_dir}/cli.py offer \
+                             --play-from {video_file} \
+                             --signaling-path {socket_path} \
+                             --signaling unix-socket \
+                             --fps {fps} \
+                             --quantizer {quantizer} \
+                             --reference-update-freq {reference_update_freq} \
+                             --save-dir {log_dir}'
+            if enable_prediction:
+                sender_cmd += ' --enable-prediction'
+            sender_cmd += ' --verbose' 
 
-#        mm_cmd = f'mm-link {uplink_trace} {downlink_trace} ' 
-#        sender_cmd =  f'python {exec_dir}/cli.py offer \
-#                        --play-from {video_file} \
-#                        --signaling-path {socket_path} \
-#                        --signaling unix-socket \
-#                        --fps {fps} \
-#                        --quantizer {quantizer} \
-#                        --reference-update-freq {reference_update_freq} \
-#                        --save-dir {log_dir}'
-#        if enable_prediction:
-#            sender_cmd += ' --enable-prediction'
-#        sender_cmd += ' --verbose' 
         sender_args = shlex.split(sender_cmd)
         sender_proc = sh.Popen(sender_args, stderr=sender_output, env=base_env)
+
+        try:
+            # get tcpdump
+            ifconfig_cmd = 'ifconfig | grep -oh "link-[0-9]*"'
+            link_name = sh.check_output(ifconfig_cmd, shell=True)
+            link_name = link_name.decode("utf-8")[:-1]
+            print("Link Name:", link_name)
+
+            rm_cmd = f'sudo rm {log_dir}/{dump_file}'
+            sh.run(rm_cmd, shell=True)
+
+            tcpdump_cmd = f'sudo tcpdump -i {link_name} \
+                    -w {log_dir}/{dump_file}'
+            print(tcpdump_cmd)
+            tcpdump_args = shlex.split(tcpdump_cmd)
+            tcp_proc = sh.Popen(tcpdump_args)
+        except:
+            pass
+
         check_sender_ready(f'{log_dir}/sender.log')
 
-        #''' 
-        # get tcpdump
-        ifconfig_cmd = 'ifconfig | grep -oh "link-[0-9]*"'
-        link_name = sh.check_output(ifconfig_cmd, shell=True)
-        link_name = link_name.decode("utf-8")[:-1]
-        print("Link Name:", link_name)
-
-        rm_cmd = f'sudo rm {log_dir}/{dump_file}'
-        sh.run(rm_cmd, shell=True)
-
-        tcpdump_cmd = f'sudo tcpdump -i {link_name} \
-                -w {log_dir}/{dump_file}'
-        print(tcpdump_cmd)
-        tcpdump_args = shlex.split(tcpdump_cmd)
-        tcp_proc = sh.Popen(tcpdump_args)
-        #'''
         # start receiver
         recv_output = open(f'{log_dir}/receiver.log', "w")
         receiver_cmd = f'python {exec_dir}/cli.py answer \

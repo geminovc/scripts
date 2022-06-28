@@ -1,7 +1,6 @@
 import argparse
 import sys
 sys.path.append('../')
-import argparse
 import log_parser
 import numpy as np
 from utils import *
@@ -9,6 +8,9 @@ from estimate_bw_at_sender import get_average_bw_over_window, get_kbits_per_ms, 
 from process_utils import plot_graph
 
 parser = argparse.ArgumentParser(description='Collect bw logs info.')
+parser.add_argument('--window', type=int,
+                    help='duration to aggregate data (assumes ms)',
+                    default=200)
 parser.add_argument('--save-dir', type=str,
                     help='directory to save graph in', default='./bw_graphs')
 parser.add_argument('--output-name', type=str,
@@ -17,19 +19,17 @@ parser.add_argument('--log-path', type=str,
                     help='path to the log file', required=True)
 parser.add_argument('--trace-path', type=str,
                     help='path to the trace file', required=True)
-parser.add_argument('--window', type=int,
-                    help='duration to aggregate bitrate over (in ms)',
-                    default=200)
 args = parser.parse_args()
 
 
 def get_common_intervals(windowed_trace_bw, sent_video_bitrates, windowed_estimated_bw):
     min_len = min(len(windowed_trace_bw), len(sent_video_bitrates), len(windowed_estimated_bw))
-    return windowed_trace_bw[1:min_len], sent_video_bitrates[1:min_len], windowed_estimated_bw[1:min_len]
+    return np.clip(windowed_trace_bw[1:min_len], 0, 12000), np.clip(sent_video_bitrates[1:min_len], 0, 12000),\
+            np.clip(windowed_estimated_bw[1:min_len], 0, 12000)
 
 
 if __name__ == "__main__":
-    stats = log_parser.gather_trace_statistics(args.log_path, int(args.window/1000))
+    stats = log_parser.gather_trace_statistics(args.log_path, args.window/1000)
     sent_video_bitrates = stats['bitrates']['video']
 
     try:

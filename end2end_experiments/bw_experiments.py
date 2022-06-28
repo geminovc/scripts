@@ -38,7 +38,8 @@ parser.add_argument('--executable-dir', type=str,
 parser.add_argument('--csv-name', type=str,
                     help='file to save final data in', 
                     default="bw_data")
-
+parser.add_argument('--disable-mahimahi', action='store_true',
+                    help='If used, traces will not be appliled to the sender')
 args = parser.parse_args()
 
 """ runs video conference at different bandwidth levels

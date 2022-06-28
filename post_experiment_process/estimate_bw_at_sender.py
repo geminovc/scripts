@@ -24,6 +24,9 @@ parser.add_argument('--trace-path', type=str,
 parser.add_argument('--uplink-bw-list', type=int, nargs='+',
                     help='list of uplink bws to run on (assumes kpbs)',
                     default=[])
+parser.add_argument('--window', type=int,
+                    help='duration to aggregate data (assumes ms)',
+                    default=200)
 args = parser.parse_args()
 
 
