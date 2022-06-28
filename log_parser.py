@@ -4,7 +4,7 @@ import sys
 
     Arguments: 
         log_filename: name of the log file
-        window: aggregation window for bitrate info
+        window: aggregation window for bitrate info (s)
 
     Returns:
         frame data - dictionary with frame timestamps, size and type
@@ -47,7 +47,7 @@ def gather_trace_statistics(log_filename, window=1):
                         last_window_start = time_object
                         first_packet_time = time_object
 
-                    if ((time_object - last_window_start).seconds > window):
+                    if ((time_object - last_window_start).total_seconds() > window):
                         for p in bitrates.keys():
                             bitrates[p].append(bytes_so_far[p] * 8)
                             bytes_so_far[p] = 0
@@ -61,7 +61,7 @@ def gather_trace_statistics(log_filename, window=1):
         bytes_so_far[p] = 0
 
     # adjust window if the elapsed time is less than the window length
-    elapsed_time =  (time_object - first_packet_time).seconds
+    elapsed_time =  (time_object - first_packet_time).total_seconds()
     if elapsed_time < window:
         window = elapsed_time
 

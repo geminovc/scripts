@@ -30,7 +30,7 @@ def get_common_intervals(windowed_trace_bw, sent_video_bitrates, windowed_estima
 
 if __name__ == "__main__":
     stats = log_parser.gather_trace_statistics(args.log_path, args.window/1000)
-    sent_video_bitrates = stats['bitrates']['video']
+    sent_video_bitrates = [i/1000 for i in stats['bitrates']['video']]
 
     try:
         estimated_max_bws, received_estimated_time = get_bw_logs(args.log_path)
