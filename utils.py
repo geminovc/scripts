@@ -351,6 +351,7 @@ def run_single_experiment(params):
     reference_update_freq = params.get('reference_update_freq', '0')
     quantizer = params.get('quantizer', 32)
     disable_mahimahi = params.get('disable_mahimahi', True)
+    qsize_pkts = params.get('qsize_pkts', 160)
     socket_path = params.get('socket_path', 'test.sock')
     user = getpass.getuser()
 
@@ -383,6 +384,10 @@ def run_single_experiment(params):
             mm_setup = 'sudo sysctl -w net.ipv4.ip_forward=1'
             sh.run(mm_setup, shell=True)
             sender_cmd = f'mm-link {uplink_trace} {downlink_trace} \
+                            --uplink-queue=droptail \
+                            --downlink-queue=droptail \
+                            --uplink-queue-args="packets={qsize_pkts}" \
+                            --downlink-queue-args="packets={qsize_pkts}" \
                             --uplink-log="{log_dir}/mahimahi.log" \
                             ./offer.sh {video_file} {fps} {log_dir}/sender.log \
                             {log_dir} {exec_dir} False {reference_update_freq} \
@@ -459,7 +464,8 @@ def run_single_experiment(params):
         sender_output.close()
 
         dump_per_frame_video_quality_latency(log_dir)
-        
+
         if os.path.isfile(f'{log_dir}/mahimahi.log'):
             sh.run(f'mm-graph {log_dir}/mahimahi.log {duration} --no-port \
+                    --xrange \"0:50\" --yrange \"0:2\" --y2range \"0:500\" \
                     > {log_dir}/mahimahi.eps 2> {log_dir}/mmgraph.log', shell=True)

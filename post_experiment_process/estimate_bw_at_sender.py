@@ -125,7 +125,7 @@ def get_kbits_per_ms(estimated_max_bws, received_estimated_time, is_ms=False, is
     kbits_per_ms = {}
     for i in range(len(received_estimated_time)):
         t = received_estimated_time[i]
-        kbits_per_ms[int(((1- int(is_ms)) * 900 + 1) * t)] =  ((1-int(is_kbits)) * 900 + 1) * estimated_max_bws[i]
+        kbits_per_ms[(((1- int(is_ms)) * 900 + 1) * t)] =  ((1-int(is_kbits)) * 900 + 1) * estimated_max_bws[i]
     return kbits_per_ms
 
 
@@ -139,19 +139,20 @@ def get_trace_samples(kbits_per_ms, received_estimated_time):
 def get_average_bw_over_window(kbits_per_ms, window=1000):
     # window = 1000 ms
     windowed_bw = []
-    last_window_start = 0
     current_window = []
-    for k, v in kbits_per_ms.items():
-        if k <= last_window_start + window:
-            current_window.append(v)
-        else:
+    num_windows = int(max(kbits_per_ms.keys())/window) + 1
+    for i in range(num_windows):
+        current_window = []
+        for k, v in kbits_per_ms.items():
+            if k > (i+1) * window:
+                break
+            elif k > i* window and k <= (i+1) * window:
+                current_window.append(v)
+
+        if len(current_window) > 0:
             windowed_bw.append(np.mean(current_window))
-            current_window = [v]
-            last_window_start = k
-    
-    if len(current_window) > 0: # last window
-        windowed_bw.append(np.mean(current_window)) 
-    
+        else:
+            windowed_bw.append(0)
     return windowed_bw
 
 

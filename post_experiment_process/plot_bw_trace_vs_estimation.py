@@ -31,7 +31,11 @@ def get_common_intervals(windowed_trace_bw, sent_video_bitrates, windowed_estima
 if __name__ == "__main__":
     stats = log_parser.gather_trace_statistics(args.log_path, args.window/1000)
     sent_video_bitrates = [i/1000 for i in stats['bitrates']['video']]
-
+    plot_graph(np.linspace(0, args.window * len(sent_video_bitrates)/ 1000, len(sent_video_bitrates)),\
+          [sent_video_bitrates],\
+          ['sent video bitrates'], \
+          ['r'], 'time (s)', 'bitrate (kbps)', 'sent bitrate',\
+          args.save_dir, f'sent_rtp_{args.output_name}_w{args.window}_ms')
     try:
         estimated_max_bws, received_estimated_time = get_bw_logs(args.log_path)
         if len(estimated_max_bws) > 0:
