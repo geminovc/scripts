@@ -382,10 +382,11 @@ def run_single_experiment(params):
             # run sender inside mm-shell
             mm_setup = 'sudo sysctl -w net.ipv4.ip_forward=1'
             sh.run(mm_setup, shell=True)
-            sender_cmd = f'mm-link {uplink_trace} {downlink_trace} --uplink-log="{log_dir}/mahimahi.log" \
-                 ./offer.sh {video_file} {fps} \
-                 {log_dir}/sender.log {log_dir} {exec_dir} \
-                 False {reference_update_freq} {quantizer} {socket_path}'
+            sender_cmd = f'mm-link {uplink_trace} {downlink_trace} \
+                            --uplink-log="{log_dir}/mahimahi.log" \
+                            ./offer.sh {video_file} {fps} {log_dir}/sender.log \
+                            {log_dir} {exec_dir} False {reference_update_freq} \
+                            {quantizer} {socket_path}'
         else:
             sender_cmd =  f'python {exec_dir}/cli.py offer \
                              --play-from {video_file} \
@@ -417,7 +418,8 @@ def run_single_experiment(params):
             print(tcpdump_cmd)
             tcpdump_args = shlex.split(tcpdump_cmd)
             tcp_proc = sh.Popen(tcpdump_args)
-        except:
+        except Exception as e:
+            print("tcpdump error", e)
             pass
 
         check_sender_ready(f'{log_dir}/sender.log')

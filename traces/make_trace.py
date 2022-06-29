@@ -14,12 +14,15 @@ args = parser.parse_args()
 
 def make_trace(t, bw, last_c, f):
     ''' t = duration (s), bw = bandwidth (kbps) '''
-    tt_MTU = int(12000/bw)
+    tt_MTU = max(int(12000/bw), 1)
+    count = max(int(bw/12000), 1)
     c = last_c
     while c <= t * 1000:
-        c += tt_MTU
-        f.write(str(c))
-        f.write('\n')
+        for i in range(count):
+            c += tt_MTU
+            f.write(str(c))
+            f.write('\n')
+
     return c
 
 f = open(args.save_path, "w")
