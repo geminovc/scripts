@@ -3,10 +3,10 @@ import argparse
 parser = argparse.ArgumentParser(description='Bandwidth  Variation.')
 parser.add_argument('--bw-list', type=int, nargs='+',
                     help='list of bws (assumes kpbs)',
-                    default=[12000, 100, 12000])
+                    default=[12000, 100])
 parser.add_argument('--time-list', type=int, nargs='+',
                     help='list of durations corresponding to each bw (assumes s)',
-                    default=[10, 10, 10])
+                    default=[10, 10])
 parser.add_argument('--save-path', type=str,
                     help='path to save the file in',
                     required=True)
@@ -17,7 +17,7 @@ def make_trace(t, bw, last_c, f):
     tt_MTU = max(int(12000/bw), 1)
     count = max(int(bw/12000), 1)
     c = last_c
-    while c <= t * 1000:
+    while c <= t * 1000 + last_c:
         for i in range(count):
             c += tt_MTU
             f.write(str(c))

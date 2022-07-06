@@ -50,7 +50,7 @@ def get_rtt_over_windows(save_dir, window=1):
             #        #print(words)
             #       received_rtcp_rr_packets.append(get_RtcpRrPacket(words_split))
             elif "estimated rtt is" in words:
-                estimated_rtts.append(float(words_split[4].split('.')[0]))
+                estimated_rtts.append(float(words_split[4].split(',')[0]))
 
     print("Average estimated rtt", np.mean(estimated_rtts))
     return estimated_rtts
