@@ -47,9 +47,9 @@ if __name__ == "__main__":
             windowed_trace_bw, sent_video_bitrates, windowed_estimated_bw = get_common_intervals(windowed_trace_bw,\
                                                                 sent_video_bitrates, windowed_estimated_bw)
             plot_graph(np.linspace(0, args.window * len(windowed_trace_bw)/1000, len(windowed_trace_bw)),\
-                      [windowed_trace_bw, sent_video_bitrates, windowed_estimated_bw],\
-                      ['link', 'sent video bitrates', 'estimated bw from receiver'], \
-                      ['r', 'b', 'g'], 'time (s)', 'bitrate (kbps)', 'sent vs link vs estimated bitrate',\
+                      [windowed_trace_bw, windowed_estimated_bw, sent_video_bitrates],\
+                      ['link', 'estimated bw from receiver', 'sent video bitrates'], \
+                      ['r', 'g', 'b'], 'time (s)', 'bitrate (kbps)', 'sent vs link vs estimated bitrate',\
                       args.save_dir, f'{args.output_name}_w{args.window}_ms')
     except Exception as e:
         print(e)
