@@ -381,9 +381,10 @@ def run_single_experiment(params):
         sender_output = open(f'{log_dir}/sender.log', "w")
         if not disable_mahimahi:
             # run sender inside mm-shell
+            print("Using mahimahi shell")
             mm_setup = 'sudo sysctl -w net.ipv4.ip_forward=1'
             sh.run(mm_setup, shell=True)
-            sender_cmd = f'mm-link {uplink_trace} {downlink_trace} \
+            sender_cmd = f'mm-delay 25 mm-link {uplink_trace} {downlink_trace} \
                             --uplink-queue=droptail \
                             --downlink-queue=droptail \
                             --uplink-queue-args="packets={qsize_pkts}" \
@@ -407,25 +408,26 @@ def run_single_experiment(params):
 
         sender_args = shlex.split(sender_cmd)
         sender_proc = sh.Popen(sender_args, stderr=sender_output, env=base_env)
+ 
+        if not disable_mahimahi:
+            try:
+                # get tcpdump
+                ifconfig_cmd = 'ifconfig | grep -oh "delay-[0-9]*"'
+                link_name = sh.check_output(ifconfig_cmd, shell=True)
+                link_name = link_name.decode("utf-8")[:-1]
+                print("Link Name:", link_name)
 
-        try:
-            # get tcpdump
-            ifconfig_cmd = 'ifconfig | grep -oh "link-[0-9]*"'
-            link_name = sh.check_output(ifconfig_cmd, shell=True)
-            link_name = link_name.decode("utf-8")[:-1]
-            print("Link Name:", link_name)
+                rm_cmd = f'sudo rm {log_dir}/{dump_file}'
+                sh.run(rm_cmd, shell=True)
 
-            rm_cmd = f'sudo rm {log_dir}/{dump_file}'
-            sh.run(rm_cmd, shell=True)
-
-            tcpdump_cmd = f'sudo tcpdump -i {link_name} \
-                    -w {log_dir}/{dump_file}'
-            print(tcpdump_cmd)
-            tcpdump_args = shlex.split(tcpdump_cmd)
-            tcp_proc = sh.Popen(tcpdump_args)
-        except Exception as e:
-            print("tcpdump error", e)
-            pass
+                tcpdump_cmd = f'sudo tcpdump -i {link_name} \
+                        -w {log_dir}/{dump_file}'
+                print(tcpdump_cmd)
+                tcpdump_args = shlex.split(tcpdump_cmd)
+                tcp_proc = sh.Popen(tcpdump_args)
+            except Exception as e:
+                print("tcpdump error", e)
+                pass
 
         check_sender_ready(f'{log_dir}/sender.log')
 
@@ -463,9 +465,5 @@ def run_single_experiment(params):
         recv_output.close()
         sender_output.close()
 
-        dump_per_frame_video_quality_latency(log_dir)
+        # dump_per_frame_video_quality_latency(log_dir)
 
-        if os.path.isfile(f'{log_dir}/mahimahi.log'):
-            sh.run(f'mm-graph {log_dir}/mahimahi.log {duration} --no-port \
-                    --xrange \"0:50\" --yrange \"0:2\" --y2range \"0:500\" \
-                    > {log_dir}/mahimahi.eps 2> {log_dir}/mmgraph.log', shell=True)

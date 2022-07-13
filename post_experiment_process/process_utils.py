@@ -106,7 +106,6 @@ def get_emwa(array, alpha = 0.9):
 
 
 def plot_graph(x, y_list, label_list, color_list, x_label, y_label, title, save_dir, output_name):
-    print("Plotting")
     os.makedirs(save_dir, exist_ok=True)
     plt.figure()
     for i in range(0, len(y_list)):

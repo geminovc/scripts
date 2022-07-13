@@ -16,7 +16,10 @@ parser.add_argument('--uplink-bw-list', type=int, nargs='+',
                     default=[100, 200, 500, 1000])
 parser.add_argument('--downlink-trace', type=str,
                     help='downlink trace path for mahimahi (assumed to be bottleneck-free)', 
-                    default="traces/12mbps_trace")
+                    default="../traces/12mbps_trace")
+parser.add_argument('--uplink-trace', type=str,
+                    help='uplink trace path for mahimahi',
+                    default=None)
 parser.add_argument('--duration', type=int,
                     help='duration of experiment (in seconds)', 
                     default=310)
@@ -59,8 +62,8 @@ def run_experiments():
     params['disable_mahimahi'] = args.disable_mahimahi
     
     for bw in args.uplink_bw_list:
-        params['uplink_trace'] = f'../traces/fixed/{bw}kbps_trace'
-        params['save_dir'] = f'{save_prefix}_{bw}kbps'
+        params['uplink_trace'] = f'../traces/fixed/{bw}kbps_trace' if args.uplink_trace is None else args.uplink_trace
+        params['save_dir'] = f'{save_prefix}_{bw}kbps' if args.uplink_trace is None else args.save_prefix
 
         shutil.rmtree(params['save_dir'], ignore_errors=True)
         os.makedirs(params['save_dir'])
@@ -73,13 +76,14 @@ def run_experiments():
 """
 def aggregate_data():
     first = True
-    save_prefix = args.save_prefix
-    
     for bw in args.uplink_bw_list:
+        save_prefix = f'{args.save_prefix}_{bw}kbps' if args.uplink_trace is None else args.save_prefix
+        uplink_trace = f'../traces/fixed/{bw}kbps_trace' if args.uplink_trace is None else args.uplink_trace
         for run_num in range(args.runs):
-            save_dir = f'{save_prefix}_{bw}kbps/run{run_num}'
+            save_dir = f'{save_prefix}/run{run_num}'
             dump_file = f'{save_dir}/sender.log'
             saved_video_file = f'{save_dir}/received.mp4'
+            '''
             stats = log_parser.gather_trace_statistics(dump_file, args.window)
             num_windows = len(stats['bitrates']['video'])
             streams = list(stats['bitrates'].keys())
@@ -103,17 +107,23 @@ def aggregate_data():
                 first = False
             else:
                 df.to_csv(f'{save_dir}/{args.csv_name}', header=False, index=False, mode="a+")
-            
+            '''
+
+            if os.path.isfile(f'{save_dir}/mahimahi.log'):
+                sh.run(f'mm-graph {save_dir}/mahimahi.log {args.duration} --no-port \
+                        --xrange \"0:{args.duration}\" --yrange \"0:3\" --y2range \"0:2000\" \
+                        > {save_dir}/mahimahi.eps 2> {save_dir}/mmgraph.log', shell=True)
+
             os.system(f'python3 ../post_experiment_process/plot_bw_trace_vs_estimation.py \
-                    --log-path {save_dir}/sender.log --trace-path ../traces/fixed/{bw}kbps_trace \
-                    --save-dir {save_dir} --output-name link_vs_sent_vs_estimation --window 200')
+                    --log-path {save_dir}/sender.log --trace-path {uplink_trace} \
+                    --save-dir {save_dir} --output-name link_vs_sent_vs_estimation --window 500')
 
             os.system(f'python3 ../post_experiment_process/estimate_rtt_at_sender.py \
                     --log-path {save_dir}/sender.log \
-                    --save-dir {save_dir} --output-name rtt_estimation_at_sender')
+                    --save-dir {save_dir} --output-name estimation_at_sender')
 
             os.system(f'python3 ../post_experiment_process/estimate_rtt_at_sender.py \
                     --log-path {save_dir}/receiver.log \
-                    --save-dir {save_dir} --output-name rtt_estimation_at_receiver')
+                    --save-dir {save_dir} --output-name estimation_at_receiver')
 run_experiments()
 aggregate_data()

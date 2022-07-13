@@ -1,6 +1,6 @@
 import datetime as dt
 import sys
-""" go through log and compute bitrates
+""" go through log and compute bits_sent
 
     Arguments: 
         log_filename: name of the log file
@@ -8,12 +8,12 @@ import sys
 
     Returns:
         frame data - dictionary with frame timestamps, size and type
-        bitrates - timeseries of bitrate in sequence of windows separated
+        bits_sent - timeseries of bits sent in sequence of windows separated
                     by type
 """
 def gather_trace_statistics(log_filename, window=1):
     bytes_so_far = {'video': 0, 'audio': 0, 'keypoints':0}
-    bitrates = {'video': [], 'audio': [], 'keypoints': []}
+    bits_sent = {'video': [], 'audio': [], 'keypoints': []}
     count = 0
     count_kp = count_video = 0
     cur_frame_size = 0
@@ -48,16 +48,16 @@ def gather_trace_statistics(log_filename, window=1):
                         first_packet_time = time_object
 
                     if ((time_object - last_window_start).total_seconds() > window):
-                        for p in bitrates.keys():
-                            bitrates[p].append(bytes_so_far[p] * 8)
+                        for p in bits_sent.keys():
+                            bits_sent[p].append(bytes_so_far[p] * 8)
                             bytes_so_far[p] = 0
                         last_window_start += dt.timedelta(0, window)
                 
                 bytes_so_far[packet_type] += packet_size
                 count += 1
 
-    for p in bitrates.keys():
-        bitrates[p].append(bytes_so_far[p] * 8)
+    for p in bits_sent.keys():
+        bits_sent[p].append(bytes_so_far[p] * 8)
         bytes_so_far[p] = 0
 
     # adjust window if the elapsed time is less than the window length
@@ -65,7 +65,33 @@ def gather_trace_statistics(log_filename, window=1):
     if elapsed_time < window:
         window = elapsed_time
 
-    print(f'Read {count} packets total {count_kp} kp {count_video} video')
+    #print(f'Read {count} packets total {count_kp} kp {count_video} video')
     log_file.close()
-    print(bitrates)
-    return {'bitrates': bitrates, 'window': window}
+    #print(bits_sent)
+    return {'bitrates': bits_sent, 'window': window}
+
+
+def gather_encoder_statistics(log_filename, window=1):
+    compression_size = []
+    compression_time = []
+    log_file = open(log_filename, 'r')
+
+    while True:
+        line = log_file.readline()
+
+        if not line:
+            break
+
+        if "is encoded with timestamp" in line:
+            parts = line.strip().split(" ")
+            compression_size.append(int(parts[10]))
+            date_str = parts[13] + " " + parts[14]
+            time_object = dt.datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S.%f')
+            if len(compression_time) == 0:
+                first_time = time_object
+                compression_time.append(0)
+            else:
+                compression_time.append((time_object - first_time).total_seconds())
+
+    log_file.close()
+    return compression_size, compression_time
