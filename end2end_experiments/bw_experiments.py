@@ -114,16 +114,23 @@ def aggregate_data():
                         --xrange \"0:{args.duration}\" --yrange \"0:3\" --y2range \"0:2000\" \
                         > {save_dir}/mahimahi.eps 2> {save_dir}/mmgraph.log', shell=True)
 
+            print(f"\033[92mSender side \033[0m")
             os.system(f'python3 ../post_experiment_process/plot_bw_trace_vs_estimation.py \
                     --log-path {save_dir}/sender.log --trace-path {uplink_trace} \
-                    --save-dir {save_dir} --output-name link_vs_sent_vs_estimation --window 500')
+                    --save-dir {save_dir} --output-name sender --window 500')
 
             os.system(f'python3 ../post_experiment_process/estimate_rtt_at_sender.py \
                     --log-path {save_dir}/sender.log \
                     --save-dir {save_dir} --output-name estimation_at_sender')
 
+            print(f"\033[92mReceiver side \033[0m")
+            os.system(f'python3 ../post_experiment_process/plot_bw_trace_vs_estimation.py \
+                    --log-path {save_dir}/receiver.log --trace-path {uplink_trace} \
+                    --save-dir {save_dir} --output-name receriver --window 500')
+
             os.system(f'python3 ../post_experiment_process/estimate_rtt_at_sender.py \
                     --log-path {save_dir}/receiver.log \
                     --save-dir {save_dir} --output-name estimation_at_receiver')
+
 run_experiments()
 aggregate_data()

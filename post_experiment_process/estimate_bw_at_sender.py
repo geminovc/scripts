@@ -86,7 +86,7 @@ def get_bw_logs(save_dir):
             if x.rtp_timestamp == packet.time_stamp:
                 pass
                 #print(x.rtp_timestamp, packet.time_stamp)
-    print("estimated_max_bws", np.mean(estimated_max_bws))
+    print("Average estimated_max_bws", np.mean(estimated_max_bws))
     times = []
     first_time = received_estimated_time[0]
     for time in received_estimated_time:

@@ -31,12 +31,12 @@ def get_common_intervals(windowed_trace_bw, sent_video_bitrates, windowed_estima
 if __name__ == "__main__":
     stats = log_parser.gather_trace_statistics(args.log_path, args.window/1000)
     sent_video_bitrates = [i/(args.window) for i in stats['bitrates']['video']]
-
+    save_suffix = f'{args.output_name}_w{args.window}_ms'
     plot_graph(np.linspace(0, args.window * len(sent_video_bitrates)/1000, len(sent_video_bitrates)),\
           [sent_video_bitrates],\
           ['sent video bitrates'], \
           ['r'], 'time (s)', 'bitrate (kbps)', 'sent bitrate',\
-          args.save_dir, f'sent_rtp_{args.output_name}_w{args.window}_ms')
+          args.save_dir, f'sent_rtp_{save_suffix}')
     try:
         estimated_max_bws, received_estimated_time = get_bw_logs(args.log_path)
         compression_size, compression_time = log_parser.gather_encoder_statistics(args.log_path)
@@ -59,18 +59,20 @@ if __name__ == "__main__":
                       [windowed_trace_bw, windowed_estimated_bw, sent_video_bitrates],\
                       ['link', 'estimated bw from receiver', 'sent video bitrates'], \
                       ['r', 'g', 'b'], 'time (s)', 'bitrate (kbps)', 'sent vs link vs estimated bitrate',\
-                      args.save_dir, f'{args.output_name}_w{args.window}_ms')
+                      args.save_dir, f'link_vs_sent_vs_estimation_{save_suffix}')
 
             plot_graph(compression_time, [compression_size],\
                       ['payload size'], \
                       ['m'], 'time (s)', 'payload size (bytes)', 'Encoder output',\
-                      args.save_dir, f'encoder_output_vs_time_w{args.window}_ms')
+                      args.save_dir, f'encoder_output_vs_time_{save_suffix}')
 
             plot_graph([i for i in range(len(compression_size))], [compression_size],\
                       ['payload size'], \
                       ['m'], 'frame index', 'payload size (bytes)', 'Encoder output',\
-                      args.save_dir, f'encoder_output_vs_frame_index_w{args.window}_ms')
+                      args.save_dir, f'encoder_output_vs_frame_index_{save_suffix}')
 
+            print("Avergae sent video bitrate", np.mean(sent_video_bitrates))
+            print("Avergae encoder payload size per frame", np.mean(compression_size))
     except Exception as e:
         print(e)
         pass
