@@ -64,10 +64,12 @@ if __name__ == "__main__":
             os.makedirs(args.save_dir, exist_ok=True)
 
             plt.figure()
-            plt.scatter(received_time, estimated_rtts, label='estimated rtt', s=1, color='b')
+            plt.scatter(received_time, estimated_rtts, label='estimated rtt', s=1, color='r')
+            plt.plot(received_time, [np.mean(estimated_rtts) for x in estimated_rtts],\
+                    label='avergae estimated rtt', color='b')
             plt.xlabel('time(s)')
             plt.ylabel('rtt(s)')
-            plt.title('Estimation of rtt in log')
+            plt.title(f'RTT {args.output_name}')
             plt.legend()
             plt.savefig(f'{args.save_dir}/rtt_{args.output_name}.png')
 
@@ -75,7 +77,7 @@ if __name__ == "__main__":
             plt.scatter(received_time, fraction_lost, label='fraction lost', s=1, color='r')
             plt.xlabel('time(s)')
             plt.ylabel('lost')
-            plt.title('Fraction lost')
+            plt.title(f'Fraction lost {args.output_name}')
             plt.legend()
             plt.savefig(f'{args.save_dir}/fraction_lost_{args.output_name}.png')
 

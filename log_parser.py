@@ -12,10 +12,10 @@ import sys
                     by type
 """
 def gather_trace_statistics(log_filename, window=1):
-    bytes_so_far = {'video': 0, 'audio': 0, 'keypoints':0}
-    bits_sent = {'video': [], 'audio': [], 'keypoints': []}
+    bytes_so_far = {'video': 0, 'audio': 0, 'keypoints':0, 'lr_video':0}
+    bits_sent = {'video': [], 'audio': [], 'keypoints': [], 'lr_video':[]}
     count = 0
-    count_kp = count_video = 0
+    count_kp = count_video = count_lr_video = 0
     cur_frame_size = 0
     window_num = 0
     last_window_start = -1
@@ -35,6 +35,8 @@ def gather_trace_statistics(log_filename, window=1):
 
                 if packet_type == "video":
                     count_video += 1
+                elif packet_type == "lr_video":
+                    count_lr_video += 1
                 elif packet_type == "keypoints":
                     count_kp += 1
 

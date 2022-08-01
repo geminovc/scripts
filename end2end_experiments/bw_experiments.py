@@ -125,7 +125,7 @@ def aggregate_data():
 
             print(f"\033[92mReceiver side \033[0m")
             os.system(f'python3 ../post_experiment_process/plot_bw_trace_vs_estimation.py \
-                    --log-path {save_dir}/receiver.log --trace-path {uplink_trace} \
+                    --log-path {save_dir}/receiver.log --trace-path {args.downlink_trace} \
                     --save-dir {save_dir} --output-name receriver --window 500')
 
             os.system(f'python3 ../post_experiment_process/estimate_rtt_at_sender.py \
