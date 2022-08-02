@@ -59,6 +59,21 @@ if __name__ == "__main__":
                       f'sent vs link vs estimated bitrate for {args.output_name}', \
                       args.save_dir, f'link_vs_sent_vs_estimation_{save_suffix}')
             '''
+
+            plot_graph(time_axis,\
+                      [ref_estimated_max_bws, ref_video_bitrates],\
+                      ['estimated bw', 'sent video bitrates'], \
+                      ['g', 'b'], 'time (s)', 'bitrate (kbps)', \
+                      f'reference stream sent vs estimated bitrate for {args.output_name}', \
+                      args.save_dir, f'ref_sent_vs_estimation_{save_suffix}')
+
+            plot_graph(time_axis,\
+                      [lr_estimated_max_bws, lr_video_bitrates],\
+                      ['estimated bw', 'sent video bitrates'], \
+                      ['g', 'b'], 'time (s)', 'bitrate (kbps)', \
+                      f'low-res stream sent vs estimated bitrate for {args.output_name}', \
+                      args.save_dir, f'lr_video_sent_vs_estimation_{save_suffix}')
+
             plot_graph(time_axis,\
                   [ref_video_bitrates, [np.mean(ref_video_bitrates) for x in ref_video_bitrates]],\
                   ['ref video bitrates', 'average'], \
