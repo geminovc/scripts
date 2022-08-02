@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
+import numpy as np
 import os
+import datetime as dt
 
 class RtcpSrPacket:
     def __init__(self, rtp_timestamp=0, packet_count=0, octet_count=0, arrival_time=0):
@@ -115,3 +117,146 @@ def plot_graph(x, y_list, label_list, color_list, x_label, y_label, title, save_
     plt.title(title)
     plt.legend()
     plt.savefig(f'{save_dir}/{output_name}.png')
+
+
+def get_full_trace(trace_path, length):
+    # length is in ms
+    file1 = open(trace_path, 'r')
+    kbits_per_ms = {}
+    prev_key = 0
+    count = 1
+    for line in file1.readlines():
+      key = int(line.strip())
+      if key == prev_key:
+        count += 1
+      else:
+        for i in range(prev_key, key + 1):
+          kbits_per_ms[i] = count * 12000 / (key - prev_key)
+        count = 1
+        prev_key = key
+
+    original_length = len(kbits_per_ms)
+    if original_length <= length:
+        for t in range(1, length + 1):
+            kbits_per_ms[t] = kbits_per_ms[t % original_length]
+    else:
+        for t in range(length, original_length):
+            kbits_per_ms.pop(t)
+
+    return kbits_per_ms
+
+
+def get_kbits_per_ms(estimated_max_bws, received_estimated_time, is_ms=False, is_kbits=True):
+    kbits_per_ms = {}
+    for i in range(len(received_estimated_time)):
+        t = received_estimated_time[i]
+        kbits_per_ms[(((1- int(is_ms)) * 900 + 1) * t)] =  ((1-int(is_kbits)) * 900 + 1) * estimated_max_bws[i]
+    return kbits_per_ms
+
+
+def get_trace_samples(kbits_per_ms, received_estimated_time):
+    bws = []
+    for i in received_estimated_time:
+        bws.append(kbits_per_ms[int(1000 * i)])
+    return bws
+
+
+def get_average_bw_over_window(kbits_per_ms, window=1000):
+    # window = 1000 ms
+    windowed_bw = []
+    current_window = []
+    num_windows = int(max(kbits_per_ms.keys())/window) + 1
+    for i in range(num_windows):
+        current_window = []
+        for k, v in kbits_per_ms.items():
+            if k > (i+1) * window:
+                break
+            elif k > i* window and k <= (i+1) * window:
+                current_window.append(v)
+
+        if len(current_window) > 0:
+            windowed_bw.append(np.mean(current_window))
+        else:
+            windowed_bw.append(0)
+    return windowed_bw
+
+#TODO: complete this function. use fixed windows in time, no elapse
+def get_log_statistics(log_path, window):
+    measured_value = {'video': 0, 'audio': 0, 'keypoints':0, 'lr_video':0,
+                    'estimated_max_bw_video':0, 'estimated_max_bw_lr_video':0}
+    bits_sent = {'video': [], 'audio': [], 'keypoints': [], 'lr_video':[],
+            'estimated_max_bw_video':[], 'estimated_max_bw_lr_video':[]}
+    count = 0
+    count_kp = count_video = count_lr_video = 0
+    num_bw = {'estimated_max_bw_video':0, 'estimated_max_bw_lr_video':0}
+    last_window_start = -1
+
+    with open(f'{log_path}') as log_file:
+        for line in log_file:
+            parts = line.split(" ")
+            date_str = None
+            if len(parts) > 3:
+                if parts[1] == ">" and parts[3].startswith("RtpPacket") and "retransmission" not in line:
+                    packet_type = parts[0].split("(")[1][:-1]
+                    packet_value = 8 * int(line.split(", ")[-1].split(" ")[0]) # in bits
+
+                    if packet_type == "video":
+                        count_video += 1
+                    elif packet_type == "lr_video":
+                        count_lr_video += 1
+                    elif packet_type == "keypoints":
+                        count_kp += 1
+
+                    date_str = line.split(") ")[-1][:-1]
+
+            if "maximum bitrate" in line:
+                if 'lr_video' in line:
+                    packet_type = "estimated_max_bw_lr_video"
+                else:
+                    packet_type = "estimated_max_bw_video"
+
+                num_bw[packet_type] += 1
+                packet_value = float(parts[6]) # in bits/s
+                date_str = line.split("time ")[-1][:-1]
+
+            if date_str is not None:
+                date_str = date_str + '.0' if '.' not in date_str else date_str
+                time_object = dt.datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S.%f')
+                if last_window_start == -1:
+                    last_window_start = time_object
+                    first_packet_time = time_object
+
+                if ((time_object - last_window_start).total_seconds() > window):
+                    for p in bits_sent.keys():
+                        if p in num_bw.keys():
+                            if num_bw[p] != 0:
+                                bits_sent[p].append(measured_value[p]/num_bw[p])
+                            else:
+                                bits_sent[p].append(0)
+                            num_bw[p] = 0
+                        else:
+                            bits_sent[p].append(measured_value[p])
+                        measured_value[p] = 0
+                    last_window_start += dt.timedelta(0, window)
+
+                measured_value[packet_type] += packet_value
+                count += 1
+
+    for p in bits_sent.keys():
+        if p in num_bw.keys():
+            if num_bw[p] != 0:
+                bits_sent[p].append(measured_value[p]/num_bw[p])
+            else:
+                bits_sent[p].append(0)
+            num_bw[p] = 0
+        else:
+            bits_sent[p].append(measured_value[p])
+        measured_value[p] = 0
+
+    # adjust window if the elapsed time is less than the window length
+    elapsed_time =  (time_object - first_packet_time).total_seconds()
+    if elapsed_time < window:
+        window = elapsed_time
+
+    log_file.close()
+    return {'bitrates': bits_sent, 'window': window, 'elapsed_time': elapsed_time, 'first_packet_time': first_packet_time}

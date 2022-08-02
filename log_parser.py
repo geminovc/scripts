@@ -74,8 +74,8 @@ def gather_trace_statistics(log_filename, window=1):
 
 
 def gather_encoder_statistics(log_filename, window=1):
-    compression_size = []
-    compression_time = []
+    compression_values = {'video': [], 'video_time': [], 'lr_video':[], 'lr_video_time':[]}
+    first_time = None
     log_file = open(log_filename, 'r')
 
     while True:
@@ -86,14 +86,21 @@ def gather_encoder_statistics(log_filename, window=1):
 
         if "is encoded with timestamp" in line:
             parts = line.strip().split(" ")
-            compression_size.append(int(parts[10]))
+            compression_size = int(parts[10])
             date_str = parts[13] + " " + parts[14]
             time_object = dt.datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S.%f')
-            if len(compression_time) == 0:
+            if first_time is None:
                 first_time = time_object
-                compression_time.append(0)
+                compression_time = 0
             else:
-                compression_time.append((time_object - first_time).total_seconds())
+                compression_time = (time_object - first_time).total_seconds()
+            if "lr_video" in line:
+                packet_type = 'lr_video'
+            else:
+                packet_type = 'video'
+
+            compression_values[packet_type].append(compression_size)
+            compression_values[f'{packet_type}_time'].append(compression_time)
 
     log_file.close()
-    return compression_size, compression_time
+    return compression_values
