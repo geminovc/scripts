@@ -88,6 +88,7 @@ def gather_encoder_statistics(log_filename, window=1):
             parts = line.strip().split(" ")
             compression_size = int(parts[10])
             date_str = parts[13] + " " + parts[14]
+            date_str = date_str + '.0' if '.' not in date_str else date_str
             time_object = dt.datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S.%f')
             if first_time is None:
                 first_time = time_object
