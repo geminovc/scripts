@@ -100,6 +100,6 @@ if __name__ == "__main__":
                               args.save_dir, f'{video_type}_encoder_output_vs_time_{save_suffix}')
 
             print("Average reference maximum estimated bw", np.mean(ref_estimated_max_bws))
-            print("Avergae total sent video bitrate", np.mean(total_video_bitrates))
+            print("Average total sent video bitrate", np.mean(total_video_bitrates))
     except Exception as e:
         print(e)

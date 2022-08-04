@@ -94,68 +94,6 @@ def get_bw_logs(save_dir):
     return estimated_max_bws, times
 
 
-def get_full_trace(trace_path, length):
-    # length is in ms
-    file1 = open(trace_path, 'r')
-    kbits_per_ms = {}
-    prev_key = 0
-    count = 1 
-    for line in file1.readlines():
-      key = int(line.strip())
-      if key == prev_key:
-        count += 1
-      else:
-        for i in range(prev_key, key + 1):
-          kbits_per_ms[i] = count * 12000 / (key - prev_key)
-        count = 1
-        prev_key = key
-
-    original_length = len(kbits_per_ms)
-    if original_length <= length: 
-        for t in range(1, length + 1):
-            kbits_per_ms[t] = kbits_per_ms[t % original_length]
-    else:
-        for t in range(length, original_length):
-            kbits_per_ms.pop(t)
-
-    return kbits_per_ms
-
-
-def get_kbits_per_ms(estimated_max_bws, received_estimated_time, is_ms=False, is_kbits=True):
-    kbits_per_ms = {}
-    for i in range(len(received_estimated_time)):
-        t = received_estimated_time[i]
-        kbits_per_ms[(((1- int(is_ms)) * 900 + 1) * t)] =  ((1-int(is_kbits)) * 900 + 1) * estimated_max_bws[i]
-    return kbits_per_ms
-
-
-def get_trace_samples(kbits_per_ms, received_estimated_time):
-    bws = []
-    for i in received_estimated_time:
-        bws.append(kbits_per_ms[int(1000 * i)])
-    return bws
-
-
-def get_average_bw_over_window(kbits_per_ms, window=1000):
-    # window = 1000 ms
-    windowed_bw = []
-    current_window = []
-    num_windows = int(max(kbits_per_ms.keys())/window) + 1
-    for i in range(num_windows):
-        current_window = []
-        for k, v in kbits_per_ms.items():
-            if k > (i+1) * window:
-                break
-            elif k > i* window and k <= (i+1) * window:
-                current_window.append(v)
-
-        if len(current_window) > 0:
-            windowed_bw.append(np.mean(current_window))
-        else:
-            windowed_bw.append(0)
-    return windowed_bw
-
-
 if __name__ == "__main__":
     if len(args.uplink_bw_list):
         x = []
