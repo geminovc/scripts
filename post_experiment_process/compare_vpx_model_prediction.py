@@ -33,13 +33,14 @@ def rgb(minimum, maximum, value):
     b = 0
     return np.array([r, g, b])
 
-def get_heatmap_of_quality_diff(model_frame, vpx_frame):
+def get_heatmap_of_quality_diff(model_frame, vpx_frame, gt_frame):
     """ get a heatmap of patches where the difference between the model
         and the VPX frames' qualities is worst
     """
     video_size = model_frame.shape[0]
     rows, cols = 8, 8
-    heatmap = np.zeros((video_size, video_size))
+    model_heatmap = np.zeros((video_size, video_size))
+    vpx_heatmap = np.zeros((video_size, video_size))
     for i in range(0, rows):
         for j in range(0, cols):
             x_start = i*video_size // rows
@@ -49,18 +50,26 @@ def get_heatmap_of_quality_diff(model_frame, vpx_frame):
             
             predicted_patch = model_frame[x_start:x_end, y_start:y_end]
             vpx_patch = vpx_frame[x_start:x_end, y_start:y_end]
+            gt_patch = gt_frame[x_start:x_end, y_start:y_end]
 
-            patch_ssim, _ = compare_ssim(vpx_patch, predicted_patch, multichannel=True, full=True)
-            heatmap[x_start:x_end, y_start:y_end] = patch_ssim
+            patch_ssim, _ = compare_ssim(predicted_patch, gt_patch, multichannel=True, full=True)
+            model_heatmap[x_start:x_end, y_start:y_end] = patch_ssim
+            
+            patch_ssim, _ = compare_ssim(vpx_patch, gt_patch, multichannel=True, full=True)
+            vpx_heatmap[x_start:x_end, y_start:y_end] = patch_ssim
     
-    rgb_data = np.zeros((video_size, video_size, 3), dtype=np.uint8)
+    model_rgb_data = np.zeros((video_size, video_size, 3), dtype=np.uint8)
+    vpx_rgb_data = np.zeros((video_size, video_size, 3), dtype=np.uint8)
     max_val = 1
-    min_val = np.amin(heatmap) 
-    print(f'min in data {np.amin(heatmap)}, max in data {np.amax(heatmap)}')
+    min_val = min(np.amin(model_heatmap), np.amin(vpx_heatmap))
+    print(f'Min in data {np.amin(model_heatmap)}, {np.amin(vpx_heatmap)}. ' + \
+            f'Max in data {np.amax(model_heatmap)}, {np.amax(vpx_heatmap)}')
+    
     for i in range(0, video_size):
         for j in range(0, video_size):
-            rgb_data[i][j] = rgb(min_val, max_val, heatmap[i][j])
-    return rgb_data
+            model_rgb_data[i][j] = rgb(min_val, max_val, model_heatmap[i][j])
+            vpx_rgb_data[i][j] = rgb(min_val, max_val, vpx_heatmap[i][j])
+    return model_rgb_data, vpx_rgb_data
 
 
 def get_frame_strip(diff, frame_type):
@@ -84,7 +93,7 @@ def get_frame_strip(diff, frame_type):
             continue
 
         gt_frames, vpx_frames, model_frames, reference_frames = [], [], [], []
-        heatmap_frames, warped_frames = [], []
+        model_heatmaps, vpx_heatmaps, warped_frames = [], [], []
         for (i, val) in worst_frames:
             video_index = min((i // FRAME_CHUNK_SIZE + 1) * FRAME_CHUNK_SIZE, 
                               total_frames)
@@ -99,30 +108,32 @@ def get_frame_strip(diff, frame_type):
             model_video_name = os.path.join(args.model_dir, 
                                             f'reconstruction_{args.model_prefix}',
                                             f'0_{video_num}.mp4_{video_index}_.mp4')
-            model_frame = get_frame_from_video(model_video_name, frame_index, 6, frame_size)
+            model_frame = get_frame_from_video(model_video_name, frame_index, 5, frame_size)
             model_frames.append(model_frame)
 
             reference_frame = get_frame_from_video(model_video_name, frame_index, 0, frame_size)
             reference_frames.append(reference_frame)
             
-            warped_ref = get_frame_from_video(model_video_name, frame_index, 4, frame_size)
+            warped_ref = get_frame_from_video(model_video_name, frame_index, 3, frame_size)
             warped_frames.append(warped_ref)
             
             gt_filename = f'{args.ground_truth_folder}/0_{video_num}.mp4'
             gt_frame = get_frame_from_video(gt_filename, i, 0, frame_size)
             gt_frames.append(gt_frame)
 
-            heatmap_frame = get_heatmap_of_quality_diff(model_frame, vpx_frame)
-            heatmap_frames.append(heatmap_frame)
+            model_heatmap, vpx_heatmap = get_heatmap_of_quality_diff(model_frame, vpx_frame, gt_frame)
+            model_heatmaps.append(model_heatmap)
+            vpx_heatmaps.append(vpx_heatmap)
 
         vpx_strip = np.concatenate(vpx_frames, axis=1)
         model_strip = np.concatenate(model_frames, axis=1)
         gt_strip = np.concatenate(gt_frames, axis=1)
         ref_strip = np.concatenate(reference_frames, axis=1)
         warped_strip = np.concatenate(warped_frames, axis=1)
-        heatmap_strip = np.concatenate(heatmap_frames, axis=1)
-        print(vpx_strip.shape, model_strip.shape, warped_strip.shape, gt_strip.shape, heatmap_strip.shape, ref_strip.shape)
-        final_strip = np.concatenate((gt_strip, vpx_strip, model_strip, ref_strip, warped_strip, heatmap_strip), axis=0)
+        model_heatmap_strip = np.concatenate(model_heatmaps, axis=1)
+        vpx_heatmap_strip = np.concatenate(vpx_heatmaps, axis=1)
+        final_strip = np.concatenate((gt_strip, vpx_strip, vpx_heatmap_strip, model_strip, \
+                                     model_heatmap_strip, ref_strip, warped_strip), axis=0)
         plt.imsave(f'{output_dir}/{frame_type}_frames_{video_num}.pdf', final_strip)
 
 
