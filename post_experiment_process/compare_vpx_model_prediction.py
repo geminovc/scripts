@@ -4,14 +4,14 @@ import os
 import imageio
 import matplotlib
 import matplotlib.pyplot as plt
-
+from skimage.metrics import structural_similarity as compare_ssim
 
 CUTOFF = 20
 FRAME_CHUNK_SIZE = 50
-FRAME_SIZE = 1024
+fig = plt.figure()
 
 
-def get_frame_from_video(video_name, index, offset=0):
+def get_frame_from_video(video_name, index, offset=0, frame_size=1024):
     """ get numpy array corresponding to frame at specific index 
         offset is responsible for indexing the right frame when
         there's a strip with reconstruction, source, target, etc.
@@ -20,12 +20,121 @@ def get_frame_from_video(video_name, index, offset=0):
     reader.set_image_index(index)
     frame = np.array(reader.get_next_data())
     reader.close()
-    return frame[:, offset*FRAME_SIZE:(offset + 1)*FRAME_SIZE, :]
+    return frame[:, offset*frame_size:(offset + 1)*frame_size, :]
+
+
+def rgb(minimum, maximum, value):
+    """ get rgb given the min/max and value to use for a heatmap
+    """
+    minimum, maximum = float(minimum), float(maximum)
+    ratio = 2 * (value-minimum) / (maximum - minimum)
+    r = int(max(0, 255*(1 - ratio)))
+    g = int(max(0, 255*(ratio - 1)))
+    b = 0
+    return np.array([r, g, b])
+
+def get_heatmap_of_quality_diff(model_frame, vpx_frame):
+    """ get a heatmap of patches where the difference between the model
+        and the VPX frames' qualities is worst
+    """
+    video_size = model_frame.shape[0]
+    rows, cols = 8, 8
+    heatmap = np.zeros((video_size, video_size))
+    for i in range(0, rows):
+        for j in range(0, cols):
+            x_start = i*video_size // rows
+            x_end = i*video_size // rows + video_size // rows
+            y_start = j*video_size // cols
+            y_end = j*video_size // cols + video_size // cols
+            
+            predicted_patch = model_frame[x_start:x_end, y_start:y_end]
+            vpx_patch = vpx_frame[x_start:x_end, y_start:y_end]
+
+            patch_ssim, _ = compare_ssim(vpx_patch, predicted_patch, multichannel=True, full=True)
+            heatmap[x_start:x_end, y_start:y_end] = patch_ssim
+    
+    rgb_data = np.zeros((video_size, video_size, 3), dtype=np.uint8)
+    max_val = 1
+    min_val = np.amin(heatmap) 
+    print(f'min in data {np.amin(heatmap)}, max in data {np.amax(heatmap)}')
+    for i in range(0, video_size):
+        for j in range(0, video_size):
+            rgb_data[i][j] = rgb(min_val, max_val, heatmap[i][j])
+    return rgb_data
+
+
+def get_frame_strip(diff, frame_type):
+    """ obtain relevant frame numbers for worst or best and
+        map back to the appropriate frames and save them as pdfs
+    """
+    frame_size = args.frame_size
+    output_dir = os.path.join(args.model_dir, f'{frame_type}_frame_list')
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    for video_num in diff.keys():
+        if frame_type == 'worst':
+            worst_frames = diff[video_num][:CUTOFF]
+        else:
+            worst_frames = diff[video_num][-CUTOFF:]
+        total_frames = len(diff[video_num])
+        print(worst_frames)
+
+        if total_frames == 0:
+            continue
+
+        gt_frames, vpx_frames, model_frames, reference_frames = [], [], [], []
+        heatmap_frames, warped_frames = [], []
+        for (i, val) in worst_frames:
+            video_index = min((i // FRAME_CHUNK_SIZE + 1) * FRAME_CHUNK_SIZE, 
+                              total_frames)
+            frame_index = i % FRAME_CHUNK_SIZE
+
+            vpx_video_name = os.path.join(args.vpx_dir, 
+                                          f'reconstruction_{args.vpx_prefix}',
+                                          f'0_{video_num}.mp4_{video_index}_.mp4')
+            vpx_frame = get_frame_from_video(vpx_video_name, frame_index, 1, frame_size)
+            vpx_frames.append(vpx_frame)
+                                          
+            model_video_name = os.path.join(args.model_dir, 
+                                            f'reconstruction_{args.model_prefix}',
+                                            f'0_{video_num}.mp4_{video_index}_.mp4')
+            model_frame = get_frame_from_video(model_video_name, frame_index, 6, frame_size)
+            model_frames.append(model_frame)
+
+            reference_frame = get_frame_from_video(model_video_name, frame_index, 0, frame_size)
+            reference_frames.append(reference_frame)
+            
+            warped_ref = get_frame_from_video(model_video_name, frame_index, 4, frame_size)
+            warped_frames.append(warped_ref)
+            
+            gt_filename = f'{args.ground_truth_folder}/0_{video_num}.mp4'
+            gt_frame = get_frame_from_video(gt_filename, i, 0, frame_size)
+            gt_frames.append(gt_frame)
+
+            heatmap_frame = get_heatmap_of_quality_diff(model_frame, vpx_frame)
+            heatmap_frames.append(heatmap_frame)
+
+        vpx_strip = np.concatenate(vpx_frames, axis=1)
+        model_strip = np.concatenate(model_frames, axis=1)
+        gt_strip = np.concatenate(gt_frames, axis=1)
+        ref_strip = np.concatenate(reference_frames, axis=1)
+        warped_strip = np.concatenate(warped_frames, axis=1)
+        heatmap_strip = np.concatenate(heatmap_frames, axis=1)
+        print(vpx_strip.shape, model_strip.shape, warped_strip.shape, gt_strip.shape, heatmap_strip.shape, ref_strip.shape)
+        final_strip = np.concatenate((gt_strip, vpx_strip, model_strip, ref_strip, warped_strip, heatmap_strip), axis=0)
+        plt.imsave(f'{output_dir}/{frame_type}_frames_{video_num}.pdf', final_strip)
 
 
 parser = argparse.ArgumentParser(description='Find worst reconstructions')
-parser.add_argument('--home-dir', metavar='h', type=str,
-                    help='name of home directory to look for data in.')
+parser.add_argument('--vpx-dir', metavar='vd', type=str,
+                    help='name of home directory to look for vpx data in.')
+parser.add_argument('--ground-truth-folder', metavar='gt', type=str,
+                    help='test directory with original videos')
+parser.add_argument('--frame-size', metavar='f', type=int, default=1024,
+                    help='size of square frame')
+parser.add_argument('--model-dir', metavar='md', type=str,
+                    help='name of home directory to look for model data in.')
 parser.add_argument('--vpx-prefix', metavar='v', type=str,
                     help='prefix for vpx data')
 parser.add_argument('--model-prefix', metavar='m', type=str,
@@ -34,7 +143,7 @@ args = parser.parse_args()
 
 # read the vpx file first
 frame_data = {}
-vpx_filename = os.path.join(args.home_dir, f'reconstruction_{args.vpx_prefix}',
+vpx_filename = os.path.join(args.vpx_dir, f'reconstruction_{args.vpx_prefix}',
                             f'{args.vpx_prefix}_per_frame_metrics.txt')
 vpx_file = open(vpx_filename)
 vpx_file.readline()
@@ -57,7 +166,7 @@ while True:
 vpx_file.close()
 
 # read the model file next
-model_filename = os.path.join(args.home_dir, 
+model_filename = os.path.join(args.model_dir, 
                               f'reconstruction_{args.model_prefix}',
                               f'{args.model_prefix}_per_frame_metrics.txt')
 model_file = open(model_filename)
@@ -80,44 +189,11 @@ diff = {}
 for video_num in frame_data.keys():
     diff[video_num] = []
     for (i, info) in frame_data[video_num].items():
+        if 'model' not in info:
+            print(i, video_num)
+            break
         diff[video_num].append((i, info['vpx'] - info['model']))
     diff[video_num].sort(key=lambda i: i[1], reverse=True)
 
-# map it back to the appropriate frames and save them as pdfs
-output_dir = os.path.join(args.home_dir, 'worst_frame_list')
-if not os.path.exists(output_dir):
-    os.makedirs(output_dir)
-
-for video_num in frame_data.keys():
-    worst_frames = diff[video_num][:CUTOFF]
-    total_frames = len(diff[video_num])
-    print(worst_frames)
-
-    gt_frames, vpx_frames, model_frames = [], [], []
-    for (i, val) in worst_frames:
-        video_index = min((i // FRAME_CHUNK_SIZE + 1) * FRAME_CHUNK_SIZE, 
-                          total_frames)
-        frame_index = i % FRAME_CHUNK_SIZE
-
-        vpx_video_name = os.path.join(args.home_dir, 
-                                      f'reconstruction_{args.vpx_prefix}',
-                                      f'0_{video_num}.mp4_{video_index}_.mp4')
-        vpx_frame = get_frame_from_video(vpx_video_name, frame_index, 2)
-        vpx_frames.append(vpx_frame)
-                                      
-        model_video_name = os.path.join(args.home_dir, 
-                                        f'reconstruction_{args.model_prefix}',
-                                        f'0_{video_num}.mp4_{video_index}_.mp4')
-        model_frame = get_frame_from_video(model_video_name, frame_index, 6)
-        model_frames.append(model_frame)
-        
-        gt_filename = f'/video-conf/scratch/pantea/fom_personalized_1024/xiran/test/0_{video_num}.mp4'
-        gt_frame = get_frame_from_video(gt_filename, i)
-        gt_frames.append(gt_frame)
-
-    vpx_strip = np.concatenate(vpx_frames, axis=1)
-    model_strip = np.concatenate(model_frames, axis=1)
-    gt_strip = np.concatenate(gt_frames, axis=1)
-    final_strip = np.concatenate((gt_strip, vpx_strip, model_strip), axis=0)
-    plt.imsave(f'{output_dir}/worst_frames_{video_num}.pdf', final_strip)
-
+get_frame_strip(diff, 'worst')
+get_frame_strip(diff, 'best')
