@@ -74,7 +74,7 @@ def convert_numpy_list_to_video(frames_list, save_name, fps=30):
     print(f'Completed video {save_name}')
 
 def get_sorted_video_array(video_frames):
-    sorted_keys = sorted(video_frames1.keys())
+    sorted_keys = sorted(video_frames.keys())
     return [video_frames[i] for i in sorted_keys]
 
 video_frames1 = get_video_frames(f'{args.numpy_prefix_1}_*.npy', video_frames1)
