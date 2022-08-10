@@ -4,10 +4,13 @@ import os
 import imageio
 import matplotlib
 import matplotlib.pyplot as plt
+import torch
+import math
 from skimage.metrics import structural_similarity as compare_ssim
 
 CUTOFF = 20
 FRAME_CHUNK_SIZE = 50
+BATCH_SIZE=10
 fig = plt.figure()
 
 
@@ -72,6 +75,21 @@ def get_heatmap_of_quality_diff(model_frame, vpx_frame, gt_frame):
     return model_rgb_data, vpx_rgb_data
 
 
+def get_weighted_PSNR(gt_frame, cur_frame, seg):
+    """ get PSNR by weighing the associated segmentation value """
+    size = gt_frame.shape[0]
+    nr, dr = 0, 0
+    max_val = 256
+    for i in range(size):
+        for j in range(size):
+            se = np.mean(np.square(gt_frame[i][j][:] - cur_frame[i][j][:]))
+            nr += seg[i][j] * se
+            dr += seg[i][j]
+
+    psnr_val = 10 * math.log((max_val * max_val * dr)/nr, 10)
+    return psnr_val
+
+
 def get_frame_strip(diff, frame_type):
     """ obtain relevant frame numbers for worst or best and
         map back to the appropriate frames and save them as pdfs
@@ -125,6 +143,11 @@ def get_frame_strip(diff, frame_type):
             model_heatmaps.append(model_heatmap)
             vpx_heatmaps.append(vpx_heatmap)
 
+            segs_dir = f'{args.segs_prefix}_{video_num}'
+            seg_for_batch = torch.load(f'{segs_dir}/{i//BATCH_SIZE}.pt')
+            seg_for_frame = seg_for_batch[0, i%BATCH_SIZE, 0, :, :].cpu().detach().numpy()
+            psnr = get_weighted_PSNR(gt_frame, model_frame, seg_for_frame)
+
         vpx_strip = np.concatenate(vpx_frames, axis=1)
         model_strip = np.concatenate(model_frames, axis=1)
         gt_strip = np.concatenate(gt_frames, axis=1)
@@ -150,6 +173,8 @@ parser.add_argument('--vpx-prefix', metavar='v', type=str,
                     help='prefix for vpx data')
 parser.add_argument('--model-prefix', metavar='m', type=str,
                     help='prefix for model data')
+parser.add_argument('--segs-prefix', metavar='s', type=str,
+                    help='prefix for segmentation data')
 args = parser.parse_args()
 
 # read the vpx file first
@@ -171,7 +196,7 @@ while True:
 
     if last_video_num != video_num:
         frame_data[video_num] = {}
-    
+
     last_video_num = video_num
     frame_data[video_num][frame_num] = {'vpx': ssim}
 vpx_file.close()
@@ -191,7 +216,6 @@ while True:
     video_num = int(parts[0])
     frame_num = int(parts[1])
     ssim = float(parts[3])
-
     frame_data[video_num][frame_num]['model'] = ssim
 model_file.close()
 
