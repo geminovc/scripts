@@ -92,9 +92,9 @@ for frame_num in video_frames2.keys():
         print(e)
         pass
 
-psnr, ssim, lpips_val = get_avg_visual_metrics(metrics)
-print(f'PSNR: {psnr}, SSIM: {ssim}, LPIPS: {lpips_val} \n')
-metrics_file.write(f'PSNR: {psnr}, SSIM: {ssim}, LPIPS: {lpips_val}')
+psnr, ssim, lpips_val, ssim_db = get_avg_visual_metrics(metrics)
+print(f'PSNR: {psnr}, SSIM: {ssim}, SSIM_DB: {ssim_db}, LPIPS: {lpips_val} \n')
+metrics_file.write(f'PSNR: {psnr}, SSIM: {ssim}, SSIM_DB: {ssim_db}, LPIPS: {lpips_val}')
 metrics_file.flush()
 metrics_file.close()
 

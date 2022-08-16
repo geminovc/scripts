@@ -99,7 +99,14 @@ if __name__ == "__main__":
                               ['m'], 'time (s)', f'payload size (bytes)', f'{video_type} encoder output for {args.output_name}',\
                               args.save_dir, f'{video_type}_encoder_output_vs_time_{save_suffix}')
 
-            print("Average reference maximum estimated bw", np.mean(ref_estimated_max_bws))
-            print("Average total sent video bitrate", np.mean(total_video_bitrates))
+            measurement_file = open(os.path.join(args.save_dir, f'bitrate_measurements_{save_suffix}.txt'), 'wt')
+            measurement_string = f'Average sent reference video bitrate {np.mean(ref_video_bitrates)} kbps \n'
+            measurement_string += f'Average sent low-res video bitrate {np.mean(lr_video_bitrates)} kbps \n'
+            measurement_string += f'Average sent total video bitrate {np.mean(total_video_bitrates)} kbps \n'
+            print(measurement_string)
+            measurement_file.write(measurement_string)
+            measurement_file.flush()
+            measurement_file.close()
+
     except Exception as e:
         print(e)
