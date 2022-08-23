@@ -107,11 +107,15 @@ def get_emwa(array, alpha = 0.9):
     return ewma
 
 
-def plot_graph(x, y_list, label_list, color_list, x_label, y_label, title, save_dir, output_name):
+def plot_graph(x, y_list, label_list, color_list, x_label, y_label, title, save_dir, output_name,
+                is_scatter=False):
     os.makedirs(save_dir, exist_ok=True)
     plt.figure()
     for i in range(0, len(y_list)):
-        plt.plot(x, y_list[i] , label=label_list[i], color=color_list[i])
+        if is_scatter:
+            plt.scatter(x, y_list[i] , label=label_list[i], color=color_list[i], s=2)
+        else:
+            plt.plot(x, y_list[i] , label=label_list[i], color=color_list[i])
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     plt.title(title)

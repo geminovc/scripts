@@ -77,27 +77,32 @@ if __name__ == "__main__":
             plot_graph(time_axis,\
                   [ref_video_bitrates, [np.mean(ref_video_bitrates) for x in ref_video_bitrates]],\
                   ['ref video bitrates', 'average'], \
-                  ['r', 'b'], 'time (s)', 'bitrate (kbps)', f'sent reference video bitrate for {args.output_name}',\
+                  ['r', 'b'], 'time (s)', 'bitrate (kbps)', \
+                  f'sent reference video bitrate for {args.output_name}',\
                   args.save_dir, f'sent_ref_video_rtp_{save_suffix}')
 
             plot_graph(time_axis,\
                   [lr_video_bitrates, [np.mean(lr_video_bitrates) for x in lr_video_bitrates]],\
                   ['lr video bitrates', 'average'], \
-                  ['r', 'b'], 'time (s)', 'bitrate (kbps)', f'sent low-res  video bitrate for {args.output_name}',\
+                  ['r', 'b'], 'time (s)', 'bitrate (kbps)', \
+                  f'sent low-res  video bitrate for {args.output_name}',\
                   args.save_dir, f'sent_lr_video_rtp_{save_suffix}')
 
             plot_graph(time_axis,\
                   [total_video_bitrates, [np.mean(total_video_bitrates) for x in total_video_bitrates]],\
                   ['total video bitrates', 'average'], \
-                  ['r', 'b'], 'time (s)', 'bitrate (kbps)', f'total sent video bitrate for {args.output_name}',\
+                  ['r', 'b'], 'time (s)', 'bitrate (kbps)', \
+                  f'total sent video bitrate for {args.output_name}',\
                   args.save_dir, f'sent_total_video_rtp_{save_suffix}')
 
             for video_type in ['video', 'lr_video']:
                 if len(compression_stats[video_type]) > 0:
                     plot_graph(compression_stats[f'{video_type}_time'], [compression_stats[video_type]],\
                               ['encoder payload size'], \
-                              ['m'], 'time (s)', f'payload size (bytes)', f'{video_type} encoder output for {args.output_name}',\
-                              args.save_dir, f'{video_type}_encoder_output_vs_time_{save_suffix}')
+                              ['m'], 'time (s)', f'payload size (bytes)',\
+                              f'{video_type} encoder output for {args.output_name}',\
+                              args.save_dir, f'{video_type}_encoder_output_vs_time_{save_suffix}',\
+                              is_scatter=(video_type=='video'))
 
             measurement_file = open(os.path.join(args.save_dir, f'bitrate_measurements_{save_suffix}.txt'), 'wt')
             measurement_string = f'Average sent reference video bitrate {np.mean(ref_video_bitrates)} kbps \n'
