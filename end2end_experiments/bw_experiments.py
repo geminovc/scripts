@@ -41,6 +41,9 @@ parser.add_argument('--executable-dir', type=str,
 parser.add_argument('--csv-name', type=str,
                     help='file to save final data in', 
                     default="bw_data")
+parser.add_argument("--quantizer", type=int,
+                    help="quantizer to compress video stream with",
+                    default=32)
 parser.add_argument('--disable-mahimahi', action='store_true',
                     help='If used, traces will not be appliled to the sender')
 args = parser.parse_args()
@@ -59,6 +62,7 @@ def run_experiments():
     params['runs'] = args.runs
     params['enable_prediction'] = False
     params['fps'] = 30
+    params['quantizer'] = args.quantizer
     params['disable_mahimahi'] = args.disable_mahimahi
     
     num_bws = args.uplink_bw_list if args.uplink_trace is None else [1]
