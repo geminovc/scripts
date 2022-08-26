@@ -1,5 +1,6 @@
 import imageio
 import torch
+import csv
 import os
 from skimage import img_as_float32
 from first_order_model.logger import Logger
@@ -15,9 +16,10 @@ def visual_metrics(frame1, frame2, loss_fn_vgg):
 def save_average_metrics(metrics, save_dir, output_name):
     metrics_file = open(os.path.join(save_dir, output_name), 'wt')
     psnr, ssim, lpips_val, ssim_db = get_avg_visual_metrics(metrics)
+    writer = csv.writer(metrics_file)
+    writer.writerow(['PSNR', 'SSIM', 'SSIM_DB', 'LPIPS'])
+    writer.writerow([psnr, ssim, ssim_db, lpips_val])
     print(f'PSNR: {psnr}, SSIM: {ssim}, SSIM_DB: {ssim_db}, LPIPS: {lpips_val} \n')
-    metrics_file.write(f'PSNR: {psnr}, SSIM: {ssim}, SSIM_DB: {ssim_db}, LPIPS: {lpips_val}')
-    metrics_file.flush()
     metrics_file.close()
 
 def get_loss_fn_vgg():

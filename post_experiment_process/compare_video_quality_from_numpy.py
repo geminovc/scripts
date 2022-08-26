@@ -10,7 +10,7 @@ parser.add_argument('--save-dir', type=str,
                     help='directory to save cvs in', required=True)
 parser.add_argument('--output-name', type=str,
                     help='file to save final data in',
-                    default="visual_metrics.txt")
+                    default="visual_metrics.csv")
 parser.add_argument('--numpy-prefix-1', type=str,
                     help='full path prefix to the first video data', required=True)
 parser.add_argument('--numpy-prefix-2', type=str,
@@ -82,7 +82,10 @@ if args.make_video:
             f'{args.numpy_prefix_1}.mp4', fps=30)
     convert_numpy_list_to_video(get_sorted_video_array(video_frames2),
             f'{args.numpy_prefix_2}.mp4', fps=30)
-'''
-if args.remove_numpy:
-    if os.path.exists(path)
-'''
+
+if args.remove_npy:
+    try:
+        os.system(f'rm {args.numpy_prefix_1}_*.npy')
+        os.system(f'rm {args.numpy_prefix_2}_*.npy')
+    except:
+        pass

@@ -5,6 +5,7 @@ import log_parser
 import numpy as np
 from utils import *
 from process_utils import *
+import csv
 
 parser = argparse.ArgumentParser(description='Collect bw logs info.')
 parser.add_argument('--window', type=int,
@@ -104,13 +105,14 @@ if __name__ == "__main__":
                               args.save_dir, f'{video_type}_encoder_output_vs_time_{save_suffix}',\
                               is_scatter=(video_type=='video'))
 
-            measurement_file = open(os.path.join(args.save_dir, f'bitrate_measurements_{save_suffix}.txt'), 'wt')
+            measurement_file = open(os.path.join(args.save_dir, f'bitrate_measurements_{save_suffix}.csv'), 'wt')
             measurement_string = f'Average sent reference video bitrate {np.mean(ref_video_bitrates)} kbps \n'
             measurement_string += f'Average sent low-res video bitrate {np.mean(lr_video_bitrates)} kbps \n'
             measurement_string += f'Average sent total video bitrate {np.mean(total_video_bitrates)} kbps \n'
             print(measurement_string)
-            measurement_file.write(measurement_string)
-            measurement_file.flush()
+            writer = csv.writer(measurement_file)
+            writer.writerow(['Average reference bitrate', 'Average low-res bitrate', 'Average total bitrate'])
+            writer.writerow([np.mean(ref_video_bitrates), np.mean(lr_video_bitrates), np.mean(total_video_bitrates)])
             measurement_file.close()
 
     except Exception as e:

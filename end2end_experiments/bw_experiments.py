@@ -61,7 +61,8 @@ def run_experiments():
     params['fps'] = 30
     params['disable_mahimahi'] = args.disable_mahimahi
     
-    for bw in args.uplink_bw_list:
+    num_bws = args.uplink_bw_list if args.uplink_trace is None else [1]
+    for bw in num_bws:
         params['uplink_trace'] = f'../traces/fixed/{bw}kbps_trace' if args.uplink_trace is None else args.uplink_trace
         params['save_dir'] = f'{save_prefix}_{bw}kbps' if args.uplink_trace is None else args.save_prefix
 
@@ -76,7 +77,8 @@ def run_experiments():
 """
 def aggregate_data():
     first = True
-    for bw in args.uplink_bw_list:
+    num_bws = args.uplink_bw_list if args.uplink_trace is None else [1]
+    for bw in num_bws:
         save_prefix = f'{args.save_prefix}_{bw}kbps' if args.uplink_trace is None else args.save_prefix
         uplink_trace = f'../traces/fixed/{bw}kbps_trace' if args.uplink_trace is None else args.uplink_trace
         for run_num in range(args.runs):
@@ -123,6 +125,12 @@ def aggregate_data():
                     --log-path {save_dir}/sender.log \
                     --save-dir {save_dir} --output-name estimation_at_sender')
 
+            os.system(f'python3 ../post_experiment_process/compare_video_quality_from_numpy.py \
+                    --numpy-prefix-1 {save_dir}/sender_frame \
+                    --numpy-prefix-2 {save_dir}/receiver_frame \
+                    --save-dir {save_dir} --output-name hr_visual_metrics.csv \
+                    --remove-npy ')
+            '''
             print(f"\033[92mReceiver side \033[0m")
             os.system(f'python3 ../post_experiment_process/plot_bw_trace_vs_estimation.py \
                     --log-path {save_dir}/receiver.log --trace-path {args.downlink_trace} \
@@ -131,6 +139,7 @@ def aggregate_data():
             os.system(f'python3 ../post_experiment_process/estimate_rtt_at_sender.py \
                     --log-path {save_dir}/receiver.log \
                     --save-dir {save_dir} --output-name estimation_at_receiver')
+            '''
 
 run_experiments()
 aggregate_data()

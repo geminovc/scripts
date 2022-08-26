@@ -349,7 +349,9 @@ def run_single_experiment(params):
     dump_file = 'tcpdump.pcap'
     enable_prediction = params['enable_prediction']
     reference_update_freq = params.get('reference_update_freq', '0')
+    prediction_type = params.get('prediction_type', 'keypoints')
     quantizer = params.get('quantizer', 32)
+    lr_quantizer = params.get('lr_quantizer', 32)
     disable_mahimahi = params.get('disable_mahimahi', True)
     qsize_pkts = params.get('qsize_pkts', 160)
     socket_path = params.get('socket_path', 'test.sock')
@@ -391,8 +393,9 @@ def run_single_experiment(params):
                             --downlink-queue-args="packets={qsize_pkts}" \
                             --uplink-log="{log_dir}/mahimahi.log" \
                             ./offer.sh {video_file} {fps} {log_dir}/sender.log \
-                            {log_dir} {exec_dir} False {reference_update_freq} \
-                            {quantizer} {socket_path}'
+                            {log_dir} {exec_dir} {enable_prediction} {reference_update_freq} \
+                            {quantizer} {socket_path} \
+                            {lr_quantizer} {prediction_type}'
         else:
             sender_cmd =  f'python {exec_dir}/cli.py offer \
                              --play-from {video_file} \
@@ -400,10 +403,13 @@ def run_single_experiment(params):
                              --signaling unix-socket \
                              --fps {fps} \
                              --quantizer {quantizer} \
+                             --lr-quantizer {lr_quantizer} \
                              --reference-update-freq {reference_update_freq} \
                              --save-dir {log_dir}'
             if enable_prediction:
                 sender_cmd += ' --enable-prediction'
+                sender_cmd += f' --prediction-type {prediction_type}'
+
             sender_cmd += ' --verbose' 
 
         sender_args = shlex.split(sender_cmd)
@@ -439,10 +445,13 @@ def run_single_experiment(params):
                         --signaling unix-socket \
                         --fps {fps} \
                         --quantizer {quantizer} \
+                        --lr-quantizer {lr_quantizer} \
                         --reference-update-freq {reference_update_freq} \
                         --save-dir {log_dir}'
         if enable_prediction:
             receiver_cmd += ' --enable-prediction'
+            receiver_cmd += f' --prediction-type {prediction_type}'
+
         receiver_cmd += ' --verbose' 
         receiver_args = shlex.split(receiver_cmd)
         recv_proc = sh.Popen(receiver_args, stderr=recv_output, env=base_env) 
