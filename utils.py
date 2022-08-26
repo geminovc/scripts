@@ -379,11 +379,11 @@ def run_single_experiment(params):
         if 'config_path' in params:
             base_env['CONFIG_PATH'] = params['config_path']
         if 'vpx_min_bitrate' in params:
-            base_env['VPX_MIN_BITRATE'] = params['vpx_min_bitrate']
+            base_env['VPX_MIN_BITRATE'] = str(params['vpx_min_bitrate'])
         if 'vpx_default_bitrate' in params:
-            base_env['VPX_DEFAULT_BITRATE'] = params['vpx_default_bitrate']
+            base_env['VPX_DEFAULT_BITRATE'] = str(params['vpx_default_bitrate'])
         if 'vpx_default_bitrate' in params:
-            base_env['VPX_MAX_BITRATE'] = params['vpx_max_bitrate']
+            base_env['VPX_MAX_BITRATE'] = str(params['vpx_max_bitrate'])
 
         # Start sender
         sender_output = open(f'{log_dir}/sender.log', "w")

@@ -12,13 +12,16 @@ import math
 from time import perf_counter
 
 
-parser = argparse.ArgumentParser(description='Compression Factor Variation.')
+parser = argparse.ArgumentParser(description='VPX Setting Variations (resolution, quantization, and bitrate).')
 parser.add_argument('--resolutions', type=str, nargs='+',
                     help='set of resolutions to try',
-                    default=['256x256', '512x512', '768x768', '1024x1024'])
+                    default=['128x128', '256x256', '512x512', '1024x1024'])
 parser.add_argument('--quantizer-list', type=int, nargs='+',
-                    help='set of quantizers to quantize at',
-                    default=[2, 16, 32, 48, 63])
+                    help='set of quantizers to quantize at. -1 means full range',
+                    default=[-1, 2, 16, 32, 45, 50, 55, 63])
+parser.add_argument('--default-bitrate-list', type=int, nargs='+',
+                    help='list of default vpx bitrate levels to run on (assumes bps)',
+                    default=[100000, 200000, 500000, 1000000])
 parser.add_argument('--uplink-trace', type=str,
                     help='uplink trace path for mahimahi', 
                     default="traces/12mbps_trace")
@@ -31,9 +34,9 @@ parser.add_argument('--duration', type=int,
 parser.add_argument('--window', type=int,
                     help='duration to aggregate bitrate over (in seconds)', 
                     default=1)
-parser.add_argument('--num-runs', type=int,
+parser.add_argument('--runs', type=int,
                     help='number of runs to average over per experiment',
-                    default=10)
+                    default=1)
 parser.add_argument('--root-dir', type=str,
                     help='name of default video directory', 
                     default="sundar_pichai.mp4")
@@ -47,17 +50,21 @@ parser.add_argument('--executable-dir', type=str,
                     required=True)
 parser.add_argument('--csv-name', type=str,
                     help='file to save final data in', 
-                    default="data/frame_rate_data")
+                    default="data/vpx_baseline")
 parser.add_argument('--video-num-range', type=int, nargs=2,
                     help='video start and end range', default=[0, 4])
-parser.add_argument('--aggregate', action='store_true',
+parser.add_argument('--just-aggregate', action='store_true',
                     help='only aggregate final stats')
-parser.add_argument('--run', action='store_true',
+parser.add_argument('--just-run', action='store_true',
                     help='only run experiments')
+parser.add_argument('--disable-mahimahi', action='store_true',
+                    help='If used, traces will not be appliled to the sender')
+parser.add_argument('--vary-bitrate', action='store_true',
+                    help='If used, bitrate implications will be applied')
 
 args = parser.parse_args()
 
-""" runs video conference with different bits per jacobian
+""" runs non-neural video conference with different vpx settings
     capturing tcpdumps to measure bitrates from
     WARNING: overwrites existing data
 """
@@ -68,9 +75,11 @@ def run_experiments():
     params['downlink_trace'] = args.downlink_trace
     params['executable_dir'] = args.executable_dir 
     params['duration'] = args.duration
-    params['runs'] = 1
+    params['runs'] = args.runs
     params['enable_prediction'] = False
-    params['socket_path'] = 'baseline.sock'
+    params['fps'] = 30
+    params['disable_mahimahi'] = args.disable_mahimahi
+    params['socket_path'] = 'vpx_baseline.sock'
     vid_start, vid_end = args.video_num_range
     assert(vid_end >= vid_start)
     
@@ -113,20 +122,32 @@ def run_experiments():
                     print("ffmpeg command took", end - start)
 
                 for quantizer in args.quantizer_list:
-                    params['save_dir'] = f'{save_prefix}_vpx/{person}/resolution{resolution}/quantizer{quantizer}/' + \
-                        f'{os.path.basename(video_name)}'
-                    start = perf_counter()
-                    shutil.rmtree(params['save_dir'], ignore_errors=True)
-                    os.makedirs(params['save_dir'])
-                    end = perf_counter()
-                    print("rm command took", end - start)
-                    
-                    params['quantizer'] = quantizer
-                    start = perf_counter()
-                    print(f'Run {video_name} for person {person} resolution {resolution} quantizer {quantizer}')
-                    run_single_experiment(params)
-                    end = perf_counter()
-                    print("single experiment took", end - start)
+                    for vpx_default_bitrate in args.default_bitrate_list:
+                        for vpx_min_bitrate in [50000, vpx_default_bitrate]:
+                            for vpx_max_bitrate in [vpx_default_bitrate, 1500000]:
+
+                                params['save_dir'] = f'{args.save_prefix}_vpx/{person}/resolution{resolution}/' + \
+                                        f'{os.path.basename(video_name)}/quantizer{quantizer}/' + \
+                                        f'vpx_min{vpx_min_bitrate}_default{vpx_default_bitrate}_max{vpx_max_bitrate}bitarte'
+
+                                start = perf_counter()
+                                shutil.rmtree(params['save_dir'], ignore_errors=True)
+                                os.makedirs(params['save_dir'])
+                                end = perf_counter()
+                                print("rm command took", end - start)
+
+                                params['quantizer'] = quantizer
+                                params['vpx_default_bitrate'] = vpx_default_bitrate
+                                params['vpx_min_bitrate'] = vpx_min_bitrate
+                                params['vpx_max_bitrate'] = vpx_max_bitrate
+
+                                start = perf_counter()
+                                print(f'Run {video_name} for person {person} resolution {resolution} quantizer {quantizer}')
+                                print(f'vpx bitarets: min {vpx_min_bitrate} default {vpx_default_bitrate} max {vpx_max_bitrate}')
+                                print(params['save_dir'])
+                                run_single_experiment(params)
+                                end = perf_counter()
+                                print("single experiment took", end - start)
 
 
 """ gets bitrate info from pcap file 
@@ -134,76 +155,102 @@ def run_experiments():
 """
 def aggregate_data():
     first = True
-    save_prefix = args.save_prefix
     vid_start, vid_end = args.video_num_range
     assert(vid_end >= vid_start)
     fps = 30
-    
+ 
     for resolution in args.resolutions:
         for quantizer in args.quantizer_list:
-            combined_df = pd.DataFrame()
+            for vpx_default_bitrate in args.default_bitrate_list:
+                for vpx_min_bitrate in [50000, vpx_default_bitrate]:
+                    for vpx_max_bitrate in [vpx_default_bitrate, 1500000]:
+                        combined_df = pd.DataFrame()
 
-            for person in args.people:
-                video_dir = os.path.join(args.root_dir, person, "test")
+                        for person in args.people:
+                            video_dir = os.path.join(args.root_dir, person, "test")
+                            for i, video_name in enumerate(os.listdir(video_dir)):
+                                if i not in range(vid_start, vid_end + 1):
+                                    continue
 
-                for i, video_name in enumerate(os.listdir(video_dir)):
-                    if i not in range(vid_start, vid_end + 1):
-                        continue
-                    start = perf_counter()
-                    print(f'Run {video_name} for person {person} resolution {resolution} quantizer {quantizer}')
-                    save_dir = f'{save_prefix}_vpx/{person}/resolution{resolution}/quantizer{quantizer}/' + \
-                            f'{os.path.basename(video_name)}/run0/'
-                    dump_file = f'{save_dir}/sender.log'
-                    saved_video_file = f'{save_dir}/received.mp4'
-                    print(save_dir)
+                                print(f'Run {video_name} for person {person} resolution {resolution} quantizer {quantizer}')
+                                print(f'vpx bitarets: min {vpx_min_bitrate} default {vpx_default_bitrate} max {vpx_max_bitrate}')
+                                save_prefix =f'{args.save_prefix}_vpx/{person}/resolution{resolution}/' + \
+                                    f'{os.path.basename(video_name)}/quantizer{quantizer}/' + \
+                                    f'vpx_min{vpx_min_bitrate}_default{vpx_default_bitrate}_max{vpx_max_bitrate}bitarte'
 
-                    stats = log_parser.gather_trace_statistics(dump_file, args.window)
-                    num_windows = len(stats['bitrates']['video'])
-                    streams = list(stats['bitrates'].keys())
-                    stats['bitrates']['time'] = np.arange(1, num_windows + 1)
-                    window = stats['window']
-                    
-                    width, height = resolution.split("x")
-                    frame_size = float(width) * float(height)
-                    df = pd.DataFrame.from_dict(stats['bitrates'])
-                    for s in streams:
-                        df[s] = (df[s] / float(window) / 1000)
-                    df['kbps'] = df.iloc[:, 0:3].sum(axis=1) 
-                    df['bpp'] = df['kbps'] * 1000 / fps /frame_size
-                    df['resolution'] = resolution
+                                for run_num in range(args.runs):
+                                    start = perf_counter()
+                                    save_dir = f'{save_prefix}/run{run_num}'
+                                    dump_file = f'{save_dir}/sender.log'
+                                    saved_video_file = f'{save_dir}/received.mp4'
+                                    print(save_dir)
+                                    '''
+                                    stats = log_parser.gather_trace_statistics(dump_file, args.window)
+                                    num_windows = len(stats['bitrates']['video'])
+                                    streams = list(stats['bitrates'].keys())
+                                    stats['bitrates']['time'] = np.arange(1, num_windows + 1)
+                                    window = stats['window']
+                                    
+                                    width, height = resolution.split("x")
+                                    frame_size = float(width) * float(height)
+                                    df = pd.DataFrame.from_dict(stats['bitrates'])
+                                    for s in streams:
+                                        df[s] = (df[s] / float(window) / 1000)
+                                    df['kbps'] = df.iloc[:, 0:3].sum(axis=1) 
+                                    df['bpp'] = df['kbps'] * 1000 / fps /frame_size
+                                    df['resolution'] = resolution
 
-                    per_frame_metrics = np.load(f'{save_dir}/metrics.npy', allow_pickle='TRUE').item()
-                    if len(per_frame_metrics) == 0:
-                        print("PROBLEM!!!!")
-                        continue
-                    averages = get_average_metrics(list(per_frame_metrics.values()))
-                    metrics = {'psnr': [], 'ssim': [], 'lpips': [], 'latency': [], 'old_lpips': []}
-                    for i, k in enumerate(metrics.keys()):
-                            metrics[k].append(averages[i])
+                                    per_frame_metrics = np.load(f'{save_dir}/metrics.npy', allow_pickle='TRUE').item()
+                                    if len(per_frame_metrics) == 0:
+                                        print("PROBLEM!!!!")
+                                        continue
+                                    averages = get_average_metrics(list(per_frame_metrics.values()))
+                                    metrics = {'psnr': [], 'ssim': [], 'lpips': [], 'latency': [], 'old_lpips': []}
+                                    for i, k in enumerate(metrics.keys()):
+                                            metrics[k].append(averages[i])
 
-                    for m in metrics.keys():
-                        while len(metrics[m]) < df.shape[0]:
-                            metrics[m].append(metrics[m][0])
-                        df[m] = metrics[m]
-                    
-                    combined_df = pd.concat([df, combined_df], ignore_index=True)
-                    end = perf_counter()
-                    print("aggregating one piece of data", end - start)
+                                    for m in metrics.keys():
+                                        while len(metrics[m]) < df.shape[0]:
+                                            metrics[m].append(metrics[m][0])
+                                        df[m] = metrics[m]
+                                    
+                                    combined_df = pd.concat([df, combined_df], ignore_index=True)
+                                    end = perf_counter()
+                                    print("aggregating one piece of data", end - start)
+                                    '''
+                                    if os.path.isfile(f'{save_dir}/mahimahi.log'):
+                                        sh.run(f'mm-graph {save_dir}/mahimahi.log {args.duration} --no-port \
+                                                --xrange \"0:{args.duration}\" --yrange \"0:3\" --y2range \"0:2000\" \
+                                                > {save_dir}/mahimahi.eps 2> {save_dir}/mmgraph.log', shell=True)
 
+                                    print(f"\033[92mSender side \033[0m")
+                                    os.system(f'python3 ../post_experiment_process/plot_bw_trace_vs_estimation.py \
+                                            --log-path {save_dir}/sender.log --trace-path {args.uplink_trace} \
+                                            --save-dir {save_dir} --output-name sender --window 500')
 
-            mean_df = pd.DataFrame(combined_df.mean(axis=0).to_dict(), index=[df.index.values[-1]])
-            mean_df['resolution'] = resolution
-            mean_df['quantizer'] = quantizer
-            mean_df['ssim_db'] = 10 * math.log10(1 / (1-mean_df['ssim']))
-            if first:
-                mean_df.to_csv(args.csv_name, header=True, index=False, mode="w")
-                first = False
-            else:
-                mean_df.to_csv(args.csv_name, header=False, index=False, mode="a+")
+                                    os.system(f'python3 ../post_experiment_process/estimate_rtt_at_sender.py \
+                                            --log-path {save_dir}/sender.log \
+                                            --save-dir {save_dir} --output-name estimation_at_sender')
 
-if args.aggregate:
+                                    os.system(f'python3 ../post_experiment_process/compare_video_quality_from_numpy.py \
+                                            --numpy-prefix-1 {save_dir}/sender_frame \
+                                            --numpy-prefix-2 {save_dir}/receiver_frame \
+                                            --save-dir {save_dir} --output-name hr_visual_metrics.csv')
+
+                        '''
+                        mean_df = pd.DataFrame(combined_df.mean(axis=0).to_dict(), index=[df.index.values[-1]])
+                        mean_df['resolution'] = resolution
+                        mean_df['quantizer'] = quantizer
+                        mean_df['ssim_db'] = 10 * math.log10(1 / (1-mean_df['ssim']))
+                        if first:
+                            mean_df.to_csv(args.csv_name, header=True, index=False, mode="w")
+                            first = False
+                        else:
+                            mean_df.to_csv(args.csv_name, header=False, index=False, mode="a+")
+                        '''
+if args.just_aggregate:
     aggregate_data()
-elif args.run:
+elif args.just_run:
     run_experiments()
 else:
     run_experiments()
