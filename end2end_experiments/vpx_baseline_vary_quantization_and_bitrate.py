@@ -16,7 +16,7 @@ parser.add_argument('--quantization-list', type=int, nargs='+',
                     default=[-1, 0, 15, 30, 40, 45 ,50, 55, 63])
 parser.add_argument('--vpx-default_bitrate-list', type=int, nargs='+',
                     help='list of default vpx bitrate levels to run on (assumes bps)',
-                    default=[100000, 200000, 500000, 1000000]
+                    default=[100000, 200000, 500000, 1000000])
 parser.add_argument('--downlink-trace', type=str,
                     help='downlink trace path for mahimahi (assumed to be bottleneck-free)', 
                     default="../traces/12mbps_trace")
@@ -93,7 +93,7 @@ def aggregate_data():
         for vpx_default_bitrate in args.vpx_default_bitrate_list:
             for vpx_min_bitrate in [50000, vpx_default_bitrate]:
                 for vpx_max_bitrate in [vpx_default_bitrate, 1500000]:
-                    save_prefix = f'{save_prefix}_quant{quantizer}' + \
+                    save_prefix = f'{args.save_prefix}_quant{quantizer}' + \
                             '_VPX_min{vpx_min_bitrate}_def{vpx_default_bitrate}_max{vpx_max_bitrate}'
                     uplink_trace = args.uplink_trace
                     for run_num in range(args.runs):
