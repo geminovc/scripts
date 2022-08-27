@@ -12,6 +12,8 @@ import piq
 import glob
 from skimage import img_as_float32
 from first_order_model.modules.model import Vgg19
+from first_order_model.logger import Logger
+from first_order_model.reconstruction import frame_to_tensor
 import lpips
 
 checkpoint_dict = {
@@ -37,33 +39,14 @@ if torch.cuda.is_available():
     vgg_model = vgg_model.cuda()
     loss_fn_vgg = loss_fn_vgg.cuda()
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 """ get per frame visual metrics based on predicted and original frame
 """
 def get_quality(prediction, original):
-    original = np.expand_dims(img_as_float32(original), 0)
-    prediction = np.expand_dims(img_as_float32(prediction), 0)
-    
-    original = np.transpose(original, [0, 3, 1, 2])
-    prediction = np.transpose(prediction, [0, 3, 1, 2])
-    
-    original_tensor = torch.from_numpy(original)
-    prediction_tensor = torch.from_numpy(prediction)
-    if torch.cuda.is_available():
-        original_tensor = original_tensor.cuda()
-        prediction_tensor = prediction_tensor.cuda()
-
-    lpips_val = vgg_model.compute_loss(original_tensor, prediction_tensor).data.cpu().numpy().flatten()[0]
-    ssim = piq.ssim(original_tensor, prediction_tensor, data_range=1.).data.cpu().numpy().flatten()[0]
-    psnr = piq.psnr(original_tensor, prediction_tensor, data_range=1., \
-            reduction='none').data.cpu().numpy().flatten()[0]
-
-    # normalize to -1 to + 1 for old lpips
-    original_tensor = torch.sub(torch.mul(original_tensor, 2), 1)
-    prediction_tensor = torch.sub(torch.mul(prediction_tensor, 2), 1)
-    old_lpips = loss_fn_vgg(original_tensor, prediction_tensor).data.cpu().numpy().flatten()[0]
-
-    return {'psnr': psnr, 'ssim': ssim, 'lpips': lpips_val, 'old_lpips': old_lpips}
+    tensor1 = frame_to_tensor(img_as_float32(prediction), device)
+    tensor2 = frame_to_tensor(img_as_float32(original), device)
+    return Logger.get_visual_metrics(tensor1, tensor2, loss_fn_vgg)
 
 
 """ average out metrics across all frames as aggregated in
@@ -79,8 +62,11 @@ def get_average_metrics(metrics_dict):
     lpips = [m['lpips'] for m in metrics_dict]
     lpip = np.average(lpips)
 
-    old_lpips = [m['old_lpips'] for m in metrics_dict]
-    old_lpip = np.average(old_lpips)
+    if 'old_lpips' in metrics_dict[0]:
+        old_lpips = [m['old_lpips'] for m in metrics_dict]
+        old_lpip = np.average(old_lpips)
+    else:
+        old_lpip = 0
 
     if 'latency' in metrics_dict[0]:
         latencies = [m['latency'] for m in metrics_dict]
@@ -480,5 +466,5 @@ def run_single_experiment(params):
         recv_output.close()
         sender_output.close()
 
-        # dump_per_frame_video_quality_latency(log_dir)
+        dump_per_frame_video_quality_latency(log_dir)
 

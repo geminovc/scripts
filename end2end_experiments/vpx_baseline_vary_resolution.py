@@ -32,8 +32,8 @@ parser.add_argument('--duration', type=int,
                     help='duration of experiment (in seconds)', 
                     default=310)
 parser.add_argument('--window', type=int,
-                    help='duration to aggregate bitrate over (in seconds)', 
-                    default=1)
+                    help='duration to aggregate bitrate over (in miliseconds)',
+                    default=1000)
 parser.add_argument('--runs', type=int,
                     help='number of runs to average over per experiment',
                     default=1)
@@ -123,8 +123,15 @@ def run_experiments():
 
                 for quantizer in args.quantizer_list:
                     for vpx_default_bitrate in args.default_bitrate_list:
-                        for vpx_min_bitrate in [50000, vpx_default_bitrate]:
-                            for vpx_max_bitrate in [vpx_default_bitrate, 1500000]:
+                        if args.vary_bitrate:
+                            vpx_min_bitrate_range = [50000, vpx_default_bitrate]
+                            vpx_max_bitrate_range = [vpx_default_bitrate, 1500000]
+                        else:
+                            vpx_min_bitrate_range = [50000]
+                            vpx_max_bitrate_range = [1500000]
+
+                        for vpx_min_bitrate in vpx_min_bitrate_range:
+                            for vpx_max_bitrate in vpx_max_bitrate_range:
 
                                 params['save_dir'] = f'{args.save_prefix}_vpx/{person}/resolution{resolution}/' + \
                                         f'{os.path.basename(video_name)}/quantizer{quantizer}/' + \
@@ -162,8 +169,15 @@ def aggregate_data():
     for resolution in args.resolutions:
         for quantizer in args.quantizer_list:
             for vpx_default_bitrate in args.default_bitrate_list:
-                for vpx_min_bitrate in [50000, vpx_default_bitrate]:
-                    for vpx_max_bitrate in [vpx_default_bitrate, 1500000]:
+                if args.vary_bitrate:
+                    vpx_min_bitrate_range = [50000, vpx_default_bitrate]
+                    vpx_max_bitrate_range = [vpx_default_bitrate, 1500000]
+                else:
+                    vpx_min_bitrate_range = [50000]
+                    vpx_max_bitrate_range = [1500000]
+
+                for vpx_min_bitrate in vpx_min_bitrate_range:
+                    for vpx_max_bitrate in vpx_max_bitrate_range:
                         combined_df = pd.DataFrame()
 
                         for person in args.people:
@@ -184,16 +198,20 @@ def aggregate_data():
                                     dump_file = f'{save_dir}/sender.log'
                                     saved_video_file = f'{save_dir}/received.mp4'
                                     print(save_dir)
-                                    '''
-                                    stats = log_parser.gather_trace_statistics(dump_file, args.window)
-                                    num_windows = len(stats['bitrates']['video'])
-                                    streams = list(stats['bitrates'].keys())
-                                    stats['bitrates']['time'] = np.arange(1, num_windows + 1)
-                                    window = stats['window']
                                     
+                                    stats = log_parser.gather_trace_statistics(dump_file, args.window / 1000)
+                                    num_windows = len(stats['bits_sent']['video'])
+                                    streams = list(stats['bits_sent'].keys())
+
+                                    stats['bits_sent']['time'] = np.arange(1, num_windows + 1)
+                                    window = stats['window']
+
                                     width, height = resolution.split("x")
                                     frame_size = float(width) * float(height)
-                                    df = pd.DataFrame.from_dict(stats['bitrates'])
+                                    df = pd.DataFrame.from_dict(stats['bits_sent'])
+                                    """" convert the bits_sent to bitrate
+                                        by dividing by window size
+                                    """
                                     for s in streams:
                                         df[s] = (df[s] / float(window) / 1000)
                                     df['kbps'] = df.iloc[:, 0:3].sum(axis=1) 
@@ -213,41 +231,29 @@ def aggregate_data():
                                         while len(metrics[m]) < df.shape[0]:
                                             metrics[m].append(metrics[m][0])
                                         df[m] = metrics[m]
-                                    
+
                                     combined_df = pd.concat([df, combined_df], ignore_index=True)
                                     end = perf_counter()
                                     print("aggregating one piece of data", end - start)
-                                    '''
+
                                     if os.path.isfile(f'{save_dir}/mahimahi.log'):
                                         sh.run(f'mm-graph {save_dir}/mahimahi.log {args.duration} --no-port \
                                                 --xrange \"0:{args.duration}\" --yrange \"0:3\" --y2range \"0:2000\" \
                                                 > {save_dir}/mahimahi.eps 2> {save_dir}/mmgraph.log', shell=True)
 
-                                    print(f"\033[92mSender side \033[0m")
-                                    os.system(f'python3 ../post_experiment_process/plot_bw_trace_vs_estimation.py \
-                                            --log-path {save_dir}/sender.log --trace-path {args.uplink_trace} \
-                                            --save-dir {save_dir} --output-name sender --window 500')
 
-                                    os.system(f'python3 ../post_experiment_process/estimate_rtt_at_sender.py \
-                                            --log-path {save_dir}/sender.log \
-                                            --save-dir {save_dir} --output-name estimation_at_sender')
-
-                                    os.system(f'python3 ../post_experiment_process/compare_video_quality_from_numpy.py \
-                                            --numpy-prefix-1 {save_dir}/sender_frame \
-                                            --numpy-prefix-2 {save_dir}/receiver_frame \
-                                            --save-dir {save_dir} --output-name hr_visual_metrics.csv')
-
-                        '''
                         mean_df = pd.DataFrame(combined_df.mean(axis=0).to_dict(), index=[df.index.values[-1]])
                         mean_df['resolution'] = resolution
                         mean_df['quantizer'] = quantizer
-                        mean_df['ssim_db'] = 10 * math.log10(1 / (1-mean_df['ssim']))
+                        mean_df['ssim_db'] = - 20 * math.log10(1-mean_df['ssim'])
+                        print(mean_df)
                         if first:
                             mean_df.to_csv(args.csv_name, header=True, index=False, mode="w")
                             first = False
                         else:
                             mean_df.to_csv(args.csv_name, header=False, index=False, mode="a+")
-                        '''
+
+
 if args.just_aggregate:
     aggregate_data()
 elif args.just_run:
