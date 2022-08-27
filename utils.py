@@ -15,6 +15,8 @@ from first_order_model.modules.model import Vgg19
 from first_order_model.logger import Logger
 from first_order_model.reconstruction import frame_to_tensor
 import lpips
+import log_parser
+import pandas as pd
 
 checkpoint_dict = {
         '512': {
@@ -214,8 +216,8 @@ def dump_per_frame_video_quality_latency(save_dir):
             continue
 
         highest_frame_so_far = frame_num
-        sent_frame = np.load(sent_frame_file, allow_pickle=True)
-        recvd_frame = np.load(recv_frame_file, allow_pickle=True)
+        sent_frame = np.load(sent_frame_file)
+        recvd_frame = np.load(recv_frame_file)
 
         if frame_num % 100 == 0:
             np.save(f'{save_dir}/metrics.npy', metrics)
@@ -468,3 +470,60 @@ def run_single_experiment(params):
 
         dump_per_frame_video_quality_latency(log_dir)
 
+""" gather data for a single experiment
+    over its multiple runs
+"""
+def gather_data_single_experiment(params, combined_df):
+    total_runs = params['runs']
+    save_prefix = params['save_prefix']
+    duration = params['duration']
+    window = params['window']
+    resolution = params['resolution']
+    fps = params['fps'] if 'fps' in params else 30
+
+    for run_num in range(total_runs):
+        save_dir = f'{save_prefix}/run{run_num}'
+        dump_file = f'{save_dir}/sender.log'
+        saved_video_file = f'{save_dir}/received.mp4'
+        
+        stats = log_parser.gather_trace_statistics(dump_file, window / 1000)
+        num_windows = len(stats['bits_sent']['video'])
+        streams = list(stats['bits_sent'].keys())
+
+        stats['bits_sent']['time'] = np.arange(1, num_windows + 1)
+        window = stats['window']
+
+        width, height = resolution.split("x")
+        frame_size = float(width) * float(height)
+        df = pd.DataFrame.from_dict(stats['bits_sent'])
+        """" convert the bits_sent to bitrate
+            by dividing by window size
+        """
+        for s in streams:
+            df[s] = (df[s] / float(window) / 1000)
+        df['kbps'] = df.iloc[:, 0:3].sum(axis=1) 
+        df['bpp'] = df['kbps'] * 1000 / fps /frame_size
+        df['resolution'] = resolution
+
+        per_frame_metrics = np.load(f'{save_dir}/metrics.npy', allow_pickle='TRUE').item()
+        if len(per_frame_metrics) == 0:
+            print("PROBLEM!!!!")
+            continue
+        averages = get_average_metrics(list(per_frame_metrics.values()))
+        metrics = {'psnr': [], 'ssim': [], 'lpips': [], 'latency': [], 'old_lpips': []}
+        for i, k in enumerate(metrics.keys()):
+                metrics[k].append(averages[i])
+
+        for m in metrics.keys():
+            while len(metrics[m]) < df.shape[0]:
+                metrics[m].append(metrics[m][0])
+            df[m] = metrics[m]
+
+        combined_df = pd.concat([df, combined_df], ignore_index=True)
+
+        if os.path.isfile(f'{save_dir}/mahimahi.log'):
+            sh.run(f'mm-graph {save_dir}/mahimahi.log {duration} --no-port \
+                    --xrange \"0:{duration}\" --yrange \"0:3\" --y2range \"0:2000\" \
+                    > {save_dir}/mahimahi.eps 2> {save_dir}/mmgraph.log', shell=True)
+
+    return combined_df

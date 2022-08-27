@@ -11,7 +11,6 @@ import shutil
 import math
 from time import perf_counter
 
-
 parser = argparse.ArgumentParser(description='VPX Setting Variations (resolution, quantization, and bitrate).')
 parser.add_argument('--resolutions', type=str, nargs='+',
                     help='set of resolutions to try',
@@ -191,58 +190,20 @@ def aggregate_data():
                                 save_prefix =f'{args.save_prefix}_vpx/{person}/resolution{resolution}/' + \
                                     f'{os.path.basename(video_name)}/quantizer{quantizer}/' + \
                                     f'vpx_min{vpx_min_bitrate}_default{vpx_default_bitrate}_max{vpx_max_bitrate}bitarte'
+                                params = {}
+                                params['save_prefix'] = save_prefix
+                                params['runs'] = args.runs
+                                params['window'] = args.window
+                                params['duration'] = args.duration
+                                params['fps'] = fps
+                                params['resolution'] = resolution
 
-                                for run_num in range(args.runs):
-                                    start = perf_counter()
-                                    save_dir = f'{save_prefix}/run{run_num}'
-                                    dump_file = f'{save_dir}/sender.log'
-                                    saved_video_file = f'{save_dir}/received.mp4'
-                                    print(save_dir)
-                                    
-                                    stats = log_parser.gather_trace_statistics(dump_file, args.window / 1000)
-                                    num_windows = len(stats['bits_sent']['video'])
-                                    streams = list(stats['bits_sent'].keys())
+                                start = perf_counter()
+                                combined_df = gather_data_single_experiment(params, combined_df)
+                                end = perf_counter()
+                                print("aggregating one piece of data", end - start)
 
-                                    stats['bits_sent']['time'] = np.arange(1, num_windows + 1)
-                                    window = stats['window']
-
-                                    width, height = resolution.split("x")
-                                    frame_size = float(width) * float(height)
-                                    df = pd.DataFrame.from_dict(stats['bits_sent'])
-                                    """" convert the bits_sent to bitrate
-                                        by dividing by window size
-                                    """
-                                    for s in streams:
-                                        df[s] = (df[s] / float(window) / 1000)
-                                    df['kbps'] = df.iloc[:, 0:3].sum(axis=1) 
-                                    df['bpp'] = df['kbps'] * 1000 / fps /frame_size
-                                    df['resolution'] = resolution
-
-                                    per_frame_metrics = np.load(f'{save_dir}/metrics.npy', allow_pickle='TRUE').item()
-                                    if len(per_frame_metrics) == 0:
-                                        print("PROBLEM!!!!")
-                                        continue
-                                    averages = get_average_metrics(list(per_frame_metrics.values()))
-                                    metrics = {'psnr': [], 'ssim': [], 'lpips': [], 'latency': [], 'old_lpips': []}
-                                    for i, k in enumerate(metrics.keys()):
-                                            metrics[k].append(averages[i])
-
-                                    for m in metrics.keys():
-                                        while len(metrics[m]) < df.shape[0]:
-                                            metrics[m].append(metrics[m][0])
-                                        df[m] = metrics[m]
-
-                                    combined_df = pd.concat([df, combined_df], ignore_index=True)
-                                    end = perf_counter()
-                                    print("aggregating one piece of data", end - start)
-
-                                    if os.path.isfile(f'{save_dir}/mahimahi.log'):
-                                        sh.run(f'mm-graph {save_dir}/mahimahi.log {args.duration} --no-port \
-                                                --xrange \"0:{args.duration}\" --yrange \"0:3\" --y2range \"0:2000\" \
-                                                > {save_dir}/mahimahi.eps 2> {save_dir}/mmgraph.log', shell=True)
-
-
-                        mean_df = pd.DataFrame(combined_df.mean(axis=0).to_dict(), index=[df.index.values[-1]])
+                        mean_df = pd.DataFrame(combined_df.mean(axis=0).to_dict(), index=[combined_df.index.values[-1]])
                         mean_df['resolution'] = resolution
                         mean_df['quantizer'] = quantizer
                         mean_df['ssim_db'] = - 20 * math.log10(1-mean_df['ssim'])
