@@ -3,7 +3,7 @@ import sys
 sys.path.append('../')
 import log_parser
 import numpy as np
-from utils import *
+from nets_utils import *
 from process_utils import *
 import csv
 

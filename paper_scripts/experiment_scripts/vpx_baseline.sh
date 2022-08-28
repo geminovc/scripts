@@ -1,6 +1,6 @@
 #!/bin/sh
 # compares VPX at a series of resolutions and different quantizer and bitrates values
-export CONFIG_PATH='/data4/pantea/aiortc/nets_implementation/first_order_model/config/resolution1024_vpx.yaml'
+export CONFIG_PATH='/data4/pantea/nets_scripts/paper_configs/resolution1024_vpx.yaml'
 cd ../../end2end_experiments
 python vpx_baseline_vary_resolution.py \
 --resolutions 128x128 256x256 \

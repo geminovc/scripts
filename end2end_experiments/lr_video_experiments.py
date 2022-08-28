@@ -6,9 +6,10 @@ import argparse
 import os
 import log_parser
 import numpy as np
-from utils import *
+from nets_utils import *
 import shutil
-
+import math
+from time import perf_counter
 
 parser = argparse.ArgumentParser(description='Low-resolution experiments.')
 parser.add_argument('--downlink-trace', type=str,
@@ -37,7 +38,7 @@ parser.add_argument('--executable-dir', type=str,
                     required=True)
 parser.add_argument('--csv-name', type=str,
                     help='file to save final data in', 
-                    default="bw_data")
+                    default="data/low_res_video")
 parser.add_argument("--quantizer", type=int,
                     help="quantizer to compress video stream with",
                     default=32)
@@ -86,60 +87,29 @@ def run_experiments():
 """
 def aggregate_data():
     first = True
-    save_prefix = args.save_prefix
-    uplink_trace = args.uplink_trace
-    for run_num in range(args.runs):
-        save_dir = f'{save_prefix}/run{run_num}'
-        dump_file = f'{save_dir}/sender.log'
-        saved_video_file = f'{save_dir}/received.mp4'
-        '''
-        stats = log_parser.gather_trace_statistics(dump_file, args.window)
-        num_windows = len(stats['bitrates']['video'])
-        streams = list(stats['bitrates'].keys())
-        stats['bitrates']['time'] = np.arange(1, num_windows + 1)
-        
-        df = pd.DataFrame.from_dict(stats['bitrates'])
-        for s in streams:
-            df[s] = (df[s] / 1000.0 / args.window).round(2)
-        df['kbps'] = df.iloc[:, 0:3].sum(axis=1).round(2) 
-        df['fps'] = get_fps_from_video(saved_video_file)
-        df['uplink_bw'] = bw
+    combined_df = pd.DataFrame()
+    params = {}
+    params['save_prefix'] = args.save_prefix
+    params['runs'] = args.runs
+    params['window'] = args.window
+    params['duration'] = args.duration
+    params['fps'] = 30
 
-        metrics = get_video_quality_latency_over_windows(save_dir, args.window)
-        for m in metrics.keys():
-            while len(metrics[m]) < df.shape[0]:
-                metrics[m].append(0)
-            df[m] = metrics[m]
+    start = perf_counter()
+    combined_df = gather_data_single_experiment(params, combined_df)
+    end = perf_counter()
+    print("aggregating one piece of data", end - start)
 
-        if first:
-            df.to_csv(f'{save_dir}/{args.csv_name}', header=True, index=False, mode="w")
-            first = False
-        else:
-            df.to_csv(f'{save_dir}/{args.csv_name}', header=False, index=False, mode="a+")
-        '''
-
-        if os.path.isfile(f'{save_dir}/mahimahi.log'):
-            sh.run(f'mm-graph {save_dir}/mahimahi.log {args.duration} --no-port \
-                    --xrange \"0:{args.duration}\" --yrange \"0:3\" --y2range \"0:2000\" \
-                    > {save_dir}/mahimahi.eps 2> {save_dir}/mmgraph.log', shell=True)
-
-        print(f"\033[92mSender side \033[0m")
-        os.system(f'python3 ../post_experiment_process/plot_bw_trace_vs_estimation.py \
-                --log-path {save_dir}/sender.log --trace-path {uplink_trace} \
-                --save-dir {save_dir} --output-name sender --window 500')
-
-        os.system(f'python3 ../post_experiment_process/estimate_rtt_at_sender.py \
-                --log-path {save_dir}/sender.log \
-                --save-dir {save_dir} --output-name estimation_at_sender')
-
-        print(f"\033[92mReceiver side \033[0m")
-        os.system(f'python3 ../post_experiment_process/plot_bw_trace_vs_estimation.py \
-                --log-path {save_dir}/receiver.log --trace-path {args.downlink_trace} \
-                --save-dir {save_dir} --output-name receriver --window 500')
-
-        os.system(f'python3 ../post_experiment_process/estimate_rtt_at_sender.py \
-                --log-path {save_dir}/receiver.log \
-                --save-dir {save_dir} --output-name estimation_at_receiver')
+    mean_df = pd.DataFrame(combined_df.mean(axis=0).to_dict(), index=[combined_df.index.values[-1]])
+    mean_df['lr_resolution'] = 256
+    mean_df['lr-quantizer'] = args.lr_quantizer
+    mean_df['ssim_db'] = - 20 * math.log10(1-mean_df['ssim'])
+    print(mean_df)
+    if first:
+        mean_df.to_csv(args.csv_name, header=True, index=False, mode="w")
+        first = False
+    else:
+        mean_df.to_csv(args.csv_name, header=False, index=False, mode="a+")
 
 run_experiments()
 aggregate_data()

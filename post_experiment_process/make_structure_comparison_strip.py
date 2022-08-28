@@ -8,7 +8,7 @@ import os
 import pandas as pd
 from argparse import ArgumentParser
 from checkpoints import *
-from utils import *
+from nets_utils import *
 import imageio
 
 def get_num_frames(filename):

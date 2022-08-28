@@ -10,7 +10,7 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
-from utils import get_quality
+from nets_utils import get_quality
 
 parser = argparse.ArgumentParser(description='Comparison tool to evaluate frames across different experiments')
 parser.add_argument('--reference-video', metavar='r', type=str, required=True, 

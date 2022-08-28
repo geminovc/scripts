@@ -16,7 +16,7 @@ sys.path.append('../')
 import pandas as pd
 import argparse
 import numpy as np
-from utils import *
+from nets_utils import *
 import math
 from time import perf_counter
 

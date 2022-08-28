@@ -11,7 +11,7 @@ import cv2
 import argparse
 import glymur
 import matplotlib.pyplot as plt
-from utils import *
+from nets_utils import *
 from imageio import imread
 import glob
 

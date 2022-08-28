@@ -6,7 +6,7 @@ import argparse
 import os
 import log_parser
 import numpy as np
-from utils import *
+from nets_utils import *
 import shutil
 from checkpoints import structure_based_checkpoint_dict
 
