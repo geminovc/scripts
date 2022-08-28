@@ -216,8 +216,14 @@ def dump_per_frame_video_quality_latency(save_dir):
             continue
 
         highest_frame_so_far = frame_num
-        sent_frame = np.load(sent_frame_file)
-        recvd_frame = np.load(recv_frame_file)
+        try:
+            sent_frame = np.load(sent_frame_file)
+        except:
+            sent_frame = np.load(sent_frame_file, allow_pickle=True)
+        try:
+            recvd_frame = np.load(recv_frame_file)
+        except:
+            recvd_frame = np.load(recv_frame_file, allow_pickle=True)
 
         if frame_num % 100 == 0:
             np.save(f'{save_dir}/metrics.npy', metrics)
@@ -478,7 +484,6 @@ def gather_data_single_experiment(params, combined_df):
     save_prefix = params['save_prefix']
     duration = params['duration']
     window = params['window']
-    resolution = params['resolution']
     fps = params['fps'] if 'fps' in params else 30
 
     for run_num in range(total_runs):
@@ -493,17 +498,23 @@ def gather_data_single_experiment(params, combined_df):
         stats['bits_sent']['time'] = np.arange(1, num_windows + 1)
         window = stats['window']
 
-        width, height = resolution.split("x")
-        frame_size = float(width) * float(height)
         df = pd.DataFrame.from_dict(stats['bits_sent'])
         """" convert the bits_sent to bitrate
             by dividing by window size
         """
         for s in streams:
             df[s] = (df[s] / float(window) / 1000)
-        df['kbps'] = df.iloc[:, 0:3].sum(axis=1) 
-        df['bpp'] = df['kbps'] * 1000 / fps /frame_size
-        df['resolution'] = resolution
+
+        if 'uplink_bw' in params:
+            df['uplink_bw'] = params['uplink_bw']
+
+        if 'resolution' in params:
+            resolution = params['resolution']
+            width, height = resolution.split("x")
+            frame_size = float(width) * float(height)
+            df['kbps'] = df.iloc[:, 0:3].sum(axis=1)
+            df['bpp'] = df['kbps'] * 1000 / fps /frame_size
+            df['resolution'] = resolution
 
         per_frame_metrics = np.load(f'{save_dir}/metrics.npy', allow_pickle='TRUE').item()
         if len(per_frame_metrics) == 0:
