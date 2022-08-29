@@ -10,8 +10,12 @@ from nets_utils import *
 import shutil
 import math
 from time import perf_counter
+import yaml
 
 parser = argparse.ArgumentParser(description='Low-resolution experiments.')
+parser.add_argument('--lr-resolutions', type=str, nargs='+',
+                    help='set of lr-resolutions to try',
+                    default=['64x64', '128x128', '256x256', '512x512'])
 parser.add_argument('--downlink-trace', type=str,
                     help='downlink trace path for mahimahi (assumed to be bottleneck-free)', 
                     default="../traces/12mbps_trace")
@@ -83,28 +87,51 @@ def run_experiments():
     vid_start, vid_end = args.video_num_range 
     assert(vid_end >= vid_start)
 
-    for person in args.people:
-        video_dir = os.path.join(args.root_dir, person, "test")
-        for i, video_name in enumerate(os.listdir(video_dir)):
-            if i not in range(vid_start, vid_end + 1):
-                continue
+    for lr_resolution in args.lr_resolutions:
+        # write a new config from the template CONFIG_PATH
+        base_env = os.environ.copy()
+        config_path = base_env['CONFIG_PATH']
+        with open(config_path) as f:
+            new_config = yaml.safe_load(f)
 
-            video_file = os.path.join(video_dir, video_name)
-            params['video_file'] = video_file
-            for quantizer in args.quantizer_list:
-                for lr_quantizer in args.lr_quantizer_list:
-                    params['lr_quantizer'] = lr_quantizer
-                    params['quantizer'] = quantizer
-                    params['save_dir'] = f'{args.save_prefix}/{person}/{os.path.basename(video_name)}/'+\
+        width, height = lr_resolution.split("x")
+        new_config['model_params']['generator_params']['lr_size'] = int(width)
+        if args.use_bicubic:
+            new_config['model_params']['generator_params']['generator_type'] = 'bicubic'
+
+        shutil.rmtree(f'{args.save_prefix}/lrresolution{lr_resolution}', ignore_errors=True)
+        os.makedirs(f'{args.save_prefix}/lrresolution{lr_resolution}')
+        new_config_path = f'{args.save_prefix}/lrresolution{lr_resolution}/config_{lr_resolution}.yaml'
+        with open(new_config_path, 'w') as file:
+            doc = yaml.dump(new_config, file)
+
+        params['config_path'] = new_config_path
+
+        for person in args.people:
+            video_dir = os.path.join(args.root_dir, person, "test")
+            for i, video_name in enumerate(os.listdir(video_dir)):
+                if i not in range(vid_start, vid_end + 1):
+                    continue
+
+                video_file = os.path.join(video_dir, video_name)
+                params['video_file'] = video_file
+                for quantizer in args.quantizer_list:
+                    for lr_quantizer in args.lr_quantizer_list:
+                        params['lr_quantizer'] = lr_quantizer
+                        params['quantizer'] = quantizer
+                        params['save_dir'] = f'{args.save_prefix}/lrresolution{lr_resolution}/{person}/' + \
+                            f'{os.path.basename(video_name)}/' + \
                             f'lrquantizer{lr_quantizer}/quantizer{quantizer}'
 
-                    shutil.rmtree(params['save_dir'], ignore_errors=True)
-                    os.makedirs(params['save_dir'])
-                    print(f'Run {video_name} for person {person} lr_quantizer {lr_quantizer} quantizer {quantizer}')
-                    start = perf_counter()
-                    run_single_experiment(params)
-                    end = perf_counter()
-                    print("single experiment took", end - start)
+                        shutil.rmtree(params['save_dir'], ignore_errors=True)
+                        os.makedirs(params['save_dir'])
+                        print(f'Run {video_name} for person {person} quantizer {quantizer}')
+                        print(f'lr_resolution {lr_resolution} lr_quantizer {lr_quantizer}')
+
+                        start = perf_counter()
+                        run_single_experiment(params)
+                        end = perf_counter()
+                        print("single experiment took", end - start)
 
 
 """ gets bitrate info from pcap file 
@@ -114,44 +141,47 @@ def aggregate_data():
     first = True
     vid_start, vid_end = args.video_num_range
     assert(vid_end >= vid_start)
-    for quantizer in args.quantizer_list:
-        for lr_quantizer in args.lr_quantizer_list:
-            # average the data over multiple people, and their multiple videos
-            combined_df = pd.DataFrame()
-            for person in args.people:
-                video_dir = os.path.join(args.root_dir, person, "test")
-                for i, video_name in enumerate(os.listdir(video_dir)):
-                    if i not in range(vid_start, vid_end + 1):
-                        continue
 
-                    video_file = os.path.join(video_dir, video_name)
-                    params = {}
-                    params['save_prefix'] = f'{args.save_prefix}/{person}/{os.path.basename(video_name)}/'+\
-                            f'lrquantizer{lr_quantizer}/quantizer{quantizer}'
-                    params['runs'] = args.runs
-                    params['window'] = args.window
-                    params['duration'] = args.duration
-                    params['fps'] = 30
+    for lr_resolution in args.lr_resolutions:
+        for quantizer in args.quantizer_list:
+            for lr_quantizer in args.lr_quantizer_list:
+                # average the data over multiple people, and their multiple videos
+                combined_df = pd.DataFrame()
+                for person in args.people:
+                    video_dir = os.path.join(args.root_dir, person, "test")
+                    for i, video_name in enumerate(os.listdir(video_dir)):
+                        if i not in range(vid_start, vid_end + 1):
+                            continue
 
-                    start = perf_counter()
-                    df = gather_data_single_experiment(params)
-                    end = perf_counter()
-                    print("aggregating one piece of data", end - start)
-                    combined_df = pd.concat([df, combined_df], ignore_index=True)
+                        video_file = os.path.join(video_dir, video_name)
+                        params = {}
+                        params['save_prefix'] = f'{args.save_prefix}/lrresolution{lr_resolution}/{person}/' + \
+                                f'{os.path.basename(video_name)}/' + \
+                                f'lrquantizer{lr_quantizer}/quantizer{quantizer}'
+                        params['runs'] = args.runs
+                        params['window'] = args.window
+                        params['duration'] = args.duration
+                        params['fps'] = 30
 
-            mean_df = pd.DataFrame(combined_df.mean(axis=0).to_dict(), index=[combined_df.index.values[-1]])
-            mean_df['ssim_db'] = - 20 * math.log10(1-mean_df['ssim'])
-            mean_df['lr_resolution'] = 256
-            mean_df['lr-quantizer'] = lr_quantizer
-            mean_df['quantizer'] = quantizer
-            #mean_df['person'] = person
+                        start = perf_counter()
+                        df = gather_data_single_experiment(params)
+                        end = perf_counter()
+                        print("aggregating one piece of data", end - start)
+                        combined_df = pd.concat([df, combined_df], ignore_index=True)
 
-            print(mean_df)
-            if first:
-                mean_df.to_csv(args.csv_name, header=True, index=False, mode="w")
-                first = False
-            else:
-                mean_df.to_csv(args.csv_name, header=False, index=False, mode="a+")
+                mean_df = pd.DataFrame(combined_df.mean(axis=0).to_dict(), index=[combined_df.index.values[-1]])
+                mean_df['ssim_db'] = - 20 * math.log10(1-mean_df['ssim'])
+                mean_df['lr_resolution'] = lr_resolution
+                mean_df['lr-quantizer'] = lr_quantizer
+                mean_df['quantizer'] = quantizer
+                #mean_df['person'] = person
+
+                print(mean_df)
+                if first:
+                    mean_df.to_csv(args.csv_name, header=True, index=False, mode="w")
+                    first = False
+                else:
+                    mean_df.to_csv(args.csv_name, header=False, index=False, mode="a+")
 
 if args.just_aggregate:
     aggregate_data()
