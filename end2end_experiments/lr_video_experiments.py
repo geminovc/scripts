@@ -116,9 +116,9 @@ def aggregate_data():
     assert(vid_end >= vid_start)
     for quantizer in args.quantizer_list:
         for lr_quantizer in args.lr_quantizer_list:
+            # average the data over multiple people, and their multiple videos
+            combined_df = pd.DataFrame()
             for person in args.people:
-
-                combined_df = pd.DataFrame()
                 video_dir = os.path.join(args.root_dir, person, "test")
                 for i, video_name in enumerate(os.listdir(video_dir)):
                     if i not in range(vid_start, vid_end + 1):
@@ -139,19 +139,19 @@ def aggregate_data():
                     print("aggregating one piece of data", end - start)
                     combined_df = pd.concat([df, combined_df], ignore_index=True)
 
-                mean_df = pd.DataFrame(combined_df.mean(axis=0).to_dict(), index=[combined_df.index.values[-1]])
-                mean_df['ssim_db'] = - 20 * math.log10(1-mean_df['ssim'])
-                mean_df['lr_resolution'] = 256
-                mean_df['lr-quantizer'] = lr_quantizer
-                mean_df['quantizer'] = quantizer
-                mean_df['person'] = person
+            mean_df = pd.DataFrame(combined_df.mean(axis=0).to_dict(), index=[combined_df.index.values[-1]])
+            mean_df['ssim_db'] = - 20 * math.log10(1-mean_df['ssim'])
+            mean_df['lr_resolution'] = 256
+            mean_df['lr-quantizer'] = lr_quantizer
+            mean_df['quantizer'] = quantizer
+            #mean_df['person'] = person
 
-                print(mean_df)
-                if first:
-                    mean_df.to_csv(args.csv_name, header=True, index=False, mode="w")
-                    first = False
-                else:
-                    mean_df.to_csv(args.csv_name, header=False, index=False, mode="a+")
+            print(mean_df)
+            if first:
+                mean_df.to_csv(args.csv_name, header=True, index=False, mode="w")
+                first = False
+            else:
+                mean_df.to_csv(args.csv_name, header=False, index=False, mode="a+")
 
 if args.just_aggregate:
     aggregate_data()
