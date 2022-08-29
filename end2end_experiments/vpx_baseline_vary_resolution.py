@@ -177,9 +177,9 @@ def aggregate_data():
 
                 for vpx_min_bitrate in vpx_min_bitrate_range:
                     for vpx_max_bitrate in vpx_max_bitrate_range:
-                        combined_df = pd.DataFrame()
-
                         for person in args.people:
+
+                            combined_df = pd.DataFrame()
                             video_dir = os.path.join(args.root_dir, person, "test")
                             for i, video_name in enumerate(os.listdir(video_dir)):
                                 if i not in range(vid_start, vid_end + 1):
@@ -199,20 +199,27 @@ def aggregate_data():
                                 params['resolution'] = resolution
 
                                 start = perf_counter()
-                                combined_df = gather_data_single_experiment(params, combined_df)
+                                df = gather_data_single_experiment(params)
                                 end = perf_counter()
                                 print("aggregating one piece of data", end - start)
+                                combined_df = pd.concat([df, combined_df], ignore_index=True)
 
-                        mean_df = pd.DataFrame(combined_df.mean(axis=0).to_dict(), index=[combined_df.index.values[-1]])
-                        mean_df['resolution'] = resolution
-                        mean_df['quantizer'] = quantizer
-                        mean_df['ssim_db'] = - 20 * math.log10(1-mean_df['ssim'])
-                        print(mean_df)
-                        if first:
-                            mean_df.to_csv(args.csv_name, header=True, index=False, mode="w")
-                            first = False
-                        else:
-                            mean_df.to_csv(args.csv_name, header=False, index=False, mode="a+")
+                            mean_df = pd.DataFrame(combined_df.mean(axis=0).to_dict(), index=[combined_df.index.values[-1]])
+                            mean_df['ssim_db'] = - 20 * math.log10(1-mean_df['ssim'])
+
+                            mean_df['resolution'] = resolution
+                            mean_df['quantizer'] = quantizer
+                            mean_df['vpx_default_bitrate'] = vpx_default_bitrate
+                            mean_df['vpx_min_bitrate'] = vpx_min_bitrate
+                            mean_df['vpx_max_bitrate'] = vpx_max_bitrate
+                            mean_df['person'] = person
+
+                            print(mean_df)
+                            if first:
+                                mean_df.to_csv(args.csv_name, header=True, index=False, mode="w")
+                                first = False
+                            else:
+                                mean_df.to_csv(args.csv_name, header=False, index=False, mode="a+")
 
 
 if args.just_aggregate:

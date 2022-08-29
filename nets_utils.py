@@ -219,11 +219,17 @@ def dump_per_frame_video_quality_latency(save_dir):
         try:
             sent_frame = np.load(sent_frame_file)
         except:
-            sent_frame = np.load(sent_frame_file, allow_pickle=True)
+            try:
+                sent_frame = np.load(sent_frame_file, allow_pickle=True)
+            except:
+                continue
         try:
             recvd_frame = np.load(recv_frame_file)
         except:
-            recvd_frame = np.load(recv_frame_file, allow_pickle=True)
+            try:
+                recvd_frame = np.load(recv_frame_file, allow_pickle=True)
+            except:
+                continue
 
         if frame_num % 100 == 0:
             np.save(f'{save_dir}/metrics.npy', metrics)
@@ -479,7 +485,7 @@ def run_single_experiment(params):
 """ gather data for a single experiment
     over its multiple runs
 """
-def gather_data_single_experiment(params, combined_df):
+def gather_data_single_experiment(params):
     total_runs = params['runs']
     save_prefix = params['save_prefix']
     duration = params['duration']
@@ -505,16 +511,12 @@ def gather_data_single_experiment(params, combined_df):
         for s in streams:
             df[s] = (df[s] / float(window) / 1000)
 
-        if 'uplink_bw' in params:
-            df['uplink_bw'] = params['uplink_bw']
-
         if 'resolution' in params:
             resolution = params['resolution']
             width, height = resolution.split("x")
             frame_size = float(width) * float(height)
             df['kbps'] = df.iloc[:, 0:3].sum(axis=1)
             df['bpp'] = df['kbps'] * 1000 / fps /frame_size
-            df['resolution'] = resolution
 
         per_frame_metrics = np.load(f'{save_dir}/metrics.npy', allow_pickle='TRUE').item()
         if len(per_frame_metrics) == 0:
@@ -530,11 +532,9 @@ def gather_data_single_experiment(params, combined_df):
                 metrics[m].append(metrics[m][0])
             df[m] = metrics[m]
 
-        combined_df = pd.concat([df, combined_df], ignore_index=True)
-
         if os.path.isfile(f'{save_dir}/mahimahi.log'):
             sh.run(f'mm-graph {save_dir}/mahimahi.log {duration} --no-port \
                     --xrange \"0:{duration}\" --yrange \"0:3\" --y2range \"0:2000\" \
                     > {save_dir}/mahimahi.eps 2> {save_dir}/mmgraph.log', shell=True)
 
-    return combined_df
+    return df
