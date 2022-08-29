@@ -171,7 +171,8 @@ def get_video_quality_latency_over_windows(save_dir, window):
     and delete them
 """
 def dump_per_frame_video_quality_latency(save_dir):
-    metrics = {} 
+    metrics = {}
+    lr_metrics = {}
     sent_times = {}
     special_frames_list = [1322, 574, 140, 1786, 1048, 839, 761, 2253, 637, 375, \
             1155, 2309, 1524, 1486, 1207, 315, 1952, 2111, 2148, 1530, \
@@ -202,13 +203,15 @@ def dump_per_frame_video_quality_latency(save_dir):
         
         sent_frame_file = f'{save_dir}/sender_frame_{frame_num:05d}.npy'
         recv_frame_file = f'{save_dir}/receiver_frame_{frame_num:05d}.npy'
+        sent_lr_frame_file = f'{save_dir}/sender_lr_frame_{frame_num:05d}.npy'
+        recv_lr_frame_file = f'{save_dir}/receiver_lr_frame_{frame_num:05d}.npy'
 
         if frame_num <= highest_frame_so_far:
             continue
         
         if frame_num > highest_frame_so_far + 100:
             continue
-
+        #compute metrics for high-resolution sent and received frames
         if not os.path.exists(recv_frame_file) or not os.path.exists(sent_frame_file):
             print("Skipping frame", frame_num)
             if os.path.exists(recv_frame_file):
@@ -242,7 +245,7 @@ def dump_per_frame_video_quality_latency(save_dir):
         frame_metrics  = qualities.copy()
         frame_metrics.update({'latency': latency})
         metrics[frame_num] = frame_metrics
-        
+
         del sent_times[frame_num]
         if frame_num not in special_frames_list:
             try:
@@ -251,37 +254,110 @@ def dump_per_frame_video_quality_latency(save_dir):
             except:
                 pass
      
+        #compute metrics for low-resolution sent and received frames
+        if not os.path.exists(recv_lr_frame_file) or not os.path.exists(sent_lr_frame_file):
+            print("Skipping low-res frame", frame_num)
+            if os.path.exists(recv_lr_frame_file):
+                os.remove(recv_lr_frame_file)
+            continue
+
+        try:
+            sent_lr_frame = np.load(sent_lr_frame_file)
+        except:
+            try:
+                sent_lr_frame = np.load(sent_lr_frame_file, allow_pickle=True)
+            except:
+                continue
+        try:
+            recvd_lr_frame = np.load(recv_lr_frame_file)
+        except:
+            try:
+                recvd_lr_frame = np.load(recv_lr_frame_file, allow_pickle=True)
+            except:
+                continue
+
+        if frame_num % 100 == 0:
+            np.save(f'{save_dir}/lr_metrics.npy', lr_metrics)
+
+        if frame_num % 500 == 0:
+            print(f'dumped metrics for {frame_num} low-res frames')
+
+        lr_qualities = get_quality(recvd_lr_frame, sent_lr_frame)
+        lr_frame_metrics  = lr_qualities.copy()
+        lr_metrics[frame_num] = lr_frame_metrics
+
+        if frame_num not in special_frames_list:
+            try:
+                os.remove(sent_lr_frame_file)
+                os.remove(recv_lr_frame_file)
+            except:
+                pass
+
     recv_times_file.close()
     
     # clean up any unremoved sent frames
-    try:
-        for frame_num in sent_times.keys():
+
+    for frame_num in sent_times.keys():
+        try:
             sent_frame_file = f'{save_dir}/sender_frame_{frame_num:05d}.npy'
             os.remove(sent_frame_file)
-    except:
-        pass
+        except:
+            pass
+
+        try:
+            sent_lr_frame_file = f'{save_dir}/sender_lr_frame_{frame_num:05d}.npy'
+            os.remove(sent_lr_frame_file)
+        except:
+            pass
+
     try:
         os.system(f'rm {save_dir}/reference_frame*')
     except:
         pass
+
     try:
-        for s in glob.glob(f'{save_dir}/sender*.npy'):
-            frame_num = int(s.split("_")[-1].split(".")[0])
-            if frame_num not in special_frames_list:
-                sent_frame_file = f'{save_dir}/sender_frame_{frame_num:05d}.npy'
-                os.remove(sent_frame_file)
+        os.system(f'rm {save_dir}/predicted_frame*')
     except:
         pass
+
     try:
-        for s in glob.glob(f'{save_dir}/receiver*.npy'):
+        for s in glob.glob(f'{save_dir}/sender_frame*.npy'):
             frame_num = int(s.split("_")[-1].split(".")[0])
             if frame_num not in special_frames_list:
-                recv_frame_file = f'{save_dir}/receiver_frame_{frame_num:05d}.npy'
-                os.remove(recv_frame_file)
+                try:
+                    sent_frame_file = f'{save_dir}/sender_frame_{frame_num:05d}.npy'
+                    os.remove(sent_frame_file)
+                except:
+                    pass
+
+                try:
+                    sent_lr_frame_file = f'{save_dir}/sender_lr_frame_{frame_num:05d}.npy'
+                    os.remove(sent_lr_frame_file)
+                except:
+                    pass
+    except:
+        pass
+
+    try:
+        for s in glob.glob(f'{save_dir}/receiver_frame*.npy'):
+            frame_num = int(s.split("_")[-1].split(".")[0])
+            if frame_num not in special_frames_list:
+                try:
+                    recv_frame_file = f'{save_dir}/receiver_frame_{frame_num:05d}.npy'
+                    os.remove(recv_frame_file)
+                except:
+                    pass
+                try:
+                    recv_lr_frame_file = f'{save_dir}/receiver_lr_frame_{frame_num:05d}.npy'
+                    os.remove(recv_lr_frame_file)
+                except:
+                    pass
     except:
         pass
 
     np.save(f'{save_dir}/metrics.npy', metrics)
+    if len(lr_metrics.keys()) > 0:
+        np.save(f'{save_dir}/lr_metrics.npy', lr_metrics)
 
 
 """ get throughput aggregated over windows of the experiment
@@ -531,6 +607,21 @@ def gather_data_single_experiment(params):
             while len(metrics[m]) < df.shape[0]:
                 metrics[m].append(metrics[m][0])
             df[m] = metrics[m]
+
+        if os.path.exists(f'{save_dir}/lr_metrics.npy'):
+            per_lr_frame_metrics = np.load(f'{save_dir}/lr_metrics.npy', allow_pickle='TRUE').item()
+            if len(per_lr_frame_metrics) == 0:
+                print("PROBLEM!!!!")
+                continue
+            averages = get_average_metrics(list(per_lr_frame_metrics.values()))
+            metrics = {'lr-psnr': [], 'lr-ssim': [], 'lr-lpips': [], 'lr-old_lpips': []}
+            for i, k in enumerate(metrics.keys()):
+                    metrics[k].append(averages[i])
+
+            for m in metrics.keys():
+                while len(metrics[m]) < df.shape[0]:
+                    metrics[m].append(metrics[m][0])
+                df[m] = metrics[m]
 
         if os.path.isfile(f'{save_dir}/mahimahi.log'):
             sh.run(f'mm-graph {save_dir}/mahimahi.log {duration} --no-port \
