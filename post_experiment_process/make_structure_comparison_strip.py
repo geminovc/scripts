@@ -45,7 +45,7 @@ parser.add_argument("--target_frame_num",
                     type=int,
                     help="index of the target frame")
 parser.add_argument("--max_frame_num",
-                    default=5250,
+                    default=1800,
                     type=int,
                     help="maximum frame number if generating video")
 parser.add_argument("--save_prefix",
@@ -80,8 +80,6 @@ try:
     for base_video_name in os.listdir(video_dir):
         video_name =  os.path.join(video_dir, base_video_name)
         print("video name ", video_name)
-        num_frames = get_num_frames(video_name)
-        print("Number of frames in the video", num_frames)
         save_dir = f'{opt.save_prefix}/{opt.resolution}/{person}/{os.path.basename(video_name)}'
         print("save_dir", save_dir)
         
@@ -106,9 +104,14 @@ try:
             
             # Add original video frames/source-target pair to the strip
             if opt.generate_video:
-                for i in range(0, min(num_frames, opt.max_frame_num)):
-                    print(i)
-                    video_array.append(get_frame(video_name, i, ifnormalize=False))
+                reader = imageio.get_reader(video_name, "ffmpeg")
+                num_frames = 0
+                for frame in reader:
+                    video_array.append(frame)
+                    num_frames += 1
+                    print(f'Reading video frame num {num_frames}')
+                    if num_frames == opt.max_frame_num:
+                        break
                 predictions.append(video_array)
             else:
                 predictions.append(np.expand_dims(source, axis=0))
@@ -127,7 +130,7 @@ try:
                     per_frame_metrics = []
 
                     if opt.generate_video:
-                        for i in range(0, min(num_frames, opt.max_frame_num)):
+                        for i in range(0, min(len(video_array), opt.max_frame_num)):
                             print(i)
                             if i % opt.source_update_frequency == 0:
                                 source = video_array[i]
@@ -170,16 +173,17 @@ try:
             # saving info per video for all settings
             df = pd.DataFrame.from_dict(cross_setting_metrics)
             df.to_csv(f'{save_dir}/{save_suffix}.csv', header=True, index=False, mode="w")
+            start_imageio = time.perf_counter()
             if opt.generate_video:
                 imageio.mimsave(f'{save_dir}/{save_suffix}.mp4',
                         np.concatenate(predictions, axis=2), fps = int(opt.output_fps))
             else:
                 imageio.imsave(f'{save_dir}/{save_suffix}.png',
                         np.hstack([image[0] for image in predictions]))
-
+            print("Saving the final output", time.perf_counter() - start_imageio)
             num_videos += 1
-            if num_videos == 3:
-                break
+            #if num_videos == 3:
+            #    break
 
 except Exception as e:
     print(e)

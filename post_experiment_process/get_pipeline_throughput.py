@@ -69,5 +69,5 @@ def get_throughput_over_windows(save_dir, window):
     return  windowed_throughput
 
 window = 0.5
-#get_throughput("/data4/pantea/aiortc/examples/videostream-cli/xiran_1024_with_skip/receiver_output", window)
-get_throughput("/data4/pantea/nets_scripts/xiran_1024_resolution1024_without_hr_skip_connections/xiran/0_1.mp4/run0/receiver.log", window)    
+get_throughput("/data1/pantea/aiortc/examples/videostream-cli/xiran_1024_with_print/receiver_output", window)
+#get_throughput("/data4/pantea/nets_scripts/xiran_1024_resolution1024_without_hr_skip_connections/xiran/0_1.mp4/run0/receiver.log", window)    
