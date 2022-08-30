@@ -587,7 +587,7 @@ def gather_data_single_experiment(params):
         for s in streams:
             df[s] = (df[s] / float(window) / 1000)
 
-        df['kbps'] = df.iloc[:, 0:3].sum(axis=1)
+        df['kbps'] = df.iloc[:, 0:4].sum(axis=1)
 
         if 'resolution' in params:
             resolution = params['resolution']
