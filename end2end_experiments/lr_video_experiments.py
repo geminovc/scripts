@@ -175,7 +175,6 @@ def aggregate_data():
                 mean_df['lr_resolution'] = lr_resolution
                 mean_df['lr_quantizer'] = lr_quantizer
                 mean_df['quantizer'] = quantizer
-                #mean_df['person'] = person
 
                 print(mean_df)
                 if first:
