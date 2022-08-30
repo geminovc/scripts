@@ -87,17 +87,18 @@ def run_experiments():
     vid_start, vid_end = args.video_num_range 
     assert(vid_end >= vid_start)
 
+    base_env = os.environ.copy()
+    config_path = base_env['CONFIG_PATH']
+    with open(config_path) as f:
+        new_config = yaml.safe_load(f)
+
+    if args.use_bicubic:
+        new_config['model_params']['generator_params']['generator_type'] = 'bicubic'
+
     for lr_resolution in args.lr_resolutions:
         # write a new config from the template CONFIG_PATH
-        base_env = os.environ.copy()
-        config_path = base_env['CONFIG_PATH']
-        with open(config_path) as f:
-            new_config = yaml.safe_load(f)
-
         width, height = lr_resolution.split("x")
         new_config['model_params']['generator_params']['lr_size'] = int(width)
-        if args.use_bicubic:
-            new_config['model_params']['generator_params']['generator_type'] = 'bicubic'
 
         shutil.rmtree(f'{args.save_prefix}/lrresolution{lr_resolution}', ignore_errors=True)
         os.makedirs(f'{args.save_prefix}/lrresolution{lr_resolution}')
@@ -172,7 +173,7 @@ def aggregate_data():
                 mean_df = pd.DataFrame(combined_df.mean(axis=0).to_dict(), index=[combined_df.index.values[-1]])
                 mean_df['ssim_db'] = - 20 * math.log10(1-mean_df['ssim'])
                 mean_df['lr_resolution'] = lr_resolution
-                mean_df['lr-quantizer'] = lr_quantizer
+                mean_df['lr_quantizer'] = lr_quantizer
                 mean_df['quantizer'] = quantizer
                 #mean_df['person'] = person
 

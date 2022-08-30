@@ -615,7 +615,7 @@ def gather_data_single_experiment(params):
                 print("PROBLEM!!!!")
                 continue
             averages = get_average_metrics(list(per_lr_frame_metrics.values()))
-            metrics = {'lr-psnr': [], 'lr-ssim': [], 'lr-lpips': [], 'lr-old_lpips': []}
+            metrics = {'lr_psnr': [], 'lr_ssim': [], 'lr_lpips': [], 'lr_old_lpips': []}
             for i, k in enumerate(metrics.keys()):
                     metrics[k].append(averages[i])
 
