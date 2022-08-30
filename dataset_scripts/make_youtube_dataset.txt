@@ -5,4 +5,5 @@
 5. Run shorten_train.sh
 6. Run recombine_test.sh
 7. Run the cleanup_script.sh code
-8. Go through the videos for strange stuff
+8. Re-encode everything at 30fps
+9. Go through the videos for strange stuff
