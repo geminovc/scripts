@@ -3,7 +3,7 @@
 export CONFIG_PATH='/data4/pantea/nets_scripts/paper_configs/resolution1024_swinir_lte.yaml'
 cd ../../end2end_experiments
 python lr_video_experiments.py \
-+--lr-resolutions 64x64 128x128 256x256 \
+--lr-resolutions 64x64 128x128 256x256 \
 --duration 70 --window 1000 --runs 3 \
 --root-dir /video-conf/scratch/pantea/fom_personalized_1024 \
 --people xiran \
