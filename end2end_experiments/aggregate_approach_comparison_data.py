@@ -15,7 +15,7 @@ parser.add_argument('--csv-name', type=str,
 
 args = parser.parse_args()
 
-columns_names = ['psnr', 'ssim', 'ssim_db', 'lpips', 'kbps', 'latency', 'setting']
+columns_names = ['psnr', 'ssim', 'ssim_db', 'lpips', 'kbps', 'latency', 'quantizer', 'setting']
 combined_df = pd.DataFrame(columns=columns_names)
 for setting, data_path in zip(args.settings, args.data_paths):
     df = pd.read_csv(data_path)

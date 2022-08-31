@@ -1,6 +1,6 @@
 dataset_params:
   root_dir: /video-conf/scratch/pantea/fom_personalized_1024
-  frame_shape: [128, 128, 3]
+  frame_shape: [1024, 1024, 3]
 
 model_params:
   generator_params:

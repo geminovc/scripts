@@ -10,6 +10,7 @@ from nets_utils import *
 import shutil
 import math
 from time import perf_counter
+import yaml
 
 parser = argparse.ArgumentParser(description='VPX Setting Variations (resolution, quantization, and bitrate).')
 parser.add_argument('--resolutions', type=str, nargs='+',
@@ -58,8 +59,8 @@ parser.add_argument('--just-run', action='store_true',
                     help='only run experiments')
 parser.add_argument('--disable-mahimahi', action='store_true',
                     help='If used, traces will not be appliled to the sender')
-parser.add_argument('--vary-bitrate', action='store_true',
-                    help='If used, bitrate implications will be applied')
+parser.add_argument('--enable-gcc', action='store_true',
+                    help='If used, gcc bitrate implications will be applied')
 
 args = parser.parse_args()
 
@@ -69,7 +70,6 @@ args = parser.parse_args()
 """
 def run_experiments():
     params = {}
-    save_prefix = args.save_prefix
     params['uplink_trace'] = args.uplink_trace
     params['downlink_trace'] = args.downlink_trace
     params['executable_dir'] = args.executable_dir 
@@ -82,8 +82,23 @@ def run_experiments():
     vid_start, vid_end = args.video_num_range
     assert(vid_end >= vid_start)
     
-    for person in args.people:
-        for resolution in args.resolutions:
+    base_env = os.environ.copy()
+    config_path = base_env['CONFIG_PATH']
+    with open(config_path) as f:
+        new_config = yaml.safe_load(f)
+    for resolution in args.resolutions:
+        # write a new config from the template CONFIG_PATH for vpx based on resolution
+        width, height = resolution.split("x")
+        new_config['dataset_params']['frame_shape'] = [int(width), int(width), 3]
+        shutil.rmtree(f'{args.save_prefix}/resolution{resolution}', ignore_errors=True)
+        os.makedirs(f'{args.save_prefix}/resolution{resolution}')
+        new_config_path = f'{args.save_prefix}/resolution{resolution}/resolution{resolution}_vpx.yaml'
+        with open(new_config_path, 'w') as file:
+            doc = yaml.dump(new_config, file)
+
+        params['config_path'] = new_config_path
+
+        for person in args.people:
             video_dir = os.path.join(args.root_dir, person, "test")
             
             for i, video_name in enumerate(os.listdir(video_dir)):
@@ -91,7 +106,7 @@ def run_experiments():
                     continue
                 
                 video_file = os.path.join(video_dir, video_name)
-                params['save_dir'] = f'{save_prefix}_vpx/{person}/resolution{resolution}/' + \
+                params['save_dir'] = f'{args.save_prefix}/resolution{resolution}/{person}/' + \
                         f'{os.path.basename(video_name)}'
                 params['video_file'] = f'{params["save_dir"]}/{video_name}'
 
@@ -122,17 +137,17 @@ def run_experiments():
 
                 for quantizer in args.quantizer_list:
                     for vpx_default_bitrate in args.default_bitrate_list:
-                        if args.vary_bitrate:
-                            vpx_min_bitrate_range = [50000, vpx_default_bitrate]
-                            vpx_max_bitrate_range = [vpx_default_bitrate, 1500000]
-                        else:
+                        if args.enable_gcc:
                             vpx_min_bitrate_range = [50000]
                             vpx_max_bitrate_range = [1500000]
+                        else:
+                            vpx_min_bitrate_range = [vpx_default_bitrate]
+                            vpx_max_bitrate_range = [vpx_default_bitrate]
 
                         for vpx_min_bitrate in vpx_min_bitrate_range:
                             for vpx_max_bitrate in vpx_max_bitrate_range:
 
-                                params['save_dir'] = f'{args.save_prefix}_vpx/{person}/resolution{resolution}/' + \
+                                params['save_dir'] = f'{args.save_prefix}/resolution{resolution}/{person}/' + \
                                         f'{os.path.basename(video_name)}/quantizer{quantizer}/' + \
                                         f'vpx_min{vpx_min_bitrate}_default{vpx_default_bitrate}_max{vpx_max_bitrate}bitarte'
 
@@ -168,12 +183,12 @@ def aggregate_data():
     for resolution in args.resolutions:
         for quantizer in args.quantizer_list:
             for vpx_default_bitrate in args.default_bitrate_list:
-                if args.vary_bitrate:
-                    vpx_min_bitrate_range = [50000, vpx_default_bitrate]
-                    vpx_max_bitrate_range = [vpx_default_bitrate, 1500000]
-                else:
+                if args.enable_gcc:
                     vpx_min_bitrate_range = [50000]
                     vpx_max_bitrate_range = [1500000]
+                else:
+                    vpx_min_bitrate_range = [vpx_default_bitrate]
+                    vpx_max_bitrate_range = [vpx_default_bitrate]
 
                 for vpx_min_bitrate in vpx_min_bitrate_range:
                     for vpx_max_bitrate in vpx_max_bitrate_range:
@@ -188,7 +203,7 @@ def aggregate_data():
 
                                 print(f'Run {video_name} for person {person} resolution {resolution} quantizer {quantizer}')
                                 print(f'vpx bitarets: min {vpx_min_bitrate} default {vpx_default_bitrate} max {vpx_max_bitrate}')
-                                save_prefix =f'{args.save_prefix}_vpx/{person}/resolution{resolution}/' + \
+                                save_prefix =f'{args.save_prefix}/resolution{resolution}/{person}/' + \
                                     f'{os.path.basename(video_name)}/quantizer{quantizer}/' + \
                                     f'vpx_min{vpx_min_bitrate}_default{vpx_default_bitrate}_max{vpx_max_bitrate}bitarte'
                                 params = {}
