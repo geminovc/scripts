@@ -163,25 +163,28 @@ def aggregate_data():
                         params['window'] = args.window
                         params['duration'] = args.duration
                         params['fps'] = 30
+                        try:
+                            start = perf_counter()
+                            df = gather_data_single_experiment(params)
+                            end = perf_counter()
+                            print("aggregating one piece of data", end - start)
+                            combined_df = pd.concat([df, combined_df], ignore_index=True)
+                        except Exception as e:
+                            print(e)
 
-                        start = perf_counter()
-                        df = gather_data_single_experiment(params)
-                        end = perf_counter()
-                        print("aggregating one piece of data", end - start)
-                        combined_df = pd.concat([df, combined_df], ignore_index=True)
+                if len(combined_df) > 0:
+                    mean_df = pd.DataFrame(combined_df.mean(axis=0).to_dict(), index=[combined_df.index.values[-1]])
+                    mean_df['ssim_db'] = - 20 * math.log10(1-mean_df['ssim'])
+                    mean_df['lr_resolution'] = lr_resolution
+                    mean_df['lr_quantizer'] = lr_quantizer
+                    mean_df['quantizer'] = quantizer
 
-                mean_df = pd.DataFrame(combined_df.mean(axis=0).to_dict(), index=[combined_df.index.values[-1]])
-                mean_df['ssim_db'] = - 20 * math.log10(1-mean_df['ssim'])
-                mean_df['lr_resolution'] = lr_resolution
-                mean_df['lr_quantizer'] = lr_quantizer
-                mean_df['quantizer'] = quantizer
-
-                print(mean_df)
-                if first:
-                    mean_df.to_csv(args.csv_name, header=True, index=False, mode="w")
-                    first = False
-                else:
-                    mean_df.to_csv(args.csv_name, header=False, index=False, mode="a+")
+                    print(mean_df)
+                    if first:
+                        mean_df.to_csv(args.csv_name, header=True, index=False, mode="w")
+                        first = False
+                    else:
+                        mean_df.to_csv(args.csv_name, header=False, index=False, mode="a+")
 
 if args.just_aggregate:
     aggregate_data()
