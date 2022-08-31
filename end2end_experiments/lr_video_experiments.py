@@ -92,21 +92,22 @@ def run_experiments():
     with open(config_path) as f:
         new_config = yaml.safe_load(f)
 
-    if args.use_bicubic:
-        new_config['model_params']['generator_params']['generator_type'] = 'bicubic'
-
     for lr_resolution in args.lr_resolutions:
-        # write a new config from the template CONFIG_PATH
         width, height = lr_resolution.split("x")
-        new_config['model_params']['generator_params']['lr_size'] = int(width)
+        # write a new config from the template CONFIG_PATH for bicubic based on lr_resolution
+        if args.use_bicubic:
+            new_config['model_params']['generator_params']['generator_type'] = 'bicubic'
+            new_config['model_params']['generator_params']['lr_size'] = int(width)
 
-        shutil.rmtree(f'{args.save_prefix}/lrresolution{lr_resolution}', ignore_errors=True)
-        os.makedirs(f'{args.save_prefix}/lrresolution{lr_resolution}')
-        new_config_path = f'{args.save_prefix}/lrresolution{lr_resolution}/config_{lr_resolution}.yaml'
-        with open(new_config_path, 'w') as file:
-            doc = yaml.dump(new_config, file)
+            shutil.rmtree(f'{args.save_prefix}/lrresolution{lr_resolution}', ignore_errors=True)
+            os.makedirs(f'{args.save_prefix}/lrresolution{lr_resolution}')
+            new_config_path = f'{args.save_prefix}/lrresolution{lr_resolution}/config_{lr_resolution}.yaml'
+            with open(new_config_path, 'w') as file:
+                doc = yaml.dump(new_config, file)
 
-        params['config_path'] = new_config_path
+            params['config_path'] = new_config_path
+        else:
+            assert(new_config['model_params']['generator_params']['lr_size'] == int(width))
 
         for person in args.people:
             video_dir = os.path.join(args.root_dir, person, "test")
