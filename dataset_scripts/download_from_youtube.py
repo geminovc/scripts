@@ -17,7 +17,7 @@ if not os.path.exists(output_folder):
 with open(urls_path) as f:
     lines = f.readlines()
 
-quality = '\'bestvideo[ext=mp4]/bestvideo+bestaudio\''
+quality = '\'bestvideo[height<=1080][ext=mp4]/bestvideo+bestaudio\''
 old_url = None
 video_id = 0
 session_id = 0
