@@ -11,7 +11,7 @@ import json
 import piq
 import glob
 from skimage import img_as_float32
-from first_order_model.modules.model import Vgg19
+from first_order_model.modules.model import Vgg19, VggFace16
 from first_order_model.logger import Logger
 from first_order_model.reconstruction import frame_to_tensor
 import lpips
@@ -36,10 +36,16 @@ checkpoint_dict = {
 }
 
 vgg_model = Vgg19()
-loss_fn_vgg = lpips.LPIPS(net='vgg')
+original_lpips = lpips.LPIPS(net='vgg')
+vgg_face_model = VggFace16()
+
 if torch.cuda.is_available():
     vgg_model = vgg_model.cuda()
-    loss_fn_vgg = loss_fn_vgg.cuda()
+    original_lpips = original_lpips.cuda()
+    vgg_face_model = vgg_face_model.cuda()
+
+loss_fn_vgg = vgg_model.compute_loss
+face_lpips = vgg_face_model.compute_loss
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -48,7 +54,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 def get_quality(prediction, original):
     tensor1 = frame_to_tensor(img_as_float32(prediction), device)
     tensor2 = frame_to_tensor(img_as_float32(original), device)
-    return Logger.get_visual_metrics(tensor1, tensor2, loss_fn_vgg)
+    return Logger.get_visual_metrics(tensor1, tensor2, loss_fn_vgg, original_lpips, face_lpips)
 
 
 """ average out metrics across all frames as aggregated in
@@ -64,11 +70,17 @@ def get_average_metrics(metrics_dict):
     lpips = [m['lpips'] for m in metrics_dict]
     lpip = np.average(lpips)
 
-    if 'old_lpips' in metrics_dict[0]:
-        old_lpips = [m['old_lpips'] for m in metrics_dict]
-        old_lpip = np.average(old_lpips)
+    if 'orig_lpips' in metrics_dict[0]:
+        orig_lpips = [m['orig_lpips'] for m in metrics_dict]
+        orig_lpip = np.average(orig_lpips)
     else:
-        old_lpip = 0
+        orig_lpip = 0
+
+    if 'face_lpips' in metrics_dict[0]:
+        face_lpips = [m['face_lpips'] for m in metrics_dict]
+        face_lpip = np.average(face_lpips)
+    else:
+        face_lpip = 0
 
     if 'latency' in metrics_dict[0]:
         latencies = [m['latency'] for m in metrics_dict]
@@ -76,7 +88,7 @@ def get_average_metrics(metrics_dict):
     else:
         latency = 0
 
-    return psnr, ssim, lpip, latency, old_lpip
+    return psnr, ssim, lpip, latency, orig_lpip, face_lpip
 
 
 """ get the fps of a video by running ffprobe
@@ -239,7 +251,7 @@ def dump_per_frame_video_quality_latency(save_dir):
 
         if frame_num % 500 == 0:
             print(f'dumped metrics for {frame_num} frames')
-        
+
         qualities = get_quality(recvd_frame, sent_frame)
         latency = (relevant_time - sent_times[frame_num]).total_seconds() * 1000
         frame_metrics  = qualities.copy()
@@ -600,7 +612,7 @@ def gather_data_single_experiment(params):
             print("PROBLEM!!!!")
             continue
         averages = get_average_metrics(list(per_frame_metrics.values()))
-        metrics = {'psnr': [], 'ssim': [], 'lpips': [], 'latency': [], 'old_lpips': []}
+        metrics = {'psnr': [], 'ssim': [], 'lpips': [], 'latency': [], 'orig_lpips': [], 'face_lpips': []}
         for i, k in enumerate(metrics.keys()):
                 metrics[k].append(averages[i])
 
@@ -615,7 +627,7 @@ def gather_data_single_experiment(params):
                 print("PROBLEM!!!!")
                 continue
             averages = get_average_metrics(list(per_lr_frame_metrics.values()))
-            metrics = {'lr_psnr': [], 'lr_ssim': [], 'lr_lpips': [], 'lr_old_lpips': []}
+            metrics = {'lr_psnr': [], 'lr_ssim': [], 'lr_lpips': [], 'lr_orig_lpips': [], 'lr_face_lpips': []}
             for i, k in enumerate(metrics.keys()):
                     metrics[k].append(averages[i])
 
