@@ -57,9 +57,9 @@ parser.add_argument('--setting-list', type=str, nargs='+',
 parser.add_argument('--quantizer-list', type=int, nargs='+',
                     help='set of quantizers to compress video stream with. -1 means full range',
                     default=[-1, 2, 16, 32, 45, 50, 55, 63])
-parser.add_argument("--reference-update-freq", type=int,
-                    help="the frequency that the reference frame is updated",
-                    default=0)
+parser.add_argument("--reference-update-freq-list", type=int, nargs='+',
+                    help="the list of frequency that the reference frame is updated",
+                    default=[0])
 parser.add_argument('--disable-mahimahi', action='store_true',
                     help='If used, traces will not be appliled to the sender')
 parser.add_argument('--just-aggregate', action='store_true',
@@ -93,7 +93,6 @@ def run_experiments():
         print(setting)
         params['socket_path'] = f'kp_{setting}.sock'
         params['config_path'] = f'{args.configs_dir}/{setting}.yaml'
-        #try:
         for person in args.people:
             params['checkpoint'] = structure_based_checkpoint_dict[setting][person]
             video_dir = os.path.join(args.root_dir, person, "test")
@@ -108,19 +107,19 @@ def run_experiments():
                 #print(ffmpeg_cmd)
                 #os.system(ffmpeg_cmd)
                 for quantizer in args.quantizer_list:
-                    params['quantizer'] = quantizer
-                    params['save_dir'] = f'{args.save_prefix}/{setting}/{person}/' + \
-                            f'{os.path.basename(video_name)}/quantizer{quantizer}'
-                    shutil.rmtree(params['save_dir'], ignore_errors=True)
-                    os.makedirs(params['save_dir'])
-                    print(f'Run {video_name} for person {person} quantizer {quantizer}')
+                    for reference_update_freq in args.reference_update_freq_list:
+                        params['reference_update_freq'] = reference_update_freq
+                        params['quantizer'] = quantizer
+                        params['save_dir'] = f'{args.save_prefix}/{setting}/{person}/' + \
+                        f'{os.path.basename(video_name)}/quantizer{quantizer}/reference_update_freq{reference_update_freq}'
+                        shutil.rmtree(params['save_dir'], ignore_errors=True)
+                        os.makedirs(params['save_dir'])
+                        print(f'Run {video_name} for person {person} quantizer {quantizer}')
 
-                    start = perf_counter()
-                    run_single_experiment(params)
-                    end = perf_counter()
-                    print("single experiment took", end - start)
-        #except Exception as e:
-        #    print(e)
+                        start = perf_counter()
+                        run_single_experiment(params)
+                        end = perf_counter()
+                        print("single experiment took", end - start)
 
 
 """ gets bitrate info from pcap file 
@@ -133,44 +132,46 @@ def aggregate_data():
 
     for quantizer in args.quantizer_list:
         for setting in settings:
-            # average the data over multiple people, and their multiple videos
-            combined_df = pd.DataFrame()
-            for person in args.people:
-                video_dir = os.path.join(args.root_dir, person, "test")
-                
-                for i, video_name in enumerate(os.listdir(video_dir)):
-                    if i not in range(vid_start, vid_end + 1):
-                        continue
+            for reference_update_freq in args.reference_update_freq_list:
+                # average the data over multiple people, and their multiple videos
+                combined_df = pd.DataFrame()
+                for person in args.people:
+                    video_dir = os.path.join(args.root_dir, person, "test")
+                    
+                    for i, video_name in enumerate(os.listdir(video_dir)):
+                        if i not in range(vid_start, vid_end + 1):
+                            continue
 
-                    video_file = os.path.join(video_dir, video_name)
-                    params = {}
-                    params['save_prefix'] = f'{args.save_prefix}/{setting}/{person}/' + \
-                                f'{os.path.basename(video_name)}/quantizer{quantizer}'
-                    params['runs'] = args.runs
-                    params['window'] = args.window
-                    params['duration'] = args.duration
-                    params['fps'] = 30
-                    try:
-                        start = perf_counter()
-                        df = gather_data_single_experiment(params)
-                        end = perf_counter()
-                        print("aggregating one piece of data", end - start)
-                        combined_df = pd.concat([df, combined_df], ignore_index=True)
-                    except Exception as e:
-                        print(e)
+                        video_file = os.path.join(video_dir, video_name)
+                        params = {}
+                        params['save_prefix'] = f'{args.save_prefix}/{setting}/{person}/' + \
+                        f'{os.path.basename(video_name)}/quantizer{quantizer}/reference_update_freq{reference_update_freq}'
+                        params['runs'] = args.runs
+                        params['window'] = args.window
+                        params['duration'] = args.duration
+                        params['fps'] = 30
+                        try:
+                            start = perf_counter()
+                            df = gather_data_single_experiment(params)
+                            end = perf_counter()
+                            print("aggregating one piece of data", end - start)
+                            combined_df = pd.concat([df, combined_df], ignore_index=True)
+                        except Exception as e:
+                            print(e)
 
-            if len(combined_df) > 0:
-                mean_df = pd.DataFrame(combined_df.mean(axis=0).to_dict(), index=[combined_df.index.values[-1]])
-                mean_df['ssim_db'] = - 20 * math.log10(1-mean_df['ssim'])
-                mean_df['quantizer'] = quantizer
-                mean_df['kp_model'] = setting
+                if len(combined_df) > 0:
+                    mean_df = pd.DataFrame(combined_df.mean(axis=0).to_dict(), index=[combined_df.index.values[-1]])
+                    mean_df['ssim_db'] = - 20 * math.log10(1-mean_df['ssim'])
+                    mean_df['quantizer'] = quantizer
+                    mean_df['kp_model'] = setting
+                    mean_df['reference_update_freq'] = reference_update_freq
 
-                print(mean_df)
-                if first:
-                    mean_df.to_csv(args.csv_name, header=True, index=False, mode="w")
-                    first = False
-                else:
-                    mean_df.to_csv(args.csv_name, header=False, index=False, mode="a+")
+                    print(mean_df)
+                    if first:
+                        mean_df.to_csv(args.csv_name, header=True, index=False, mode="w")
+                        first = False
+                    else:
+                        mean_df.to_csv(args.csv_name, header=False, index=False, mode="a+")
 
 
 if args.just_aggregate:
