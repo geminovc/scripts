@@ -84,7 +84,6 @@ def run_experiments():
     params['enable_prediction'] = True
     params['prediction_type'] = 'keypoints'
     params['checkpoint'] = 'None'
-    params['reference_update_freq'] = args.reference_update_freq
     params['disable_mahimahi'] = args.disable_mahimahi
     vid_start, vid_end = args.video_num_range
     assert(vid_end >= vid_start)
