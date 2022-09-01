@@ -12,3 +12,4 @@ There should be a directory DIR/person available.
 7. Run `bash cleanup_script.sh DIR/person person`
 8. Re-encode everything at 30fps by `bash reencode_at_30fps.sh DIR/person person`
 9. Go through the videos for strange stuff
+10. Run `find DIR/person -type f -name '*.DS_Store' -delete`
