@@ -9,9 +9,9 @@ import numpy as np
 from nets_utils import *
 import shutil
 from checkpoints import structure_based_checkpoint_dict
+from time import perf_counter
 
-
-parser = argparse.ArgumentParser(description='Compare different structures of the learned models.')
+parser = argparse.ArgumentParser(description='Compare different structures of learned keypoint-based models.')
 parser.add_argument('--uplink-trace', type=str,
                     help='uplink trace path for mahimahi', 
                     default="traces/12mbps_trace")
@@ -22,15 +22,15 @@ parser.add_argument('--duration', type=int,
                     help='duration of experiment (in seconds)', 
                     default=310)
 parser.add_argument('--window', type=float,
-                    help='duration to aggregate bitrate over (in seconds)', 
-                    default=1)
-parser.add_argument('--num-runs', type=int,
+                    help='duration to aggregate bitrate over (in miliseconds)',
+                    default=1000)
+parser.add_argument('--runs', type=int,
                     help='number of runs to loop through per experiment',
                     default=10)
 parser.add_argument('--root-dir', type=str,
                     help='name of default video directory', 
                     default="sundar_pichai.mp4")
-parser.add_argument('--person-list', type=str, nargs='+',
+parser.add_argument('--people', type=str, nargs='+',
                     help='list of people', default=['jen_psaki'])
 parser.add_argument('--save-prefix', type=str,
                     help='prefix to save logs and files in', 
@@ -43,59 +43,83 @@ parser.add_argument('--executable-dir', type=str,
                     required=True)
 parser.add_argument('--csv-name', type=str,
                     help='file to save final data in', 
-                    default="data/main_comparison")
+                    default="data/fom_baseline")
 parser.add_argument('--resolution', type=str,
                     help='video resolution',
                     default="512")
+parser.add_argument('--video-num-range', type=int, nargs=2,
+                    help='video start and end range', default=[0, 4])
+parser.add_argument('--setting-list', type=str, nargs='+',
+                    help='list of settings',
+                    default=['without_hr_skip_connections', 'fom_standard',
+                            'only_upsample_blocks', 'with_hr_skip_connections'])
+parser.add_argument('--quantizer-list', type=int, nargs='+',
+                    help='set of quantizers to compress video stream with. -1 means full range',
+                    default=[-1, 2, 16, 32, 45, 50, 55, 63])
+parser.add_argument("--reference-update-freq", type=int,
+                    help="the frequency that the reference frame is updated",
+                    default=0)
+parser.add_argument('--disable-mahimahi', action='store_true',
+                    help='If used, traces will not be appliled to the sender')
+parser.add_argument('--just-aggregate', action='store_true',
+                    help='only aggregate final stats')
+parser.add_argument('--just-run', action='store_true',
+                    help='only run experiments')
 args = parser.parse_args()
 
-""" runs video conference with different bits per jacobian
+""" runs video conference with different setting for keypoint-based models
     capturing tcpdumps to measure bitrates from
     WARNING: overwrites existing data
 """
-settings = [f"resolution{args.resolution}_without_hr_skip_connections", f"resolution{args.resolution}_fom_standard",
-            f"resolution{args.resolution}_only_upsample_blocks", f"resolution{args.resolution}_with_hr_skip_connections"]
-
+settings = [f"resolution{args.resolution}_{setting}" for setting in args.setting_list]
+print(settings)
 def run_experiments():
+    params = {}
+    params['uplink_trace'] = args.uplink_trace
+    params['downlink_trace'] = args.downlink_trace
+    params['executable_dir'] = args.executable_dir
+    params['duration'] = args.duration
+    params['runs'] = args.runs
+    params['enable_prediction'] = True
+    params['prediction_type'] = 'keypoints'
+    params['checkpoint'] = 'None'
+    params['reference_update_freq'] = args.reference_update_freq
+    params['disable_mahimahi'] = args.disable_mahimahi
+    vid_start, vid_end = args.video_num_range
+    assert(vid_end >= vid_start)
+
     for setting in settings:
         print(setting)
-        try:
-            params = {}
-            save_prefix = f'{args.save_prefix}_{setting}'
-            params['uplink_trace'] = args.uplink_trace
-            params['downlink_trace'] = args.downlink_trace
-            params['executable_dir'] = args.executable_dir 
-            params['duration'] = args.duration
-            params['enable_prediction'] = False if setting == "vpx" else True
-            params['runs'] = 1
-            params['checkpoint'] = 'None' if setting != "generic" else checkpoint_dict['generic']
-            params['reference_update_freq'] = 1000
-            nets_implementation_path = os.environ.get('PYTHONPATH', '/data4/pantea/aiortc/nets_implementation')
-            params['config_path'] = f'{args.configs_dir}/{setting}.yaml'
-            
-            for person in args.person_list:
-                video_dir = os.path.join(args.root_dir, person, "test")
-                params['checkpoint'] = structure_based_checkpoint_dict[setting][person]
-                num_videos = 0 
-                for video_name in os.listdir(video_dir):
-                    video_file = os.path.join(video_dir, video_name)
-                    params['save_dir'] = f'{save_prefix}/{person}/{os.path.basename(video_name)}'
-                    params['video_file'] = f'{params["save_dir"]}/{video_name}'
+        params['socket_path'] = f'kp_{setting}.sock'
+        params['config_path'] = f'{args.configs_dir}/{setting}.yaml'
+        #try:
+        for person in args.people:
+            params['checkpoint'] = structure_based_checkpoint_dict[setting][person]
+            video_dir = os.path.join(args.root_dir, person, "test")
+            for i, video_name in enumerate(os.listdir(video_dir)):
+                if i not in range(vid_start, vid_end + 1):
+                    continue
 
+                video_file = os.path.join(video_dir, video_name)
+                params['video_file'] = video_file
+                #ffmpeg_cmd = f'ffmpeg -hide_banner -loglevel error -y -stream_loop {args.num_runs} -i {video_file} ' + \
+                #        f'{params["video_file"]}'
+                #print(ffmpeg_cmd)
+                #os.system(ffmpeg_cmd)
+                for quantizer in args.quantizer_list:
+                    params['quantizer'] = quantizer
+                    params['save_dir'] = f'{args.save_prefix}/{setting}/{person}/' + \
+                            f'{os.path.basename(video_name)}/quantizer{quantizer}'
                     shutil.rmtree(params['save_dir'], ignore_errors=True)
                     os.makedirs(params['save_dir'])
+                    print(f'Run {video_name} for person {person} quantizer {quantizer}')
 
-                    ffmpeg_cmd = f'ffmpeg -hide_banner -loglevel error -y -stream_loop {args.num_runs} -i {video_file} ' + \
-                            f'{params["video_file"]}'
-                    print(ffmpeg_cmd)
-                    os.system(ffmpeg_cmd)
-
+                    start = perf_counter()
                     run_single_experiment(params)
-                    num_videos += 1
-                    if num_videos == 3:
-                        break
-        except Exception as e:
-            print(e)
+                    end = perf_counter()
+                    print("single experiment took", end - start)
+        #except Exception as e:
+        #    print(e)
 
 
 """ gets bitrate info from pcap file 
@@ -103,61 +127,55 @@ def run_experiments():
 """
 def aggregate_data():
     first = True
-    
-    for setting in settings:
-        combined_df = pd.DataFrame()
-        save_prefix = f'{args.save_prefix}_{setting}'
+    vid_start, vid_end = args.video_num_range
+    assert(vid_end >= vid_start)
 
-        for person in args.person_list:
-            video_dir = os.path.join(args.root_dir, person, "test")
-            
-            for video_name in os.listdir(video_dir):
-                print(f'Run {video_name} for setting {setting} for person {person}')
-                save_dir = f'{save_prefix}/{person}/{os.path.basename(video_name)}/run0'
-                dump_file = f'{save_dir}/sender.log'
-                saved_video_file = f'{save_dir}/received.mp4'
-
-                stats = log_parser.gather_trace_statistics(dump_file, args.window)
-                num_windows = len(stats['bitrates']['video'])
-                streams = list(stats['bitrates'].keys())
-                stats['bitrates']['time'] = np.arange(1, num_windows + 1)
-                window = stats['window']
+    for quantizer in args.quantizer_list:
+        for setting in settings:
+            # average the data over multiple people, and their multiple videos
+            combined_df = pd.DataFrame()
+            for person in args.people:
+                video_dir = os.path.join(args.root_dir, person, "test")
                 
-                df = pd.DataFrame.from_dict(stats['bitrates'])
-                for s in streams:
-                    df[s] = (df[s] / 1000.0 / window).round(2)
-                df['kbps'] = df.iloc[:, 0:3].sum(axis=1).round(2) 
-                df['video_name'] = video_name
-                
-                per_frame_metrics = np.load(f'{save_dir}/metrics.npy', allow_pickle='TRUE').item()
-                averages = get_average_metrics(list(per_frame_metrics.values()))
-                metrics = {'psnr': [], 'ssim': [], 'lpips': [], 'latency': []}
-                for i, k in enumerate(metrics.keys()):
-                        metrics[k].append(averages[i])
-                
-                for m in metrics.keys():
-                    while len(metrics[m]) < df.shape[0]:
-                        metrics[m].append(metrics[m][0])
-                    df[m] = metrics[m]
+                for i, video_name in enumerate(os.listdir(video_dir)):
+                    if i not in range(vid_start, vid_end + 1):
+                        continue
 
-                windowed_throughput = get_throughput_over_windows(save_dir, args.window)
-                averaged_throughput_accross_windows = [np.average(windowed_throughput)]
-                print("averaged_throughput_accross_windows", averaged_throughput_accross_windows)
-                while len(averaged_throughput_accross_windows) < df.shape[0]:
-                    averaged_throughput_accross_windows.append(averaged_throughput_accross_windows[0])
-                df['average_throughput'] = averaged_throughput_accross_windows
-                combined_df = pd.concat([df, combined_df], ignore_index=True)
+                    video_file = os.path.join(video_dir, video_name)
+                    params = {}
+                    params['save_dir'] = f'{args.save_prefix}/{setting}/{person}/' + \
+                                f'{os.path.basename(video_name)}/quantizer{quantizer}'
+                    params['runs'] = args.runs
+                    params['window'] = args.window
+                    params['duration'] = args.duration
+                    params['fps'] = 30
+                    try:
+                        start = perf_counter()
+                        df = gather_data_single_experiment(params)
+                        end = perf_counter()
+                        print("aggregating one piece of data", end - start)
+                        combined_df = pd.concat([df, combined_df], ignore_index=True)
+                    except Exception as e:
+                        print(e)
 
-                break
-        
-        mean_df = pd.DataFrame(combined_df.mean(axis=0).round(2).to_dict(), index=[df.index.values[-1]])
-        mean_df['setting'] = setting
-        if first:
-            mean_df.to_csv(args.csv_name, header=True, index=False, mode="w")
-            first = False
-        else:
-            mean_df.to_csv(args.csv_name, header=False, index=False, mode="a+")
+            if len(combined_df) > 0:
+                mean_df = pd.DataFrame(combined_df.mean(axis=0).to_dict(), index=[combined_df.index.values[-1]])
+                mean_df['ssim_db'] = - 20 * math.log10(1-mean_df['ssim'])
+                mean_df['quantizer'] = quantizer
+                mean_df['kp_model'] = setting
+
+                print(mean_df)
+                if first:
+                    mean_df.to_csv(args.csv_name, header=True, index=False, mode="w")
+                    first = False
+                else:
+                    mean_df.to_csv(args.csv_name, header=False, index=False, mode="a+")
 
 
-run_experiments()
-aggregate_data()
+if args.just_aggregate:
+    aggregate_data()
+elif args.just_run:
+    run_experiments()
+else:
+    run_experiments()
+    aggregate_data()
