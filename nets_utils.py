@@ -14,9 +14,11 @@ from skimage import img_as_float32
 from first_order_model.modules.model import Vgg19, VggFace16
 from first_order_model.logger import Logger
 from first_order_model.reconstruction import frame_to_tensor, get_video_duration
+from first_order_model.frames_dataset import get_num_frames
 import lpips
 import log_parser
 import pandas as pd
+import subprocess
 
 checkpoint_dict = {
         '512': {
@@ -422,6 +424,26 @@ def check_sender_ready(filename):
         time.sleep(5)
 
 
+""" check if the video has been fully received
+"""
+def check_receiving_finished(video_file, receiver_log, max_duration):
+    start_time = time.time()
+    video_num_frames = get_num_frames(video_file)
+
+    while True:
+        if time.time() - start_time > max_duration:
+            return
+
+        result = subprocess.check_output(f'grep -i "Frame displayed at receiver" {receiver_log} | tail -1 | cut -d" " -f 6 ' , shell=True)
+        try:
+            if int(result.decode("utf-8").strip()) == video_num_frames - 1:
+                return
+        except Exception as e:
+            print(e)
+            pass
+        time.sleep(10)
+
+
 """ run a single experiment inside a mahimahi shell, 
     capturing logs using parameters passed in
 """
@@ -552,7 +574,8 @@ def run_single_experiment(params):
 
         # wait for experiment and kill processes
         print("PIDS", recv_proc.pid, sender_proc.pid)
-        time.sleep(duration)
+        check_receiving_finished(video_file, f'{log_dir}/receiver.log', duration)
+        #time.sleep(duration)
         os.kill(recv_proc.pid, signal.SIGINT)
         time.sleep(5)
         
@@ -583,7 +606,7 @@ def gather_data_single_experiment(params):
         does not use the windowing and divides the total bits by
         the length of the received.mp4 video.
     """
-    use_video_length_for_bitrate = False
+    use_video_length_for_bitrate = True
     if 'use_video_length_for_bitrate' in params:
         use_video_length_for_bitrate = True
 
