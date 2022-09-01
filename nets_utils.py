@@ -375,7 +375,7 @@ def get_throughput_over_windows(save_dir, window):
     with open(f'{save_dir}/receiver.log') as receiver_log:
         for line in receiver_log:
             words = line.strip()
-            if "Prediction time for received keypoints" in words:
+            if "Prediction time for received" in words:
                 total_predicted_frames += 1
                 words_split = words.split()
                 end_of_prediction_time = float(words_split[10])
