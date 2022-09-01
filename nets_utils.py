@@ -13,7 +13,7 @@ import glob
 from skimage import img_as_float32
 from first_order_model.modules.model import Vgg19, VggFace16
 from first_order_model.logger import Logger
-from first_order_model.reconstruction import frame_to_tensor
+from first_order_model.reconstruction import frame_to_tensor, get_video_duration
 import lpips
 import log_parser
 import pandas as pd
@@ -579,12 +579,21 @@ def gather_data_single_experiment(params):
     duration = params['duration']
     window = params['window']
     fps = params['fps'] if 'fps' in params else 30
+    """ if use_video_length_for_bitrate is True, the experiment
+        does not use the windowing and divides the total bits by
+        the length of the received.mp4 video.
+    """
+    use_video_length_for_bitrate = False
+    if 'use_video_length_for_bitrate' in params:
+        use_video_length_for_bitrate = True
 
+    combined_df = pd.DataFrame()
     for run_num in range(total_runs):
         save_dir = f'{save_prefix}/run{run_num}'
         dump_file = f'{save_dir}/sender.log'
         saved_video_file = f'{save_dir}/received.mp4'
-        
+        saved_video_duration = get_video_duration(saved_video_file)
+
         stats = log_parser.gather_trace_statistics(dump_file, window / 1000)
         num_windows = len(stats['bits_sent']['video'])
         streams = list(stats['bits_sent'].keys())
@@ -594,12 +603,19 @@ def gather_data_single_experiment(params):
 
         df = pd.DataFrame.from_dict(stats['bits_sent'])
         """" convert the bits_sent to bitrate
-            by dividing by window size
+             if use_video_length_for_bitrate: divide total bits by received video length
+             else: divide total bits in each window  by window size
         """
         for s in streams:
-            df[s] = (df[s] / float(window) / 1000)
+            if use_video_length_for_bitrate:
+                df[s] = (df[s].sum(axis=0) / saved_video_duration / 1000)
+            else:
+                df[s] = (df[s] / float(window) / 1000)
 
-        df['kbps'] = df.iloc[:, 0:4].sum(axis=1)
+        if use_video_length_for_bitrate:
+            df['kbps'] = (df['video'] + df['lr_video'] + df['audio'] + df['keypoints'])
+        else:
+            df['kbps'] = df.iloc[:, 0:4].sum(axis=1)
 
         if 'resolution' in params:
             resolution = params['resolution']
@@ -636,9 +652,10 @@ def gather_data_single_experiment(params):
                     metrics[m].append(metrics[m][0])
                 df[m] = metrics[m]
 
+        combined_df = pd.concat([df, combined_df], ignore_index=True)
         if os.path.isfile(f'{save_dir}/mahimahi.log'):
             sh.run(f'mm-graph {save_dir}/mahimahi.log {duration} --no-port \
                     --xrange \"0:{duration}\" --yrange \"0:3\" --y2range \"0:2000\" \
                     > {save_dir}/mahimahi.eps 2> {save_dir}/mmgraph.log', shell=True)
 
-    return df
+    return pd.DataFrame(combined_df.mean(axis=0).to_dict(), index=[combined_df.index.values[-1]])
