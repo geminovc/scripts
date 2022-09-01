@@ -9,13 +9,16 @@ parser.add_argument('--data-paths', type=str, nargs='+',
 parser.add_argument('--settings', type=str, nargs='+',
                     help='name of the experiment to be displayed',
                     default=['vpx', 'bicubic','SwinIR-LTE', 'Ours', 'FOM'])
+parser.add_argument('--columns-names', type=str, nargs='+',
+                    help='name of the columns to be gathered',
+                    default=['psnr', 'ssim', 'ssim_db', 'lpips', 'kbps', 'latency', 'quantizer', 'setting'])
 parser.add_argument('--csv-name', type=str,
                     help='file to save final data in',
                     default="data/aggregate_1024_comparison_data")
 
 args = parser.parse_args()
 
-columns_names = ['psnr', 'ssim', 'ssim_db', 'lpips', 'kbps', 'latency', 'quantizer', 'setting']
+columns_names = args.columns_names
 combined_df = pd.DataFrame(columns=columns_names)
 for setting, data_path in zip(args.settings, args.data_paths):
     df = pd.read_csv(data_path)
