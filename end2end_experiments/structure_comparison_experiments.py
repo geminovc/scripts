@@ -10,6 +10,7 @@ from nets_utils import *
 import shutil
 from checkpoints import structure_based_checkpoint_dict
 from time import perf_counter
+import math
 
 parser = argparse.ArgumentParser(description='Compare different structures of learned keypoint-based models.')
 parser.add_argument('--uplink-trace', type=str,
@@ -26,7 +27,7 @@ parser.add_argument('--window', type=float,
                     default=1000)
 parser.add_argument('--runs', type=int,
                     help='number of runs to loop through per experiment',
-                    default=10)
+                    default=1)
 parser.add_argument('--root-dir', type=str,
                     help='name of default video directory', 
                     default="sundar_pichai.mp4")
@@ -102,7 +103,7 @@ def run_experiments():
 
                 video_file = os.path.join(video_dir, video_name)
                 params['video_file'] = video_file
-                #ffmpeg_cmd = f'ffmpeg -hide_banner -loglevel error -y -stream_loop {args.num_runs} -i {video_file} ' + \
+                #ffmpeg_cmd = f'ffmpeg -hide_banner -loglevel error -y -stream_loop {args.runs} -i {video_file} ' + \
                 #        f'{params["video_file"]}'
                 #print(ffmpeg_cmd)
                 #os.system(ffmpeg_cmd)
@@ -143,7 +144,7 @@ def aggregate_data():
 
                     video_file = os.path.join(video_dir, video_name)
                     params = {}
-                    params['save_dir'] = f'{args.save_prefix}/{setting}/{person}/' + \
+                    params['save_prefix'] = f'{args.save_prefix}/{setting}/{person}/' + \
                                 f'{os.path.basename(video_name)}/quantizer{quantizer}'
                     params['runs'] = args.runs
                     params['window'] = args.window
