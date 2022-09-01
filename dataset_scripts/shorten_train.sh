@@ -11,7 +11,7 @@ do
 
     if [ ${val} -gt 300 ]
     then
-        for start in {0..120..10}
+        for ((start=0; start<=120; start+=10 ))
         do
             ((end=start+10))
             ffmpeg -ss $start -to $end  -i $file -c copy ${DIR}/${speaker}/${speaker}/train/id${speaker}_${end}_${fbname}.mp4
