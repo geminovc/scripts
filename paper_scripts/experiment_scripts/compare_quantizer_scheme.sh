@@ -10,7 +10,7 @@ python vpx_baseline_vary_resolution.py \
 --save-prefix /data3/pantea/quantization_scheme_full_range \
 --executable-dir /data4/pantea/aiortc/examples/videostream-cli \
 --csv data/quantization_scheme_full_range \
---quantizer-list -1 --default-bitrate-list 5000 50000 100000 200000 500000 800000 1000000 7000000 \
+--quantizer-list -1 --default-bitrate-list 5000 50000 100000 200000 500000 800000 1000000 3000000 7000000 \
 --video-num-range 0 0 --disable-mahimah  \
 
 

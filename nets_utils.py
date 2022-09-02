@@ -429,8 +429,12 @@ def check_sender_ready(filename):
 def check_receiving_finished(video_file, receiver_log, max_duration):
     start_time = time.time()
     video_num_frames = get_num_frames(video_file)
+    received_at_least_one = False
 
     while True:
+        if time.time() - start_time > 120 and not received_at_least_one:
+            print("Killing the experiment: nothing has been received after 2 minutes")
+            return
         if time.time() - start_time > max_duration:
             return
 
@@ -438,6 +442,7 @@ def check_receiving_finished(video_file, receiver_log, max_duration):
         try:
             if int(result.decode("utf-8").strip()) == video_num_frames - 1:
                 return
+            received_at_least_one = True
         except Exception as e:
             print(e)
             pass
