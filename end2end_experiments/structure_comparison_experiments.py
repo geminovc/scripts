@@ -52,7 +52,7 @@ parser.add_argument('--video-num-range', type=int, nargs=2,
                     help='video start and end range', default=[0, 4])
 parser.add_argument('--setting-list', type=str, nargs='+',
                     help='list of settings',
-                    default=['without_hr_skip_connections', 'fom_standard',
+                    default=['without_hr_skip_connections', 'fom_standard', 'fom_original_paper',
                             'only_upsample_blocks', 'with_hr_skip_connections'])
 parser.add_argument('--quantizer-list', type=int, nargs='+',
                     help='set of quantizers to compress video stream with. -1 means full range',
@@ -93,7 +93,11 @@ def run_experiments():
         params['socket_path'] = f'kp_{setting}.sock'
         params['config_path'] = f'{args.configs_dir}/{setting}.yaml'
         for person in args.people:
-            params['checkpoint'] = structure_based_checkpoint_dict[setting][person]
+            if setting == f'resolution{args.resolution}_fom_original_paper':
+                params['checkpoint'] = '/video-conf/scratch/pantea_experiments_chunky/vox-cpk.pth.tar'
+            else:
+                params['checkpoint'] = structure_based_checkpoint_dict[setting][person]
+
             video_dir = os.path.join(args.root_dir, person, "test")
             for i, video_name in enumerate(os.listdir(video_dir)):
                 if i not in range(vid_start, vid_end + 1):

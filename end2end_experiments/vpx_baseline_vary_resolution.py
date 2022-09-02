@@ -149,7 +149,7 @@ def run_experiments():
 
                                 params['save_dir'] = f'{args.save_prefix}/resolution{resolution}/{person}/' + \
                                         f'{os.path.basename(video_name)}/quantizer{quantizer}/' + \
-                                        f'vpx_min{vpx_min_bitrate}_default{vpx_default_bitrate}_max{vpx_max_bitrate}bitarte'
+                                        f'vpx_min{vpx_min_bitrate}_default{vpx_default_bitrate}_max{vpx_max_bitrate}bitrate'
 
                                 start = perf_counter()
                                 shutil.rmtree(params['save_dir'], ignore_errors=True)
@@ -164,7 +164,7 @@ def run_experiments():
 
                                 start = perf_counter()
                                 print(f'Run {video_name} for person {person} resolution {resolution} quantizer {quantizer}')
-                                print(f'vpx bitarets: min {vpx_min_bitrate} default {vpx_default_bitrate} max {vpx_max_bitrate}')
+                                print(f'vpx bitrates: min {vpx_min_bitrate} default {vpx_default_bitrate} max {vpx_max_bitrate}')
                                 print(params['save_dir'])
                                 run_single_experiment(params)
                                 end = perf_counter()
@@ -202,10 +202,10 @@ def aggregate_data():
                                     continue
 
                                 print(f'Run {video_name} for person {person} resolution {resolution} quantizer {quantizer}')
-                                print(f'vpx bitarets: min {vpx_min_bitrate} default {vpx_default_bitrate} max {vpx_max_bitrate}')
+                                print(f'vpx bitrates: min {vpx_min_bitrate} default {vpx_default_bitrate} max {vpx_max_bitrate}')
                                 save_prefix =f'{args.save_prefix}/resolution{resolution}/{person}/' + \
                                     f'{os.path.basename(video_name)}/quantizer{quantizer}/' + \
-                                    f'vpx_min{vpx_min_bitrate}_default{vpx_default_bitrate}_max{vpx_max_bitrate}bitarte'
+                                    f'vpx_min{vpx_min_bitrate}_default{vpx_default_bitrate}_max{vpx_max_bitrate}bitrate'
                                 params = {}
                                 params['save_prefix'] = save_prefix
                                 params['runs'] = args.runs

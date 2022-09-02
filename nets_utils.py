@@ -444,6 +444,18 @@ def check_receiving_finished(video_file, receiver_log, max_duration):
         time.sleep(10)
 
 
+""" check the last frame_num in sent/recv times files
+"""
+def get_frame_num_in_endpoint(endpoint_times):
+    result = subprocess.check_output(f'tail -n 1 {endpoint_times} | cut -d" " -f 2 ' , shell=True)
+    try:
+        frame_num = int(result.decode("utf-8").strip())
+        return frame_num
+    except Exception as e:
+        print(e)
+        return None
+
+
 """ run a single experiment inside a mahimahi shell, 
     capturing logs using parameters passed in
 """
@@ -602,11 +614,12 @@ def gather_data_single_experiment(params):
     duration = params['duration']
     window = params['window']
     fps = params['fps'] if 'fps' in params else 30
+
     """ if use_video_length_for_bitrate is True, the experiment
         does not use the windowing and divides the total bits by
         the length of the received.mp4 video.
     """
-    use_video_length_for_bitrate = True
+    use_video_length_for_bitrate = False
     if 'use_video_length_for_bitrate' in params:
         use_video_length_for_bitrate = True
 
@@ -616,6 +629,13 @@ def gather_data_single_experiment(params):
         dump_file = f'{save_dir}/sender.log'
         saved_video_file = f'{save_dir}/received.mp4'
         saved_video_duration = get_video_duration(saved_video_file)
+        send_frame_num = get_frame_num_in_endpoint(f'{save_dir}/send_times.txt')
+        recv_frame_num = get_frame_num_in_endpoint(f'{save_dir}/recv_times.txt')
+        if recv_frame_num is not None and send_frame_num :
+            if recv_frame_num >= send_frame_num - 10:
+                use_video_length_for_bitrate = True
+            else:
+                use_video_length_for_bitrate = False
 
         stats = log_parser.gather_trace_statistics(dump_file, window / 1000)
         num_windows = len(stats['bits_sent']['video'])
