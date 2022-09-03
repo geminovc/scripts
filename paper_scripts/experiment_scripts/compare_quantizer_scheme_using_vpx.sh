@@ -9,9 +9,9 @@ python vpx_baseline_vary_resolution.py \
 --people needle_drop \
 --save-prefix /data3/pantea/quantization_scheme_full_range \
 --executable-dir /data4/pantea/aiortc/examples/videostream-cli \
---csv data/quantization_scheme_full_range \
+--csv data/needle_drop_quantization_scheme_full_range_video_dur \
 --quantizer-list -1 --default-bitrate-list 5000 50000 100000 200000 500000 800000 1000000 3000000 7000000 \
---video-num-range 0 0 --disable-mahimah  \
+--video-num-range 0 0 --disable-mahimah  --just-aggregate \
 
 
 python vpx_baseline_vary_resolution.py \
@@ -21,9 +21,9 @@ python vpx_baseline_vary_resolution.py \
 --people needle_drop \
 --save-prefix /data3/pantea/quantization_scheme_fixed \
 --executable-dir /data4/pantea/aiortc/examples/videostream-cli \
---csv data/quantization_scheme_fixed \
---quantizer-list 63 55 50 48 32 16 8 --default-bitrate-list 100000 500000 \
---video-num-range 0 0 --disable-mahimah \
+--csv data/needle_drop_quantization_scheme_fixed_range_video_dur \
+--quantizer-list 63 55 50 48 32 16 8 2 --default-bitrate-list 100000 500000 \
+--video-num-range 0 0 --disable-mahimah --just-aggregate \
 
 # plot data
 #cd ../plot_scripts

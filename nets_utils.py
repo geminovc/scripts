@@ -624,7 +624,7 @@ def gather_data_single_experiment(params):
         does not use the windowing and divides the total bits by
         the length of the received.mp4 video.
     """
-    use_video_length_for_bitrate = False
+    use_video_length_for_bitrate = True
     if 'use_video_length_for_bitrate' in params:
         use_video_length_for_bitrate = True
 
@@ -634,6 +634,7 @@ def gather_data_single_experiment(params):
         dump_file = f'{save_dir}/sender.log'
         saved_video_file = f'{save_dir}/received.mp4'
         saved_video_duration = get_video_duration(saved_video_file)
+        '''
         send_frame_num = get_frame_num_in_endpoint(f'{save_dir}/send_times.txt')
         recv_frame_num = get_frame_num_in_endpoint(f'{save_dir}/recv_times.txt')
         if recv_frame_num is not None and send_frame_num :
@@ -641,7 +642,7 @@ def gather_data_single_experiment(params):
                 use_video_length_for_bitrate = True
             else:
                 use_video_length_for_bitrate = False
-
+        '''
         stats = log_parser.gather_trace_statistics(dump_file, window / 1000)
         num_windows = len(stats['bits_sent']['video'])
         streams = list(stats['bits_sent'].keys())
