@@ -90,8 +90,7 @@ def run_experiments():
         # write a new config from the template CONFIG_PATH for vpx based on resolution
         width, height = resolution.split("x")
         new_config['dataset_params']['frame_shape'] = [int(width), int(width), 3]
-        shutil.rmtree(f'{args.save_prefix}/resolution{resolution}', ignore_errors=True)
-        os.makedirs(f'{args.save_prefix}/resolution{resolution}')
+        os.makedirs(f'{args.save_prefix}/resolution{resolution}', exist_ok=True)
         new_config_path = f'{args.save_prefix}/resolution{resolution}/resolution{resolution}_vpx.yaml'
         with open(new_config_path, 'w') as file:
             doc = yaml.dump(new_config, file)
@@ -110,8 +109,7 @@ def run_experiments():
                         f'{os.path.basename(video_name)}'
                 params['video_file'] = f'{params["save_dir"]}/{video_name}'
 
-                shutil.rmtree(params['save_dir'], ignore_errors=True)
-                os.makedirs(params['save_dir'])
+                os.makedirs(params['save_dir'], exist_ok=True)
 
                 start = perf_counter()
                 width, height = resolution.split("x")

@@ -482,6 +482,7 @@ def run_single_experiment(params):
     disable_mahimahi = params.get('disable_mahimahi', True)
     qsize_pkts = params.get('qsize_pkts', 160)
     socket_path = params.get('socket_path', 'test.sock')
+    socket_path = f'{time.time()}_' + socket_path
     user = getpass.getuser()
 
     for run_num in range(total_runs):

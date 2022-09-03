@@ -105,8 +105,7 @@ def run_experiments():
             new_config['model_params']['generator_params']['generator_type'] = 'bicubic'
             new_config['model_params']['generator_params']['lr_size'] = int(width)
 
-            shutil.rmtree(f'{args.save_prefix}/lrresolution{lr_resolution}', ignore_errors=True)
-            os.makedirs(f'{args.save_prefix}/lrresolution{lr_resolution}')
+            os.makedirs(f'{args.save_prefix}/lrresolution{lr_resolution}', exist_ok=True)
             new_config_path = f'{args.save_prefix}/lrresolution{lr_resolution}/config_{lr_resolution}.yaml'
             with open(new_config_path, 'w') as file:
                 doc = yaml.dump(new_config, file)
