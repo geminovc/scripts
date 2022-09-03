@@ -12,7 +12,7 @@ do
 done
 
 DIR="/video-conf/scratch/pantea/fom_personalized_1024"
-for speaker in "xiran" "needle_drop" "fancy_fueko" "kayleigh"
+for speaker in "xiran" "needle_drop" "fancy_fueko" "kayleigh" "adam_neely"
 do
     for phase in train test
     do

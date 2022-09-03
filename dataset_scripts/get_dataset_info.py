@@ -105,17 +105,14 @@ if __name__ == '__main__':
 
     # write to csv
     with open(f'{save_dir}/{save_name}_stats.csv', 'w') as f:
-        f.write("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n"%('num_videos', 'width', 'height','min_num_frames',
+        f.write("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n"%('num_videos', 'total_duration', 'width', 'height','min_num_frames',
         'avg_num_frames','max_num_frames', 'min_frame_rate','avg_frame_rate','max_frame_rate',
         'min_bit_rate','avg_bit_rate', 'max_bit_rate', 'min_duration','avg_duration', 'max_duration'))
 
-        f.write("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n" % (count, np.average(widths), np.average(heights), min(num_frames), 
+        f.write("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n" % (count, count * np.average(durations), np.average(widths), np.average(heights), min(num_frames),
                     np.average(num_frames), max(num_frames), min(frame_rates), np.average(frame_rates), max(frame_rates),
                     min(bit_rates), np.average(bit_rates), max(bit_rates), min(durations), np.average(durations), max(durations)))
 
 
     np.save(f'{save_dir}/{save_name}_durations.npy', durations)
     np.save(f'{save_dir}/{save_name}_bit_rates.npy', bit_rates)
-
-
-    

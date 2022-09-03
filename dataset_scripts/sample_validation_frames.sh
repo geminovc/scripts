@@ -1,7 +1,7 @@
 #!/bin/sh
 path="/video-conf/scratch/pantea/fom_personalized_1024"
 
-for speaker in "xiran" "fancy_fueko" "needle_drop" "kayleigh";
+for speaker in "adam_neely" "xiran" "fancy_fueko" "needle_drop" "kayleigh";
 do
     x=0
     for i in 1 2 3 4;
