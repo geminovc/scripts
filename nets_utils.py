@@ -20,6 +20,7 @@ import log_parser
 import pandas as pd
 import subprocess
 
+SKIP_LR_METRICS = True
 checkpoint_dict = {
         '512': {
         'generic': '/video-conf/scratch/pantea_experiments_tardy/generic_512_kp_at_256_with_hr_skip_connections 29_03_22_17.17.57/00000059-checkpoint.pth.tar',
@@ -267,45 +268,46 @@ def dump_per_frame_video_quality_latency(save_dir):
                 os.remove(recv_frame_file)
             except:
                 pass
-     
-        #compute metrics for low-resolution sent and received frames
-        if not os.path.exists(recv_lr_frame_file) or not os.path.exists(sent_lr_frame_file):
-            print("Skipping low-res frame", frame_num)
-            if os.path.exists(recv_lr_frame_file):
-                os.remove(recv_lr_frame_file)
-            continue
 
-        try:
-            sent_lr_frame = np.load(sent_lr_frame_file)
-        except:
-            try:
-                sent_lr_frame = np.load(sent_lr_frame_file, allow_pickle=True)
-            except:
-                continue
-        try:
-            recvd_lr_frame = np.load(recv_lr_frame_file)
-        except:
-            try:
-                recvd_lr_frame = np.load(recv_lr_frame_file, allow_pickle=True)
-            except:
+        if not SKIP_LR_METRICS:
+            #compute metrics for low-resolution sent and received frames
+            if not os.path.exists(recv_lr_frame_file) or not os.path.exists(sent_lr_frame_file):
+                print("Skipping low-res frame", frame_num)
+                if os.path.exists(recv_lr_frame_file):
+                    os.remove(recv_lr_frame_file)
                 continue
 
-        if frame_num % 100 == 0:
-            np.save(f'{save_dir}/lr_metrics.npy', lr_metrics)
-
-        if frame_num % 500 == 0:
-            print(f'dumped metrics for {frame_num} low-res frames')
-
-        lr_qualities = get_quality(recvd_lr_frame, sent_lr_frame)
-        lr_frame_metrics  = lr_qualities.copy()
-        lr_metrics[frame_num] = lr_frame_metrics
-
-        if frame_num not in special_frames_list:
             try:
-                os.remove(sent_lr_frame_file)
-                os.remove(recv_lr_frame_file)
+                sent_lr_frame = np.load(sent_lr_frame_file)
             except:
-                pass
+                try:
+                    sent_lr_frame = np.load(sent_lr_frame_file, allow_pickle=True)
+                except:
+                    continue
+            try:
+                recvd_lr_frame = np.load(recv_lr_frame_file)
+            except:
+                try:
+                    recvd_lr_frame = np.load(recv_lr_frame_file, allow_pickle=True)
+                except:
+                    continue
+
+            if frame_num % 100 == 0:
+                np.save(f'{save_dir}/lr_metrics.npy', lr_metrics)
+
+            if frame_num % 500 == 0:
+                print(f'dumped metrics for {frame_num} low-res frames')
+
+            lr_qualities = get_quality(recvd_lr_frame, sent_lr_frame)
+            lr_frame_metrics  = lr_qualities.copy()
+            lr_metrics[frame_num] = lr_frame_metrics
+
+            if frame_num not in special_frames_list:
+                try:
+                    os.remove(sent_lr_frame_file)
+                    os.remove(recv_lr_frame_file)
+                except:
+                    pass
 
     recv_times_file.close()
     
@@ -595,17 +597,16 @@ def run_single_experiment(params):
         if lr_enable_gcc:
             receiver_cmd += ' --lr-enable-gcc'
 
-        receiver_cmd += ' --verbose' 
+        receiver_cmd += ' --verbose'
         receiver_args = shlex.split(receiver_cmd)
         recv_proc = sh.Popen(receiver_args, stderr=recv_output, env=base_env) 
 
         # wait for experiment and kill processes
         print("PIDS", recv_proc.pid, sender_proc.pid)
         check_receiving_finished(video_file, f'{log_dir}/receiver.log', duration)
-        #time.sleep(duration)
         os.kill(recv_proc.pid, signal.SIGINT)
         time.sleep(5)
-        
+
         os.kill(sender_proc.pid, signal.SIGTERM)
         
         time.sleep(5)
@@ -675,7 +676,7 @@ def gather_data_single_experiment(params):
             df['kbps'] = (df['video'] + df['lr_video'] + df['audio'] + df['keypoints'])
         else:
             df['kbps'] = df.iloc[:, 0:4].sum(axis=1)
-        print(df['kbps'])
+
         if 'resolution' in params:
             resolution = params['resolution']
             width, height = resolution.split("x")
