@@ -10,6 +10,8 @@ quantizer=$8
 socket_path=$9
 lr_quantizer=${10}
 prediction_type=${11}
+lr_target_bitrate=${12}
+lr_enable_gcc=${13}
 
 args1="offer --play-from ${video_file} --signaling-path ${socket_path}"
 args2=" --signaling unix-socket --reference-update-freq ${reference_frame_update_freq}"
@@ -19,6 +21,11 @@ if [[ "${enable_prediction}" == "True" ]]; then
     args2="${args2} --enable-prediction"
     args2="${args2} --prediction-type ${prediction_type}"
     args2="${args2} --lr-quantizer ${lr_quantizer}"
+    args2="${args2} --lr-target-bitrate ${lr_target_bitrate}"
+
+    if [[ "${lr_enable_gcc}" == "True" ]]; then
+    	args2="${args2} --lr-enable-gcc"
+    fi
 fi
 
 python3 ${exec_dir}/cli.py ${args1}${args2}${args3} 2>${sender_log_file}

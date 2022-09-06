@@ -479,6 +479,8 @@ def run_single_experiment(params):
     prediction_type = params.get('prediction_type', 'keypoints')
     quantizer = params.get('quantizer', 32)
     lr_quantizer = params.get('lr_quantizer', 32)
+    lr_target_bitrate = params.get('lr_target_bitrate', 100000)
+    lr_enable_gcc = params.get('lr_enable_gcc', False)
     disable_mahimahi = params.get('disable_mahimahi', True)
     qsize_pkts = params.get('qsize_pkts', 160)
     socket_path = params.get('socket_path', 'test.sock')
@@ -529,7 +531,7 @@ def run_single_experiment(params):
                             ./offer.sh {video_file} {fps} {log_dir}/sender.log \
                             {log_dir} {exec_dir} {enable_prediction} {reference_update_freq} \
                             {quantizer} {socket_path} \
-                            {lr_quantizer} {prediction_type}'
+                            {lr_quantizer} {prediction_type} {lr_target_bitrate} {lr_enable_gcc}'
         else:
             sender_cmd =  f'python {exec_dir}/cli.py offer \
                              --play-from {video_file} \
@@ -538,11 +540,14 @@ def run_single_experiment(params):
                              --fps {fps} \
                              --quantizer {quantizer} \
                              --lr-quantizer {lr_quantizer} \
+                             --lr-target-bitrate {lr_target_bitrate} \
                              --reference-update-freq {reference_update_freq} \
                              --save-dir {log_dir}'
             if enable_prediction:
                 sender_cmd += ' --enable-prediction'
                 sender_cmd += f' --prediction-type {prediction_type}'
+            if lr_enable_gcc:
+                sender_cmd += f' --lr-enable-gcc'
 
             sender_cmd += ' --verbose' 
 
@@ -580,11 +585,15 @@ def run_single_experiment(params):
                         --fps {fps} \
                         --quantizer {quantizer} \
                         --lr-quantizer {lr_quantizer} \
+                        --lr-target-bitrate {--lr_target_bitrate} \
                         --reference-update-freq {reference_update_freq} \
                         --save-dir {log_dir}'
         if enable_prediction:
             receiver_cmd += ' --enable-prediction'
             receiver_cmd += f' --prediction-type {prediction_type}'
+
+        if lr_enable_gcc:
+            receiver_cmd += ' --lr-enable-gcc'
 
         receiver_cmd += ' --verbose' 
         receiver_args = shlex.split(receiver_cmd)
@@ -666,7 +675,7 @@ def gather_data_single_experiment(params):
             df['kbps'] = (df['video'] + df['lr_video'] + df['audio'] + df['keypoints'])
         else:
             df['kbps'] = df.iloc[:, 0:4].sum(axis=1)
-
+        print(df['kbps'])
         if 'resolution' in params:
             resolution = params['resolution']
             width, height = resolution.split("x")
