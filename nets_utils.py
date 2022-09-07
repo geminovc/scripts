@@ -66,32 +66,44 @@ def get_quality(prediction, original):
 def get_average_metrics(metrics_dict):
     psnrs = [m['psnr'] for m in metrics_dict]
     psnr = np.average(psnrs)
+    psnr_min = np.min(psnrs)
+    psnr_max = np.max(psnrs)
 
     ssims = [m['ssim'] for m in metrics_dict]
     ssim = np.average(ssims)
+    ssim_min = np.min(ssims)
+    ssim_max = np.max(ssims)
 
     lpips = [m['lpips'] for m in metrics_dict]
     lpip = np.average(lpips)
+    lpip_min = np.min(lpips)
+    lpip_max = np.max(lpips)
 
     if 'orig_lpips' in metrics_dict[0]:
         orig_lpips = [m['orig_lpips'] for m in metrics_dict]
         orig_lpip = np.average(orig_lpips)
+        orig_lpip_min = np.min(orig_lpips)
+        orig_lpip_max = np.max(orig_lpips)
     else:
-        orig_lpip = 0
+        orig_lpip, orig_lpip_min, orig_lpip_max  = 0, 0, 0
 
     if 'face_lpips' in metrics_dict[0]:
         face_lpips = [m['face_lpips'] for m in metrics_dict]
         face_lpip = np.average(face_lpips)
+        face_lpip_min = np.min(face_lpips)
+        face_lpip_max = np.max(face_lpips)
     else:
-        face_lpip = 0
+        face_lpip, face_lpip_min, face_lpip_max = 0, 0, 0
 
     if 'latency' in metrics_dict[0]:
         latencies = [m['latency'] for m in metrics_dict]
         latency = np.average(latencies)
+        latency_min = np.min(latencies)
+        latency_max = np.max(latencies)
     else:
-        latency = 0
+        latency, latency_min, latency_max = 0, 0, 0
 
-    return psnr, ssim, lpip, latency, orig_lpip, face_lpip
+    return psnr_min, psnr, psnr_min, ssim_min, ssim, ssim_max, lpip_min, lpip, lpip_max, latency_min, latency, latency_max, orig_lpip_min, orig_lpip, orig_lpip_max, face_lpip_min, face_lpip, face_lpip_max
 
 
 """ get the fps of a video by running ffprobe
@@ -688,7 +700,11 @@ def gather_data_single_experiment(params):
             print("PROBLEM!!!!")
             continue
         averages = get_average_metrics(list(per_frame_metrics.values()))
-        metrics = {'psnr': [], 'ssim': [], 'lpips': [], 'latency': [], 'orig_lpips': [], 'face_lpips': []}
+        metrics = {'psnr_min': [], 'psnr': [], 'psnr_max': [], 'ssim_min': [], 'ssim': [], 'ssim_max': [],
+                'lpips_min': [], 'lpips': [], 'lpips_max': [], 'latency_min': [], 'latency': [], 'latency_max': [],
+                'orig_lpips_min': [], 'orig_lpips': [], 'orig_lpips_max': [], 'face_lpips_min': [], 'face_lpips': [],
+                'face_lpips_max': []}
+
         for i, k in enumerate(metrics.keys()):
                 metrics[k].append(averages[i])
 
@@ -703,7 +719,11 @@ def gather_data_single_experiment(params):
                 print("PROBLEM!!!!")
                 continue
             averages = get_average_metrics(list(per_lr_frame_metrics.values()))
-            metrics = {'lr_psnr': [], 'lr_ssim': [], 'lr_lpips': [], 'lr_orig_lpips': [], 'lr_face_lpips': []}
+            metrics = {'lr_psnr_min': [], 'lr_psnr': [], 'lr_psnr_max': [], 'lr_ssim_min': [], 'lr_ssim': [],
+                    'lr_ssim_max': [], 'lr_lpips_min': [], 'lr_lpips': [], 'lr_lpips_max': [],  
+                    'lr_orig_lpips_min': [], 'lr_orig_lpips': [], 'lr_orig_lpips_max': [],
+                    'lr_face_lpips_min': [], 'lr_face_lpips': [], 'lr_face_lpips_max': []}
+
             for i, k in enumerate(metrics.keys()):
                     metrics[k].append(averages[i])
 

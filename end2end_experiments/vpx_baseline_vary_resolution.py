@@ -226,6 +226,10 @@ def aggregate_data():
                         if len(combined_df) > 0:
                             mean_df = pd.DataFrame(combined_df.mean(axis=0).to_dict(),
                                                 index=[combined_df.index.values[-1]])
+                            for metric in ['psnr', 'ssim', 'lpips', 'latency', 'orig_lpips', 'face_lpips']:
+                                mean_df[f'{metric}_min'] = combined_df[f'{metric}_min'].min()
+                                mean_df[f'{metric}_max'] = combined_df[f'{metric}_max'].max()
+
                             mean_df['ssim_db'] = - 20 * math.log10(1-mean_df['ssim'])
 
                             mean_df['resolution'] = resolution
