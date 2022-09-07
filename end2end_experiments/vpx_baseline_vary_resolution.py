@@ -11,7 +11,10 @@ import shutil
 import math
 from time import perf_counter
 import yaml
-
+"""
+This experiment does not use the vpx bitrate transformation,
+it directly sets the DEFAULT_BITRATE, MIN_BITRATE, MAX_BITRATE in aiortc.vpx
+"""
 parser = argparse.ArgumentParser(description='VPX Setting Variations (resolution, quantization, and bitrate).')
 parser.add_argument('--resolutions', type=str, nargs='+',
                     help='set of resolutions to try',
@@ -19,7 +22,7 @@ parser.add_argument('--resolutions', type=str, nargs='+',
 parser.add_argument('--quantizer-list', type=int, nargs='+',
                     help='set of quantizers to quantize at. -1 means full range',
                     default=[-1, 2, 16, 32, 45, 50, 55, 63])
-parser.add_argument('--default-bitrate-list', type=int, nargs='+',
+parser.add_argument('--vpx-default-bitrate-list', type=int, nargs='+',
                     help='list of default vpx bitrate levels to run on (assumes bps)',
                     default=[100000, 200000, 500000, 1000000])
 parser.add_argument('--uplink-trace', type=str,
@@ -134,7 +137,7 @@ def run_experiments():
                     print("ffmpeg command took", end - start)
 
                 for quantizer in args.quantizer_list:
-                    for vpx_default_bitrate in args.default_bitrate_list:
+                    for vpx_default_bitrate in args.vpx_default_bitrate_list:
                         if args.enable_gcc:
                             vpx_min_bitrate_range = [50000]
                             vpx_max_bitrate_range = [1500000]
@@ -180,7 +183,7 @@ def aggregate_data():
  
     for resolution in args.resolutions:
         for quantizer in args.quantizer_list:
-            for vpx_default_bitrate in args.default_bitrate_list:
+            for vpx_default_bitrate in args.vpx_default_bitrate_list:
                 if args.enable_gcc:
                     vpx_min_bitrate_range = [50000]
                     vpx_max_bitrate_range = [1500000]

@@ -12,7 +12,9 @@ import math
 from time import perf_counter
 import yaml
 from lr_checkpoints import checkpoint_dict
-
+"""
+This experiment uses a bitrate transformation in aiortc.vpx. refer to self.vpx_bitrate_conversion_dict.
+"""
 parser = argparse.ArgumentParser(description='Low-resolution experiments.')
 parser.add_argument('--lr-resolutions', type=str, nargs='+',
                     help='set of lr-resolutions to try',
