@@ -7,7 +7,7 @@ export CONFIG_PATH='/data4/pantea/nets_scripts/paper_configs/resolution1024_swin
 # full-range quantizer
 python lr_video_experiments.py \
 --lr-resolutions 256x256 \
---duration 3600 --window 1000 --runs 1 \
+--duration 21600 --window 1000 --runs 1 \
 --root-dir /video-conf/scratch/pantea/fom_personalized_1024 \
 --people xiran \
 --save-prefix /data4/pantea/nsdi_fall_2022/main_comparison/swinir_lte_full_quantizer \
