@@ -12,7 +12,7 @@ python lr_video_experiments.py \
 --people xiran \
 --save-prefix /data3/pantea/nsdi_fall_2022/main_comparison/swinir_lte_full_quantizer \
 --executable-dir /data4/pantea/aiortc/examples/videostream-cli \
---csv /data3/pantea/nsdi_fall_2022/main_comparison/data/swinir_lte_full_quantizer \
+--csv /data3/pantea/nsdi_fall_2022/main_comparison/data/swinir_lte_lr256_full_quantizer \
 --quantizer-list 32 --lr-quantizer-list -1 \
 --lr-target-bitrate-list 45 75 105 \
 --configs-dir /data4/pantea/nets_scripts/paper_configs \
