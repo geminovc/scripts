@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# main experiment for Ours 256x256
+# main experiment for Ours
 cd ../../../end2end_experiments
 
 # full-range quantizer
@@ -16,7 +16,7 @@ python lr_video_experiments.py \
 --lr-target-bitrate-list 45 75 105 \
 --configs-dir /data4/pantea/nets_scripts/paper_configs/exps_overview \
 --generator-type occlusion_aware --resolution 1024 \
---video-num-range 0 4 --disable-mahimah --just-aggregate \
+--video-num-range 0 4 --disable-mahimah  --just-aggregate \
 
 # full-range quantizer
 python lr_video_experiments.py \
@@ -37,4 +37,4 @@ python aggregate_approach_comparison_data.py \
 --data-paths /data4/pantea/nsdi_fall_2022/main_comparison/data/ours_lr256_full_quantizer /data4/pantea/nsdi_fall_2022/main_comparison/data/ours_lr128_full_quantizer \
 --settings 256x256 128x128 \
 --csv-name /data4/pantea/nsdi_fall_2022/main_comparison/data/ours_full_quantizer \
---columns-names setting kbps psnr ssim ssim_db orig_lpips lr_resolution lr_quantizer lr_target_bitrate \
+--columns-names setting kbps psnr_min psnr psnr_max ssim_min ssim ssim_max ssim_db orig_lpips_min orig_lpips orig_lpips_max lr_resolution lr_quantizer lr_target_bitrate \
