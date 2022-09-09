@@ -2,12 +2,12 @@ import argparse
 import numpy as np
 from process_utils import *
 
-parser = argparse.ArgumentParser(description='Collect bw logs info.')
+parser = argparse.ArgumentParser(description='Plot mahimahi plot in time.')
 parser.add_argument('--window', type=int,
                     help='duration to aggregate data (assumes ms)',
                     default=200)
 parser.add_argument('--save-dir', type=str,
-                    help='directory to save graph in', default='./bw_graphs')
+                    help='directory to save graph in', default='../traces/bw_graphs')
 parser.add_argument('--output-name', type=str,
                     help='file to save final graph in', default="bw")
 parser.add_argument('--max-time', type=int,

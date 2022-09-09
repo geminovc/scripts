@@ -48,7 +48,7 @@ checkpoint_dict = {
                         },
 
                 '128x128': { 'lrquantizer-1':{
-                                            15: '/video-conf/scratch/vibhaa_lam2/encoder_fixed_bitrate/kayleigh1024_128lr_tgt15Kb 07_09_22_05.02.52/00000029-checkpoint.pth.tar',
+                                            15: '/video-conf/scratch/vibhaa_lam2/encoder_fixed_bitrate/kayleigh1024_128lr_tgt15Kb 08_09_22_01.37.16/00000029-checkpoint.pth.tar',
                                             45: '/video-conf/scratch/vibhaa_tardy/encoder_fixed_bitrate/kayleigh1024_lr128_tgt45Kb 06_09_22_22.12.44/00000029-checkpoint.pth.tar'
                                              }
                            },
