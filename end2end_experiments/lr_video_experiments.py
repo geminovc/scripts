@@ -124,6 +124,13 @@ def run_experiments():
                                         ][person][lr_resolution][f'lrquantizer{lr_quantizer}'][lr_target_bitrate]
 
                                 config_path = os.path.join(os.path.dirname(checkpoint_path), f'{setting}.yaml')
+                            elif args.generator_type == 'occlusion_aware_no_encoder':
+                                checkpoint_path = checkpoint_dict[
+                                        f'resolution{args.resolution}_{args.generator_type}'
+                                        ][person]
+
+                                config_path = os.path.join(os.path.dirname(checkpoint_path), 
+                                                    'fomm_3pathways_with_occlusion.yaml')
                             else: # Bicubic, SwinIR-LTE
                                 setting = f'resolution{args.resolution}_{args.generator_type}'
                                 config_path =  f'{args.configs_dir}/{setting}.yaml'

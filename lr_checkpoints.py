@@ -94,5 +94,14 @@ checkpoint_dict = {
 
                 '512x512': {'lrquantizer-1':{}}
                         }
+    },
+
+    'resolution1024_occlusion_aware_no_encoder': {
+            'needle_drop': {},
+            'xiran': '/video-conf/scratch/vibhaa_lam2/model_arch_comparison/xiran1024_fomm_3_pathways_with_occlusion 07_09_22_05.03.13/00000029-checkpoint.pth.tar',
+            'fancy_fueko': {},
+            'adam_neely': {},
+            'kayleigh': {}
+
     }
 }

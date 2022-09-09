@@ -103,7 +103,7 @@ def get_average_metrics(metrics_dict):
     else:
         latency, latency_min, latency_max = 0, 0, 0
 
-    return psnr_min, psnr, psnr_min, ssim_min, ssim, ssim_max, lpip_min, lpip, lpip_max, latency_min, latency, latency_max, orig_lpip_min, orig_lpip, orig_lpip_max, face_lpip_min, face_lpip, face_lpip_max
+    return psnr_min, psnr, psnr_max, ssim_min, ssim, ssim_max, lpip_min, lpip, lpip_max, latency_min, latency, latency_max, orig_lpip_min, orig_lpip, orig_lpip_max, face_lpip_min, face_lpip, face_lpip_max
 
 
 """ get the fps of a video by running ffprobe
