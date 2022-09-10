@@ -35,9 +35,11 @@ def get_offset(approach):
         offset = 2
     elif '3_pathways' in approach or 'lr_decoder' in approach:
         offset = 6
+    elif 'bicubic' in approach:
+        offset = 0
     else: 
         # standard FOMM or with skip connections
-        offset = 5
+        offset = 6
     return offset
 
 def extract_prediction(person, frame_id, video_num, offset, folder):
@@ -45,6 +47,10 @@ def extract_prediction(person, frame_id, video_num, offset, folder):
     prefix = f'{video_num}.mp4_frame{frame_id}.npy'
     img = np.load(f'{folder}/visualization/{prefix}')
     prediction = img[:, offset*args.img_width: (offset + 1)*args.img_width, :]
+    if offset == 0:
+        prediction *= 255
+        prediction = prediction.astype(np.uint8)
+    matplotlib.image.imsave(f'{args.save_prefix}/full_prediction.pdf', img)
     return prediction
 
 
@@ -71,7 +77,6 @@ for person in args.person_list:
         else:
             df_dict[approach] = pd.concat([df_dict[approach], cur_frame])
 
-        offset = 6
         prediction = extract_prediction(person, args.frame_num, args.video_num, get_offset(approach), folder)
         row_in_strip.append(prediction)
     
