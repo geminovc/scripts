@@ -18,7 +18,7 @@ python lr_video_experiments.py \
 --lr-target-bitrate-list 15 \
 --configs-dir /data4/pantea/nets_scripts/paper_configs \
 --generator-type bicubic --resolution 1024 \
---video-num-range 0 4 --disable-mahimah \
+--video-num-range 0 4 --disable-mahimah --just-aggregate \
 
 python lr_video_experiments.py \
 --lr-resolutions 256x256 \
@@ -34,8 +34,37 @@ python lr_video_experiments.py \
 --generator-type bicubic --resolution 1024 \
 --video-num-range 0 4 --disable-mahimah --just-aggregate \
 
+python lr_video_experiments.py \
+--lr-resolutions 256x256 \
+--duration 2000  --window 1000 --runs 1 \
+--root-dir /video-conf/scratch/pantea/fom_personalized_1024 \
+--people xiran \
+--save-prefix /data4/pantea/nsdi_fall_2022/main_comparison/bicubic_full_quantizer \
+--executable-dir /data4/pantea/aiortc/examples/videostream-cli \
+--csv /data4/pantea/nsdi_fall_2022/main_comparison/data/bicubic_lr256_full_quantizer \
+--quantizer-list 32 --lr-quantizer-list -1 \
+--lr-target-bitrate-list 45 75 105 \
+--configs-dir /data4/pantea/nets_scripts/paper_configs \
+--generator-type bicubic --resolution 1024 \
+--video-num-range 0 4 --disable-mahimah --just-aggregate \
+
+python lr_video_experiments.py \
+--lr-resolutions 512x512 \
+--duration 2000  --window 1000 --runs 1 \
+--root-dir /video-conf/scratch/pantea/fom_personalized_1024 \
+--people xiran \
+--save-prefix /data4/pantea/nsdi_fall_2022/main_comparison/bicubic_full_quantizer \
+--executable-dir /data4/pantea/aiortc/examples/videostream-cli \
+--csv /data4/pantea/nsdi_fall_2022/main_comparison/data/bicubic_lr512_full_quantizer \
+--quantizer-list 32 --lr-quantizer-list -1 \
+--lr-target-bitrate-list 180 420 \
+--configs-dir /data4/pantea/nets_scripts/paper_configs \
+--generator-type bicubic --resolution 1024 \
+--video-num-range 0 4 --disable-mahimah \
+
+
 python aggregate_approach_comparison_data.py \
---data-paths /data4/pantea/nsdi_fall_2022/main_comparison/data/bicubic_lr128_full_quantizer /data4/pantea/nsdi_fall_2022/main_comparison/data/bicubic_lr256_full_quantizer \
---settings 128x128 256x256 \
+--data-paths /data4/pantea/nsdi_fall_2022/main_comparison/data/bicubic_lr128_full_quantizer /data4/pantea/nsdi_fall_2022/main_comparison/data/bicubic_lr256_full_quantizer /data4/pantea/nsdi_fall_2022/main_comparison/data/bicubic_lr512_full_quantizer \
+--settings 128x128 256x256 512x512\
 --csv-name /data4/pantea/nsdi_fall_2022/main_comparison/data/bicubic_full_quantizer \
---columns-names setting kbps psnr_min psnr psnr_max ssim_min ssim ssim_max ssim_db orig_lpips_min orig_lpips orig_lpips_max lr_resolution lr_quantizer lr_target_bitrate \
+--columns-names setting kbps psnr_min psnr psnr_max psnr_std ssim_min ssim ssim_max ssim_std ssim_db orig_lpips_min orig_lpips orig_lpips_max orig_lpips_std lr_resolution lr_quantizer lr_target_bitrate \

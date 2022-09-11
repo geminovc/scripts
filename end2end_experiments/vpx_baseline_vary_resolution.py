@@ -229,8 +229,9 @@ def aggregate_data():
                             for metric in ['psnr', 'ssim', 'lpips', 'latency', 'orig_lpips', 'face_lpips']:
                                 mean_df[f'{metric}_min'] = combined_df[f'{metric}_min'].min()
                                 mean_df[f'{metric}_max'] = combined_df[f'{metric}_max'].max()
-
-                            mean_df['ssim_db'] = - 20 * math.log10(1-mean_df['ssim'])
+                                mean_df[f'{metric}_std'] = combined_df[metric].std()
+                            
+                            mean_df['ssim_db'] = - 10 * math.log10(1-mean_df['ssim'])
 
                             mean_df['resolution'] = resolution
                             mean_df['quantizer'] = quantizer

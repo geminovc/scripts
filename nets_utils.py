@@ -536,18 +536,11 @@ def run_single_experiment(params):
             print("Using mahimahi shell")
             mm_setup = 'sudo sysctl -w net.ipv4.ip_forward=1'
             sh.run(mm_setup, shell=True)
-            sender_cmd = f'mm-delay 25 mm-link {uplink_trace} {downlink_trace} \
-                            --uplink-queue=droptail \
-                            --downlink-queue=droptail \
-                            --uplink-queue-args="packets={qsize_pkts}" \
-                            --downlink-queue-args="packets={qsize_pkts}" \
-                            --uplink-log="{log_dir}/mahimahi.log" \
-                            ./offer.sh {video_file} {fps} {log_dir}/sender.log \
-                            {log_dir} {exec_dir} {enable_prediction} {reference_update_freq} \
-                            {quantizer} {socket_path} \
-                            {lr_quantizer} {prediction_type} {lr_target_bitrate} {lr_enable_gcc}'
+
+            sender_cmd = f'mm-delay 25 mm-link --uplink-log=\"{log_dir}/mahimahi.log\" {uplink_trace} {downlink_trace} ./offer.sh {video_file} {fps} {log_dir}/sender.log {log_dir} {exec_dir} {enable_prediction} {reference_update_freq} {quantizer} {socket_path} {prediction_type} {lr_target_bitrate} {lr_enable_gcc} '
         else:
-            sender_cmd =  f'python {exec_dir}/cli.py offer \
+
+            sender_cmd +=  f'python {exec_dir}/cli.py offer \
                              --play-from {video_file} \
                              --signaling-path {socket_path} \
                              --signaling unix-socket \
@@ -571,6 +564,7 @@ def run_single_experiment(params):
         if not disable_mahimahi:
             try:
                 # get tcpdump
+                time.sleep(1)
                 ifconfig_cmd = 'ifconfig | grep -oh "delay-[0-9]*"'
                 link_name = sh.check_output(ifconfig_cmd, shell=True)
                 link_name = link_name.decode("utf-8")[:-1]
@@ -579,8 +573,7 @@ def run_single_experiment(params):
                 rm_cmd = f'sudo rm {log_dir}/{dump_file}'
                 sh.run(rm_cmd, shell=True)
 
-                tcpdump_cmd = f'sudo tcpdump -i {link_name} \
-                        -w {log_dir}/{dump_file}'
+                tcpdump_cmd = f'sudo tcpdump -i {link_name} -w {log_dir}/{dump_file}'
                 print(tcpdump_cmd)
                 tcpdump_args = shlex.split(tcpdump_cmd)
                 tcp_proc = sh.Popen(tcpdump_args)
@@ -610,6 +603,7 @@ def run_single_experiment(params):
             receiver_cmd += ' --lr-enable-gcc'
 
         receiver_cmd += ' --verbose'
+        print(receiver_cmd)
         receiver_args = shlex.split(receiver_cmd)
         recv_proc = sh.Popen(receiver_args, stderr=recv_output, env=base_env) 
 
@@ -657,6 +651,7 @@ def gather_data_single_experiment(params):
         dump_file = f'{save_dir}/sender.log'
         saved_video_file = f'{save_dir}/received.mp4'
         saved_video_duration = get_video_duration(saved_video_file)
+        print("saved_video_duration", saved_video_duration)
         '''
         send_frame_num = get_frame_num_in_endpoint(f'{save_dir}/send_times.txt')
         recv_frame_num = get_frame_num_in_endpoint(f'{save_dir}/recv_times.txt')

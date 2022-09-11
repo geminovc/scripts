@@ -225,7 +225,9 @@ def aggregate_data():
                             mean_df[f'{metric}_min'] = combined_df[f'{metric}_min'].min()
                             mean_df[f'{metric}_max'] = combined_df[f'{metric}_max'].max()
 
-                        mean_df['ssim_db'] = - 20 * math.log10(1-mean_df['ssim'])
+                            mean_df[f'{metric}_std'] = combined_df[metric].std()
+
+                        mean_df['ssim_db'] = - 10 * math.log10(1-mean_df['ssim'])
                         mean_df['lr_resolution'] = lr_resolution
                         mean_df['lr_quantizer'] = lr_quantizer
                         mean_df['quantizer'] = quantizer
