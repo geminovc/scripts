@@ -540,7 +540,7 @@ def run_single_experiment(params):
             sender_cmd = f'mm-delay 25 mm-link --uplink-log=\"{log_dir}/mahimahi.log\" {uplink_trace} {downlink_trace} ./offer.sh {video_file} {fps} {log_dir}/sender.log {log_dir} {exec_dir} {enable_prediction} {reference_update_freq} {quantizer} {socket_path} {prediction_type} {lr_target_bitrate} {lr_enable_gcc} '
         else:
 
-            sender_cmd +=  f'python {exec_dir}/cli.py offer \
+            sender_cmd =  f'python {exec_dir}/cli.py offer \
                              --play-from {video_file} \
                              --signaling-path {socket_path} \
                              --signaling unix-socket \
@@ -603,7 +603,6 @@ def run_single_experiment(params):
             receiver_cmd += ' --lr-enable-gcc'
 
         receiver_cmd += ' --verbose'
-        print(receiver_cmd)
         receiver_args = shlex.split(receiver_cmd)
         recv_proc = sh.Popen(receiver_args, stderr=recv_output, env=base_env) 
 
