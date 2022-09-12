@@ -53,6 +53,15 @@ def extract_prediction(person, frame_id, video_num, offset, folder):
     matplotlib.image.imsave(f'{args.save_prefix}/full_prediction.pdf', img)
     return prediction
 
+def extract_src_tgt(person, frame_id, video_num, folder):
+    """ retrieve the source and target from strip consisting of all intermediates """
+    prefix = f'{video_num}.mp4_frame{frame_id}.npy'
+    img = np.load(f'{folder}/visualization/{prefix}')
+    src_offset = 0
+    tgt_offset = 3
+    src = img[:, src_offset*args.img_width: (src_offset + 1)*args.img_width, :]
+    tgt = img[:, tgt_offset*args.img_width: (tgt_offset + 1)*args.img_width, :]
+    return src, tgt
 
 df_dict = {}
 strip = []
@@ -69,8 +78,8 @@ for person in args.person_list:
             prefix = f'single_source'
 
         metrics_file = f'{folder}/{prefix}_per_frame_metrics.txt'
+        print(f'reading {metrics_file}')
         cur_frame = pd.read_csv(metrics_file)
-        cur_frame['approach'] = approach
 
         if approach not in df_dict:
             df_dict[approach] = cur_frame
@@ -78,6 +87,9 @@ for person in args.person_list:
             df_dict[approach] = pd.concat([df_dict[approach], cur_frame])
 
         prediction = extract_prediction(person, args.frame_num, args.video_num, get_offset(approach), folder)
+        if len(row_in_strip) == 0:
+            (src, tgt) = extract_src_tgt(person, args.frame_num, args.video_num, folder)
+            row_in_strip = [src, tgt]
         row_in_strip.append(prediction)
     
     completed_row = np.concatenate(row_in_strip, axis=1)
