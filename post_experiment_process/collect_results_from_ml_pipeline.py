@@ -8,6 +8,8 @@ import os
 parser = argparse.ArgumentParser(description='Collect Overall Average Stats from ML Pipeline.')
 parser.add_argument('--person-list', type=str, nargs='+',
                     help='people whose results will be aggregated', default=['xiran'])
+parser.add_argument('--people-for-strip', type=str, nargs='+',
+                    help='people whose visuals will be saved', default=['xiran'])
 parser.add_argument('--save-prefix', type=str,
                     help='prefix to save logs and files in', 
                     required=True)
@@ -92,8 +94,9 @@ for person in args.person_list:
             row_in_strip = [src, tgt]
         row_in_strip.append(prediction)
     
-    completed_row = np.concatenate(row_in_strip, axis=1)
-    strip.append(completed_row)
+    if person in args.people_for_strip:
+        completed_row = np.concatenate(row_in_strip, axis=1)
+        strip.append(completed_row)
 final_img = np.concatenate(strip, axis=0)
     
 # compute average for each approach
