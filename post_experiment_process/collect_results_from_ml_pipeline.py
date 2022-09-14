@@ -30,16 +30,21 @@ parser.add_argument('--video-num', type=str,
 args = parser.parse_args()
 
 main_settings = ['lr128_tgt15', 'lr256_tgt45', 'lr256_tgt75', 'lr256_tgt105', 'lr512_tgt180', 'lr512_tgt420']
+encoder_exp_settings = ['15Kb', '45Kb', '75Kb']
 settings = {
-        'main_exp_ours': main_settings,
-        'main_exp_bicubic': main_settings,
-        'main_exp_fomm': ['fomm'],
-        'main_exp_vpx': [],
-        'main_exp_SwinIR': main_settings, 
+        'main_exp:ours': main_settings,
+        'main_exp:bicubic': main_settings,
+        'main_exp:fomm': ['fomm'],
+        'main_exp:vpx': [],
+        'main_exp:SwinIR': main_settings, 
+        'encoder_effect:tgt15': encoder_exp_settings,
+        'encoder_effect:tgt45': encoder_exp_settings,
+        'encoder_effect:tgt75': encoder_exp_settings,
+        'encoder_effect:tgt_random': encoder_exp_settings,
+        'encoder_effect:no_encoder': encoder_exp_settings,
         'personalization': ['personalization', 'generic'],
         'model_ablation': ['fomm', 'fomm_skip_connections', 'fomm_skip_connections_lr_in_decoder', \
                 'fomm_3_pathways_with_occlusion', 'sme_3_pathways_with_occlusion', 'pure_upsampling'],
-        'encoder_in_training': ['lr128_tgt15', 'lr128_tgt45', 'lr128_tgt75', 'lr128_tgt_random', 'no_encoder'],
         'resolution_comparison': ['lr64_tgt45', 'lr128_tgt45', 'lr256_tgt45'],
         'design_model_comparison': ['fomm', 'fomm_3_pathways_with_occlusion']
 }
@@ -51,7 +56,7 @@ def get_offset(setting, approach):
     if approach in ['bicubic', 'SwinIR', 'vpx']:
         offset = 0
     elif 'personalization' in setting or 'generic' in setting:
-        offset = 6
+        offset = 7
     elif 'pure_upsampling' in setting:
         offset = 2
     elif '3_pathways' in setting or 'lr_decoder' in setting:
@@ -85,14 +90,24 @@ def extract_src_tgt(person, frame_id, video_num, folder):
     tgt = img[:, tgt_offset*args.img_width: (tgt_offset + 1)*args.img_width, :]
     return src, tgt
 
-df_dict = {}
+final_df = pd.DataFrame()
 strip = []
 final_img = None
 os.makedirs(args.save_prefix, exist_ok=True)
 
+# adjust approaches if need be
+if args.approaches_to_compare == ['encoder_in_training']:
+    approaches_to_compare = [f'encoder_effect:{x}' for x in \
+            ['no_encoder', 'tgt15', 'tgt45', 'tgt75', 'tgt_random']]
+    base_dir_list = args.base_dir_list * 5
+else:
+    approaches_to_compare = args.approaches_to_compare
+    base_dir_list = args.base_dir_list
+
 # aggregate results across all people for each setting for each approach
-for (approach, base_dir) in zip(args.approaches_to_compare, args.base_dir_list):
+for (approach, base_dir) in zip(approaches_to_compare, base_dir_list):
     settings_to_compare = settings[approach]
+    df_dict = {}
     for person in args.person_list:
         row_in_strip = []
         
@@ -100,11 +115,14 @@ for (approach, base_dir) in zip(args.approaches_to_compare, args.base_dir_list):
             if setting == "generic":
                 folder = f'{base_dir}/{setting}/reconstruction_single_source_{person}'
                 prefix = f'single_source_{person}'
+            elif "encoder_effect" in approach:
+                model_type = f'lr128_{approach.split(":")[-1]}'
+                folder = f'{base_dir}/{model_type}/{person}/reconstruction_single_source_{setting}'
+                prefix = f'single_source_{setting}'
             else:
                 folder = f'{base_dir}/{setting}/{person}/reconstruction_single_source'
                 prefix = f'single_source'
 
-            print('folder', folder)
             metrics_file = f'{folder}/{prefix}_per_frame_metrics.txt'
             print(f'reading {metrics_file}')
             cur_frame = pd.read_csv(metrics_file)
@@ -115,7 +133,7 @@ for (approach, base_dir) in zip(args.approaches_to_compare, args.base_dir_list):
                 df_dict[setting] = pd.concat([df_dict[setting], cur_frame])
 
             # skip multiple settings for extracting strip for main exp
-            if 'main_exp' in approach:
+            if 'main_exp' in approach or 'encoder_effect' in approach:
                 continue
 
             prediction = extract_prediction(person, args.frame_num, args.video_num, \
@@ -136,7 +154,6 @@ for (approach, base_dir) in zip(args.approaches_to_compare, args.base_dir_list):
         final_img = np.concatenate(strip, axis=0)
         
     # compute average + stddev for each setting
-    final_df = pd.DataFrame()
     for setting in settings_to_compare:
         average_df = pd.DataFrame(df_dict[setting].mean().to_dict(), \
                         index=[df_dict[setting].index.values[-1]])
@@ -146,22 +163,33 @@ for (approach, base_dir) in zip(args.approaches_to_compare, args.base_dir_list):
         for m in metrics_of_interest:
             average_df[f'{m}_sd'] = std_dev[m]
         final_df = pd.concat([final_df, average_df])
+# same summary in csv
+final_df.to_csv(f'{args.save_prefix}/{args.csv_name}', index=False, header=True)
 
 
-# form strip separately for main experiment
-if 'main_exp' in args.approaches_to_compare[0]:
+# form strip separately for main experiment/encoder effect
+if 'main_exp' in approaches_to_compare[0] or 'encoder_effect' in approaches_to_compare[0]:
     for person in args.person_list:
         row_in_strip = []
-        for (approach, base_dir) in zip(args.approaches_to_compare, args.base_dir_list):
-            setting = 'lr256_tgt45' if 'fomm' not in approach else 'fomm'
-            folder = f'{base_dir}/{setting}/{person}/reconstruction_single_source'
-            prefix = f'single_source'
+        for (approach, base_dir) in zip(approaches_to_compare, base_dir_list):
+            if 'main_exp' in approach:
+                setting = 'lr256_tgt45' if 'fomm' not in approach else 'fomm'
+                folder = f'{base_dir}/{setting}/{person}/reconstruction_single_source'
+                prefix = f'single_source'
+            else:
+                model_type = f'lr128_{approach.split(":")[-1]}'
+                setting = '45Kb'
+                folder = f'{base_dir}/{model_type}/{person}/reconstruction_single_source_{setting}'
+                prefix = f'single_source_{setting}'
 
             prediction = extract_prediction(person, args.frame_num, args.video_num, \
                     get_offset(setting, approach), folder, setting)
-            if 'ours' in approach:
+            if approach == 'main_exp:ours':
                 (src, tgt) = extract_src_tgt(person, args.frame_num, args.video_num, folder)
                 row_in_strip = [src, tgt] + row_in_strip
+            elif 'encoder' in approach and len(row_in_strip) == 0:
+                (src, tgt) = extract_src_tgt(person, args.frame_num, args.video_num, folder)
+                row_in_strip = [src, tgt]
             row_in_strip.append(prediction)
         
         if person in args.people_for_strip and len(row_in_strip) > 0:
@@ -170,7 +198,6 @@ if 'main_exp' in args.approaches_to_compare[0]:
     if len(strip) > 0:
         final_img = np.concatenate(strip, axis=0)
         
-# save all data
-final_df.to_csv(f'{args.save_prefix}/{args.csv_name}', index=False, header=True)
+# save img data
 if final_img is not None:
     matplotlib.image.imsave(f'{args.save_prefix}/strip.pdf', final_img)
