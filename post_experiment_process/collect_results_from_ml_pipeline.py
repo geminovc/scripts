@@ -40,7 +40,8 @@ settings = {
         'model_ablation': ['fomm', 'fomm_skip_connections', 'fomm_skip_connections_lr_in_decoder', \
                 'fomm_3_pathways_with_occlusion', 'sme_3_pathways_with_occlusion', 'pure_upsampling'],
         'encoder_in_training': ['lr128_tgt15', 'lr128_tgt45', 'lr128_tgt75', 'lr128_tgt_random', 'no_encoder'],
-        'resolution_comparison': ['lr64_tgt45', 'lr128_tgt45', 'lr256_tgt45']
+        'resolution_comparison': ['lr64_tgt45', 'lr128_tgt45', 'lr256_tgt45'],
+        'design_model_comparison': ['fomm', 'fomm_3_pathways_with_occlusion']
 }
 metrics_of_interest = ['psnr', 'ssim_db', 'orig_lpips']
         
@@ -87,14 +88,14 @@ def extract_src_tgt(person, frame_id, video_num, folder):
 df_dict = {}
 strip = []
 final_img = None
-os.makedirs(args.save_prefix, exist_ok=True)  
+os.makedirs(args.save_prefix, exist_ok=True)
 
-print(args.base_dir_list)
 # aggregate results across all people for each setting for each approach
 for (approach, base_dir) in zip(args.approaches_to_compare, args.base_dir_list):
     settings_to_compare = settings[approach]
     for person in args.person_list:
         row_in_strip = []
+        
         for setting in settings_to_compare:
             if setting == "generic":
                 folder = f'{base_dir}/{setting}/reconstruction_single_source_{person}'
@@ -115,12 +116,11 @@ for (approach, base_dir) in zip(args.approaches_to_compare, args.base_dir_list):
 
             # skip multiple settings for extracting strip for main exp
             if 'main_exp' in approach:
-                if setting != 'lr256_tgt45' and 'fomm' not in approach:
-                    continue
+                continue
 
             prediction = extract_prediction(person, args.frame_num, args.video_num, \
                     get_offset(setting, approach), folder, setting)
-            if 'main_exp' in approach or approach == "model_ablation":
+            if approach == "model_ablation" or approach == 'design_model_comparison':
                 if 'ours' in setting or 'fomm_3_pathways' in setting:
                     (src, tgt) = extract_src_tgt(person, args.frame_num, args.video_num, folder)
                     row_in_strip = [src, tgt] + row_in_strip
@@ -129,7 +129,7 @@ for (approach, base_dir) in zip(args.approaches_to_compare, args.base_dir_list):
                 row_in_strip = [src, tgt]
             row_in_strip.append(prediction)
         
-        if person in args.people_for_strip:
+        if person in args.people_for_strip and len(row_in_strip) > 0:
             completed_row = np.concatenate(row_in_strip, axis=1)
             strip.append(completed_row)
     if len(strip) > 0:
@@ -147,6 +147,29 @@ for (approach, base_dir) in zip(args.approaches_to_compare, args.base_dir_list):
             average_df[f'{m}_sd'] = std_dev[m]
         final_df = pd.concat([final_df, average_df])
 
+
+# form strip separately for main experiment
+if 'main_exp' in args.approaches_to_compare[0]:
+    for person in args.person_list:
+        row_in_strip = []
+        for (approach, base_dir) in zip(args.approaches_to_compare, args.base_dir_list):
+            setting = 'lr256_tgt45' if 'fomm' not in approach else 'fomm'
+            folder = f'{base_dir}/{setting}/{person}/reconstruction_single_source'
+            prefix = f'single_source'
+
+            prediction = extract_prediction(person, args.frame_num, args.video_num, \
+                    get_offset(setting, approach), folder, setting)
+            if 'ours' in approach:
+                (src, tgt) = extract_src_tgt(person, args.frame_num, args.video_num, folder)
+                row_in_strip = [src, tgt] + row_in_strip
+            row_in_strip.append(prediction)
+        
+        if person in args.people_for_strip and len(row_in_strip) > 0:
+            completed_row = np.concatenate(row_in_strip, axis=1)
+            strip.append(completed_row)
+    if len(strip) > 0:
+        final_img = np.concatenate(strip, axis=0)
+        
 # save all data
 final_df.to_csv(f'{args.save_prefix}/{args.csv_name}', index=False, header=True)
 if final_img is not None:
