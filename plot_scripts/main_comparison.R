@@ -4,32 +4,123 @@
 source("style.R")
 
 args <- commandArgs(trailingOnly=TRUE)
-file <- "../data/aggregate_1024_comparison_data"
-plot_filename <- "pdfs/main_bpp_quality_1024.pdf"
+file <- "../data/main_experiment/summary.csv"
+plot_filename <- "pdfs/main_experiment.pdf"
 data<-read.csv(file)
 
-ssim_plot <- ggplot(data, aes(x=kbps,y=ssim_db,color=setting,linetype=setting)) + 
+label_list <- c(
+                 "vpx" = "VP8 (Chromium)",
+                 "bicubic" = "Bicubic",
+                 "ours" = "Ours",
+                 "SwinIR" = "SwinIR",
+                 "fomm" = "FOMM")
+
+
+shape_list <- c(
+                 "vpx" = 15,
+                 "bicubic" = 8,
+                 "ours" = 16,
+                 "SwinIR" = 20,
+                 "fomm" = 17)
+
+line_list <- c(
+                 "vpx" = "twodash",
+                 "bicubic" = "dashed",
+                 "ours" = "solid",
+                 "SwinIR" = "dotted",
+                 "fomm" = "blank")
+
+color_list <- c(
+                 "vpx" = "#00BF7D",
+                 "SwinIR" = "#A3A500",
+                 "bicubic" = "#F8766D",
+                 "ours" = "#00B0F6",
+                 "fomm" = "#E76BF3")
+
+
+breaks_list <- c("vpx", "bicubic", "SwinIR", "fomm", "ours")
+
+ssim_plot <- ggplot(data, aes(x=kbps,y=ssim_db,color=approach,linetype=approach, shape=approach)) + 
         geom_line(size=0.8) +
         geom_point(size=2) +
-        xlim(0, 1000) +  
+        geom_errorbar(aes(ymin=ssim_db-ssim_db_sd, ymax=ssim_db+ssim_db_sd), width=.2) +
+        xlim(0, 900) + 
+        
+        scale_color_manual(
+                values = color_list,
+                labels=label_list,
+                breaks=breaks_list,
+                guide=guide_legend(title=NULL, nrow=1)) +
+
+        scale_shape_manual(
+                values=shape_list,
+                labels=label_list,
+                breaks=breaks_list,
+                guide=guide_legend(title=NULL, nrow=1)) +
+
+        scale_linetype_manual(
+                values = line_list,
+                labels=label_list,
+                breaks=breaks_list,
+                guide=guide_legend(title=NULL, nrow=1)) +
+
 
         labs(y="SSIM (dB)", x="Kbps") 
 ggsave(plot_filename, width=12.2,height=5)
   
-psnr_plot <- ggplot(data, aes(x=kbps,y=psnr,color=setting,linetype=setting)) + 
+psnr_plot <- ggplot(data, aes(x=kbps,y=psnr,color=approach,linetype=approach, shape=approach)) + 
         geom_line(size=0.8) +
         geom_point(size=2) +
-        xlim(0, 1000) +  
+        geom_errorbar(aes(ymin=psnr-psnr_sd, ymax=psnr+psnr_sd), width=.2) +
+        xlim(0, 900) +  
+
+        scale_color_manual(
+                values = color_list,
+                labels=label_list,
+                breaks=breaks_list,
+                guide=guide_legend(title=NULL, nrow=1)) +
+
+        scale_shape_manual(
+                values=shape_list,
+                labels=label_list,
+                breaks=breaks_list,
+                guide=guide_legend(title=NULL, nrow=1)) +
+
+        scale_linetype_manual(
+                values = line_list,
+                labels=label_list,
+                breaks=breaks_list,
+                guide=guide_legend(title=NULL, nrow=1)) +
+
 
         theme(legend.text=element_text(size=rel(1)), legend.key.size=unit(15,"points"), legend.position="none",
               legend.box.margin=margin(-10,-10,-10,-10), legend.title=element_blank(),
               legend.margin=margin(c(0,0,0,0))) + 
         labs(y="PSNR (dB)", x="Kbps") 
 
-lpips_plot <- ggplot(data, aes(x=kbps,y=lpips,color=setting,linetype=setting)) + 
+lpips_plot <- ggplot(data, aes(x=kbps,y=orig_lpips,color=approach,linetype=approach, shape=approach)) + 
         geom_line(size=0.8) +
         geom_point(size=2) + 
-        xlim(0, 1000) +  
+        geom_errorbar(aes(ymin=orig_lpips-orig_lpips_sd, ymax=orig_lpips+orig_lpips_sd), width=.2) +
+        xlim(0, 900) +
+
+        scale_color_manual(
+                values = color_list,
+                labels=label_list,
+                breaks=breaks_list,
+                guide=guide_legend(title=NULL, nrow=1)) +
+
+        scale_shape_manual(
+                values=shape_list,
+                labels=label_list,
+                breaks=breaks_list,
+                guide=guide_legend(title=NULL, nrow=1)) +
+
+        scale_linetype_manual(
+                values = line_list,
+                labels=label_list,
+                breaks=breaks_list,
+                guide=guide_legend(title=NULL, nrow=1)) +
 
         labs(y="LPIPS", x="Kbps") 
  

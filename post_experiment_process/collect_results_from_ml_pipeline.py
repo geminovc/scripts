@@ -29,23 +29,23 @@ parser.add_argument('--video-num', type=str,
                     help='Default video to use', default='/video_conf/scratch/vibhaa_mm_directory/personalization')
 args = parser.parse_args()
 
-main_settings = ['lr128_tgt15', 'lr256_tgt45', 'lr256_tgt75', 'lr256_tgt105', 'lr512_tgt180', 'lr512_tgt420']
+main_settings = ['lr128_tgt15Kb', 'lr256_tgt45Kb', 'lr256_tgt75Kb', 'lr256_tgt105Kb', 'lr512_tgt180Kb', 'lr512_tgt420Kb']
 encoder_exp_settings = ['15Kb', '45Kb', '75Kb']
 settings = {
         'main_exp:ours': main_settings,
         'main_exp:bicubic': main_settings,
         'main_exp:fomm': ['fomm'],
-        'main_exp:vpx': [],
+        'main_exp:vpx': ['tgt1000Kb', 'tgt200Kb', 'tgt400Kb', 'tgt600Kb', 'tgt800Kb'],
         'main_exp:SwinIR': main_settings, 
-        'encoder_effect:tgt15': encoder_exp_settings,
-        'encoder_effect:tgt45': encoder_exp_settings,
-        'encoder_effect:tgt75': encoder_exp_settings,
+        'encoder_effect:tgt15kb': encoder_exp_settings,
+        'encoder_effect:tgt45Kb': encoder_exp_settings,
+        'encoder_effect:tgt75Kb': encoder_exp_settings,
         'encoder_effect:tgt_random': encoder_exp_settings,
         'encoder_effect:no_encoder': encoder_exp_settings,
         'personalization': ['personalization', 'generic'],
         'model_ablation': ['fomm', 'fomm_skip_connections', 'fomm_skip_connections_lr_in_decoder', \
                 'fomm_3_pathways_with_occlusion', 'sme_3_pathways_with_occlusion', 'pure_upsampling'],
-        'resolution_comparison': ['lr64_tgt45', 'lr128_tgt45', 'lr256_tgt45'],
+        'resolution_comparison': ['lr64_tgt45Kb', 'lr128_tgt45Kb', 'lr256_tgt45Kb'],
         'design_model_comparison': ['fomm', 'fomm_3_pathways_with_occlusion']
 }
 metrics_of_interest = ['psnr', 'ssim_db', 'orig_lpips']
@@ -98,7 +98,7 @@ os.makedirs(args.save_prefix, exist_ok=True)
 # adjust approaches if need be
 if args.approaches_to_compare == ['encoder_in_training']:
     approaches_to_compare = [f'encoder_effect:{x}' for x in \
-            ['no_encoder', 'tgt15', 'tgt45', 'tgt75', 'tgt_random']]
+            ['no_encoder', 'tgt15Kb', 'tgt45Kb', 'tgt75Kb', 'tgt_random']]
     base_dir_list = args.base_dir_list * 5
 else:
     approaches_to_compare = args.approaches_to_compare
@@ -159,7 +159,8 @@ for (approach, base_dir) in zip(approaches_to_compare, base_dir_list):
                         index=[df_dict[setting].index.values[-1]])
         std_dev = df_dict[setting][metrics_of_interest].std()
         average_df['setting'] = setting
-        average_df['approach'] = approach
+        average_df['approach'] = approach.split(':')[1] if ':' in approach else approach
+        average_df['kbps'] = average_df['reference_kbps'] + average_df['lr_kbps']
         for m in metrics_of_interest:
             average_df[f'{m}_sd'] = std_dev[m]
         final_df = pd.concat([final_df, average_df])
@@ -172,8 +173,11 @@ if 'main_exp' in approaches_to_compare[0] or 'encoder_effect' in approaches_to_c
     for person in args.person_list:
         row_in_strip = []
         for (approach, base_dir) in zip(approaches_to_compare, base_dir_list):
+            if 'vpx' in approach:
+                continue
+
             if 'main_exp' in approach:
-                setting = 'lr256_tgt45' if 'fomm' not in approach else 'fomm'
+                setting = 'lr256_tgt45Kb' if 'fomm' not in approach else 'fomm'
                 folder = f'{base_dir}/{setting}/{person}/reconstruction_single_source'
                 prefix = f'single_source'
             else:
