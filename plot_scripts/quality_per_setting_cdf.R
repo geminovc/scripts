@@ -8,13 +8,14 @@ args <- commandArgs(trailingOnly=TRUE)
 file <- args[1]
 plot_filename <- args[2] 
 data<-read.csv(file)
+data<- data[data$setting != 'fomm' & data$setting != 'fomm_skip_connections' & data$setting != 'fomm_skip_connections_lr_in_decoder', ]
 
 ssim_plot <- ggplot(data) +
-        stat_ecdf(aes(ssim,color=setting,linetype=setting), size=1) + 
-        labs(x="SSIM", y="CDF") 
+        stat_ecdf(aes(ssim_db,color=setting), size=1) + 
+        labs(x="SSIM (dB)", y="CDF") 
   
 psnr_plot <- ggplot(data) +
-        stat_ecdf(aes(psnr,color=setting,linetype=setting), size=1) + 
+        stat_ecdf(aes(psnr,color=setting), size=1) + 
         labs(x="PSNR (dB)", y="CDF") + 
 
         theme(legend.text=element_text(size=rel(1)), legend.key.size=unit(15,"points"), legend.position="none",
@@ -22,7 +23,7 @@ psnr_plot <- ggplot(data) +
               legend.margin=margin(c(0,0,0,0))) 
 
 lpips_plot <- ggplot(data) +
-        stat_ecdf(aes(lpips,color=setting,linetype=setting), size=1) + 
+        stat_ecdf(aes(orig_lpips,color=setting), size=1) + 
         labs(x="LPIPS", y="CDF") 
 
 legend <- get_legend(psnr_plot + theme(legend.position="top"))

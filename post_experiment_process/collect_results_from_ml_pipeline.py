@@ -29,6 +29,10 @@ parser.add_argument('--video-num', type=str,
                     help='Default video to use', default='/video_conf/scratch/vibhaa_mm_directory/personalization')
 args = parser.parse_args()
 
+
+summarize = True
+generate_cdf = False
+
 main_settings = ['lr128_tgt15Kb', 'lr256_tgt45Kb', 'lr256_tgt75Kb', 'lr256_tgt105Kb', 'lr512_tgt180Kb', 'lr512_tgt420Kb']
 encoder_exp_settings = ['15Kb', '45Kb', '75Kb']
 settings = {
@@ -53,7 +57,7 @@ metrics_of_interest = ['psnr', 'ssim_db', 'orig_lpips']
 
 def get_offset(setting, approach):
     """ return offset at which prediction is found based on setting """
-    if approach in ['bicubic', 'SwinIR', 'vpx']:
+    if approach in ['main_exp:bicubic', 'main_exp:SwinIR', 'main_exp:vpx']:
         offset = 0
     elif 'personalization' in setting or 'generic' in setting:
         offset = 7
@@ -69,7 +73,7 @@ def get_offset(setting, approach):
     print(f'returning at offset {offset} for {setting} in {approach}')
     return offset
 
-def extract_prediction(person, frame_id, video_num, offset, folder, setting):
+def extract_prediction(person, frame_id, video_num, offset, folder, setting, approach):
     """ retrieve the prediction from strip consisting of all intermediates """
     prefix = f'{video_num}.mp4_frame{frame_id}.npy'
     img = np.load(f'{folder}/visualization/{prefix}')
@@ -77,7 +81,7 @@ def extract_prediction(person, frame_id, video_num, offset, folder, setting):
     if offset == 0:
         prediction *= 255
         prediction = prediction.astype(np.uint8)
-    matplotlib.image.imsave(f'{args.save_prefix}/full_prediction_{setting}.pdf', img)
+    matplotlib.image.imsave(f'{args.save_prefix}/full_prediction_{setting}_{approach}.pdf', img)
     return prediction
 
 def extract_src_tgt(person, frame_id, video_num, folder):
@@ -105,103 +109,152 @@ else:
     base_dir_list = args.base_dir_list
 
 # aggregate results across all people for each setting for each approach
-for (approach, base_dir) in zip(approaches_to_compare, base_dir_list):
-    settings_to_compare = settings[approach]
-    df_dict = {}
-    for person in args.person_list:
-        row_in_strip = []
-        
-        for setting in settings_to_compare:
-            if setting == "generic":
-                folder = f'{base_dir}/{setting}/reconstruction_single_source_{person}'
-                prefix = f'single_source_{person}'
-            elif "encoder_effect" in approach:
-                model_type = f'lr128_{approach.split(":")[-1]}'
-                folder = f'{base_dir}/{model_type}/{person}/reconstruction_single_source_{setting}'
-                prefix = f'single_source_{setting}'
-            else:
-                folder = f'{base_dir}/{setting}/{person}/reconstruction_single_source'
-                prefix = f'single_source'
+if summarize:
+    for (approach, base_dir) in zip(approaches_to_compare, base_dir_list):
+        settings_to_compare = settings[approach]
+        df_dict = {}
+        for person in args.person_list:
+            row_in_strip = []
+            
+            for setting in settings_to_compare:
+                if setting == "generic":
+                    folder = f'{base_dir}/{setting}/reconstruction_single_source_{person}'
+                    prefix = f'single_source_{person}'
+                elif "encoder_effect" in approach:
+                    model_type = f'lr128_{approach.split(":")[-1]}'
+                    folder = f'{base_dir}/{model_type}/{person}/reconstruction_single_source_{setting}'
+                    prefix = f'single_source_{setting}'
+                else:
+                    folder = f'{base_dir}/{setting}/{person}/reconstruction_single_source'
+                    prefix = f'single_source'
 
-            metrics_file = f'{folder}/{prefix}_per_frame_metrics.txt'
-            print(f'reading {metrics_file}')
-            cur_frame = pd.read_csv(metrics_file)
+                metrics_file = f'{folder}/{prefix}_per_frame_metrics.txt'
+                print(f'reading {metrics_file}')
+                cur_frame = pd.read_csv(metrics_file)
 
-            if setting not in df_dict:
-                df_dict[setting] = cur_frame
-            else:
-                df_dict[setting] = pd.concat([df_dict[setting], cur_frame])
+                if setting not in df_dict:
+                    df_dict[setting] = cur_frame
+                else:
+                    df_dict[setting] = pd.concat([df_dict[setting], cur_frame])
 
-            # skip multiple settings for extracting strip for main exp
-            if 'main_exp' in approach or 'encoder_effect' in approach:
-                continue
+                # skip multiple settings for extracting strip for main exp
+                if 'main_exp' in approach or 'encoder_effect' in approach:
+                    continue
 
-            prediction = extract_prediction(person, args.frame_num, args.video_num, \
-                    get_offset(setting, approach), folder, setting)
-            if approach == "model_ablation" or approach == 'design_model_comparison':
-                if 'ours' in setting or 'fomm_3_pathways' in setting:
+                prediction = extract_prediction(person, args.frame_num, args.video_num, \
+                        get_offset(setting, approach), folder, setting, approach)
+                if approach == "model_ablation" or approach == 'design_model_comparison':
+                    if 'ours' in setting or 'fomm_3_pathways' in setting:
+                        (src, tgt) = extract_src_tgt(person, args.frame_num, args.video_num, folder)
+                        row_in_strip = [src, tgt] + row_in_strip
+                elif len(row_in_strip) == 0:
                     (src, tgt) = extract_src_tgt(person, args.frame_num, args.video_num, folder)
-                    row_in_strip = [src, tgt] + row_in_strip
-            elif len(row_in_strip) == 0:
-                (src, tgt) = extract_src_tgt(person, args.frame_num, args.video_num, folder)
-                row_in_strip = [src, tgt]
-            row_in_strip.append(prediction)
+                    row_in_strip = [src, tgt]
+                row_in_strip.append(prediction)
         
-        if person in args.people_for_strip and len(row_in_strip) > 0:
-            completed_row = np.concatenate(row_in_strip, axis=1)
-            strip.append(completed_row)
-    if len(strip) > 0:
-        final_img = np.concatenate(strip, axis=0)
-        
-    # compute average + stddev for each setting
-    for setting in settings_to_compare:
-        average_df = pd.DataFrame(df_dict[setting].mean().to_dict(), \
-                        index=[df_dict[setting].index.values[-1]])
-        std_dev = df_dict[setting][metrics_of_interest].std()
-        average_df['setting'] = setting
-        average_df['approach'] = approach.split(':')[1] if ':' in approach else approach
-        average_df['kbps'] = average_df['reference_kbps'] + average_df['lr_kbps']
-        for m in metrics_of_interest:
-            average_df[f'{m}_sd'] = std_dev[m]
-        final_df = pd.concat([final_df, average_df])
-# same summary in csv
-final_df.to_csv(f'{args.save_prefix}/{args.csv_name}', index=False, header=True)
+            if person in args.people_for_strip and len(row_in_strip) > 0:
+                completed_row = np.concatenate(row_in_strip, axis=1)
+                strip.append(completed_row)
+        if len(strip) > 0:
+            final_img = np.concatenate(strip, axis=0)
+            
+        # compute average + stddev for each setting
+        for setting in settings_to_compare:
+            average_df = pd.DataFrame(df_dict[setting].mean().to_dict(), \
+                            index=[df_dict[setting].index.values[-1]])
+            std_dev = df_dict[setting][metrics_of_interest].std()
+            average_df['setting'] = setting
+            average_df['approach'] = approach.split(':')[1] if ':' in approach else approach
+            average_df['kbps'] = average_df['reference_kbps'] + average_df['lr_kbps']
+            for m in metrics_of_interest:
+                average_df[f'{m}_sd'] = std_dev[m]
+            final_df = pd.concat([final_df, average_df])
+    # same summary in csv
+    final_df.to_csv(f'{args.save_prefix}/{args.csv_name}', index=False, header=True)
 
 
 # form strip separately for main experiment/encoder effect
-if 'main_exp' in approaches_to_compare[0] or 'encoder_effect' in approaches_to_compare[0]:
-    for person in args.person_list:
-        row_in_strip = []
-        for (approach, base_dir) in zip(approaches_to_compare, base_dir_list):
-            if 'vpx' in approach:
-                continue
+    if 'main_exp' in approaches_to_compare[0] or 'encoder_effect' in approaches_to_compare[0]:
+        for person in args.person_list:
+            row_in_strip = []
+            for (approach, base_dir) in zip(approaches_to_compare, base_dir_list):
+                if 'vpx' in approach:
+                    continue
 
-            if 'main_exp' in approach:
-                setting = 'lr256_tgt45Kb' if 'fomm' not in approach else 'fomm'
-                folder = f'{base_dir}/{setting}/{person}/reconstruction_single_source'
-                prefix = f'single_source'
-            else:
-                model_type = f'lr128_{approach.split(":")[-1]}'
-                setting = '45Kb'
-                folder = f'{base_dir}/{model_type}/{person}/reconstruction_single_source_{setting}'
-                prefix = f'single_source_{setting}'
+                if 'main_exp' in approach:
+                    setting = 'lr256_tgt45Kb' if 'fomm' not in approach else 'fomm'
+                    folder = f'{base_dir}/{setting}/{person}/reconstruction_single_source'
+                    prefix = f'single_source'
+                else:
+                    model_type = f'lr128_{approach.split(":")[-1]}'
+                    setting = '45Kb'
+                    folder = f'{base_dir}/{model_type}/{person}/reconstruction_single_source_{setting}'
+                    prefix = f'single_source_{setting}'
 
-            prediction = extract_prediction(person, args.frame_num, args.video_num, \
-                    get_offset(setting, approach), folder, setting)
-            if approach == 'main_exp:ours':
-                (src, tgt) = extract_src_tgt(person, args.frame_num, args.video_num, folder)
-                row_in_strip = [src, tgt] + row_in_strip
-            elif 'encoder' in approach and len(row_in_strip) == 0:
-                (src, tgt) = extract_src_tgt(person, args.frame_num, args.video_num, folder)
-                row_in_strip = [src, tgt]
-            row_in_strip.append(prediction)
+                prediction = extract_prediction(person, args.frame_num, args.video_num, \
+                        get_offset(setting, approach), folder, setting, approach)
+                if approach == 'main_exp:ours':
+                    (src, tgt) = extract_src_tgt(person, args.frame_num, args.video_num, folder)
+                    row_in_strip = [src, tgt] + row_in_strip
+                elif 'encoder' in approach and len(row_in_strip) == 0:
+                    (src, tgt) = extract_src_tgt(person, args.frame_num, args.video_num, folder)
+                    row_in_strip = [src, tgt]
+                row_in_strip.append(prediction)
+            
+            if person in args.people_for_strip and len(row_in_strip) > 0:
+                completed_row = np.concatenate(row_in_strip, axis=1)
+                strip.append(completed_row)
+        if len(strip) > 0:
+            final_img = np.concatenate(strip, axis=0)
+            
+    # save img data
+    if final_img is not None:
+        matplotlib.image.imsave(f'{args.save_prefix}/strip.pdf', final_img)
+
+
+# aggregate results across all people for each setting for each approach
+elif generate_cdf:
+    for (approach, base_dir) in zip(approaches_to_compare, base_dir_list):
+        settings_to_compare = settings[approach]
+        df_dict = {}
+        for person in args.person_list:
+            row_in_strip = []
+            
+            for setting in settings_to_compare:
+                if setting == "generic":
+                    folder = f'{base_dir}/{setting}/reconstruction_single_source_{person}'
+                    prefix = f'single_source_{person}'
+                elif "encoder_effect" in approach:
+                    model_type = f'lr128_{approach.split(":")[-1]}'
+                    folder = f'{base_dir}/{model_type}/{person}/reconstruction_single_source_{setting}'
+                    prefix = f'single_source_{setting}'
+                else:
+                    folder = f'{base_dir}/{setting}/{person}/reconstruction_single_source'
+                    prefix = f'single_source'
+
+                metrics_file = f'{folder}/{prefix}_per_frame_metrics.txt'
+                print(f'reading {metrics_file}')
+                cur_frame = pd.read_csv(metrics_file)
+                #avg_df = pd.DataFrame(cur_frame.mean().to_dict(), \
+                #            index=[cur_frame.index.values[-1]])
+                avg_df = cur_frame.groupby('video_num').mean().reset_index()
+                avg_df['person'] = person
+                """
+                avg_df = pd.DataFrame(cur_frame.groupby('video_num').mean().to_dict(), \
+                            index=[cur_frame.index.values[-1]])
+                """
+                
+                if setting not in df_dict:
+                    df_dict[setting] = avg_df
+                else:
+                    df_dict[setting] = pd.concat([df_dict[setting], avg_df])
         
-        if person in args.people_for_strip and len(row_in_strip) > 0:
-            completed_row = np.concatenate(row_in_strip, axis=1)
-            strip.append(completed_row)
-    if len(strip) > 0:
-        final_img = np.concatenate(strip, axis=0)
-        
-# save img data
-if final_img is not None:
-    matplotlib.image.imsave(f'{args.save_prefix}/strip.pdf', final_img)
+        for setting in settings_to_compare:
+            setting_df = df_dict[setting]
+            setting_df['setting'] = setting
+            setting_df['approach'] = approach.split(':')[1] if ':' in approach else approach
+            setting_df['kbps'] = setting_df['reference_kbps'] + setting_df['lr_kbps']
+            final_df = pd.concat([final_df, setting_df])
+    # same summary in csv
+    final_df.to_csv(f'{args.save_prefix}/{args.csv_name}', index=False, header=True)
+
