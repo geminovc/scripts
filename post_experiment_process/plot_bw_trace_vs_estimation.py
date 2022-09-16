@@ -48,6 +48,7 @@ if __name__ == "__main__":
                     lr_estimated_max_bws[i] = lr_estimated_max_bws[i - 1]
  
             time_axis = np.linspace(0, args.window * len(total_video_bitrates)/1000, len(total_video_bitrates))
+            windowed_trace = lr_estimated_max_bws
             #TODO: fix trace problem
             '''
             full_trace = get_full_trace(args.trace_path, int(elapsed_time) + 20))
@@ -105,7 +106,7 @@ if __name__ == "__main__":
                               args.save_dir, f'{video_type}_encoder_output_vs_time_{save_suffix}',\
                               is_scatter=(video_type=='video'))
 
-            measurement_file = open(os.path.join(args.save_dir, f'bitrate_measurements_{save_suffix}.csv'), 'wt')
+            measurement_file = open(os.path.join(args.save_dir, f'bitrate_average_{save_suffix}.csv'), 'wt')
             measurement_string = f'Average sent reference video bitrate {np.mean(ref_video_bitrates)} kbps \n'
             measurement_string += f'Average sent low-res video bitrate {np.mean(lr_video_bitrates)} kbps \n'
             measurement_string += f'Average sent total video bitrate {np.mean(total_video_bitrates)} kbps \n'
@@ -114,6 +115,15 @@ if __name__ == "__main__":
             writer.writerow(['Average reference bitrate', 'Average low-res bitrate', 'Average total bitrate'])
             writer.writerow([np.mean(ref_video_bitrates), np.mean(lr_video_bitrates), np.mean(total_video_bitrates)])
             measurement_file.close()
+
+            # dump timeseries
+            timeseries_file = open(os.path.join(args.save_dir, f'timeseries_{save_suffix}.csv'), 'wt')
+            writer = csv.writer(timeseries_file)
+            writer.writerow(['actual_bitrate', 'estimated_bitrate', 'total_video_bitrates'])
+            for i in range(len(lr_estimated_max_bws)):
+                writer.writerow([windowed_trace[i], lr_estimated_max_bws[i], total_video_bitrates[i]])
+
+            timeseries_file.close()
 
     except Exception as e:
         print(e)
