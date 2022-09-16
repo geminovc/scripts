@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.image
 import os
-
+from PIL import Image, ImageDraw, ImageFont
 
 parser = argparse.ArgumentParser(description='Collect Overall Average Stats from ML Pipeline.')
 parser.add_argument('--person-list', type=str, nargs='+',
@@ -27,11 +27,10 @@ parser.add_argument('--img-width', type=int,
                     help='Frame width in pixels', default=1024)
 parser.add_argument('--video-num', type=str,
                     help='Default video to use', default='/video_conf/scratch/vibhaa_mm_directory/personalization')
+parser.add_argument('--summarize', action='store_true')
+parser.add_argument('--cdf', action='store_true')
 args = parser.parse_args()
 
-
-summarize = True
-generate_cdf = False
 
 main_settings = ['lr128_tgt15Kb', 'lr256_tgt45Kb', 'lr256_tgt75Kb', 'lr256_tgt105Kb', 'lr512_tgt180Kb', 'lr512_tgt420Kb']
 encoder_exp_settings = ['15Kb', '45Kb', '75Kb']
@@ -53,7 +52,55 @@ settings = {
         'design_model_comparison': ['fomm', 'fomm_3_pathways_with_occlusion']
 }
 metrics_of_interest = ['psnr', 'ssim_db', 'orig_lpips']
-        
+
+def get_label(setting, approach):
+    """ get label for an approach and setting """
+    if 'bicubic' in approach:
+        label = 'Bicubic'
+    elif 'SwinIR' in approach:
+        label = 'SwinIR'
+    elif 'ours' in approach:
+        label = 'Gemino'
+    elif 'vpx' in approach:
+        label = 'VP8 (Chromium)'
+    elif setting == 'fomm':
+        label = 'FOMM'
+    elif 'personalization' in setting:
+        label = 'Personalized'
+    elif 'generic' in setting:
+        label = 'Generic'
+    elif setting == 'pure_upsampling':
+        label = 'Pure Upsampling'
+    elif 'lr_in_decoder' in setting:
+        label = 'Cond. SR w/ Warped HR'
+    elif 'sme' in setting:
+        label = 'Gemino w/ RGB Warping'
+    elif '3_pathways' in setting:
+        label = 'Gemino'
+    elif 'skip_connections' in setting:
+        label = 'FOMM w/ Skip' 
+    return label
+
+
+def make_label(labels):
+    """ add a label row on top of figure """
+    total_width = len(labels) * args.img_width
+    height = 170
+    white_background = np.full((height, total_width, 3), 255, dtype=np.uint8)
+    white_img = Image.fromarray(white_background, "RGB")
+    white_img_draw = ImageDraw.Draw(white_img)
+    desired_font = ImageFont.truetype('arial.ttf', 85)
+    for i, l in enumerate(labels):
+        if len(l) < 8:
+            x_loc = round((i + 0.4)* args.img_width - 0.6*len(l))
+        elif len(l) < 16:
+            x_loc = round((i + 0.25)* args.img_width - 0.6*len(l))
+        else:
+            x_loc = round((i + 0.05)* args.img_width)
+        white_img_draw.text((x_loc, round(0.43*height)), l, fill=(0, 0, 0), font=desired_font)
+    array = np.array(white_img)
+    return array
+
 
 def get_offset(setting, approach):
     """ return offset at which prediction is found based on setting """
@@ -108,12 +155,16 @@ else:
     approaches_to_compare = args.approaches_to_compare
     base_dir_list = args.base_dir_list
 
+
 # aggregate results across all people for each setting for each approach
-if summarize:
+labels = ['Reference', 'Target']
+if args.summarize:
+    num = 0
     for (approach, base_dir) in zip(approaches_to_compare, base_dir_list):
         settings_to_compare = settings[approach]
         df_dict = {}
         for person in args.person_list:
+            num += 1
             row_in_strip = []
             
             for setting in settings_to_compare:
@@ -151,6 +202,8 @@ if summarize:
                     (src, tgt) = extract_src_tgt(person, args.frame_num, args.video_num, folder)
                     row_in_strip = [src, tgt]
                 row_in_strip.append(prediction)
+                if num == 1:
+                    labels.append(get_label(setting, approach))
         
             if person in args.people_for_strip and len(row_in_strip) > 0:
                 completed_row = np.concatenate(row_in_strip, axis=1)
@@ -175,7 +228,9 @@ if summarize:
 
 # form strip separately for main experiment/encoder effect
     if 'main_exp' in approaches_to_compare[0] or 'encoder_effect' in approaches_to_compare[0]:
+        num = 0
         for person in args.person_list:
+            num += 1
             row_in_strip = []
             for (approach, base_dir) in zip(approaches_to_compare, base_dir_list):
                 if 'vpx' in approach:
@@ -199,6 +254,9 @@ if summarize:
                 elif 'encoder' in approach and len(row_in_strip) == 0:
                     (src, tgt) = extract_src_tgt(person, args.frame_num, args.video_num, folder)
                     row_in_strip = [src, tgt]
+                
+                if num == 1:
+                    labels.append(get_label(setting, approach))
                 row_in_strip.append(prediction)
             
             if person in args.people_for_strip and len(row_in_strip) > 0:
@@ -209,17 +267,17 @@ if summarize:
             
     # save img data
     if final_img is not None:
+        label = make_label(labels)
+        final_img = np.concatenate([label, final_img], axis=0)
         matplotlib.image.imsave(f'{args.save_prefix}/strip.pdf', final_img)
 
 
 # aggregate results across all people for each setting for each approach
-elif generate_cdf:
+elif args.cdf:
     for (approach, base_dir) in zip(approaches_to_compare, base_dir_list):
         settings_to_compare = settings[approach]
         df_dict = {}
         for person in args.person_list:
-            row_in_strip = []
-            
             for setting in settings_to_compare:
                 if setting == "generic":
                     folder = f'{base_dir}/{setting}/reconstruction_single_source_{person}'
