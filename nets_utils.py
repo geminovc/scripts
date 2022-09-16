@@ -536,8 +536,12 @@ def run_single_experiment(params):
             print("Using mahimahi shell")
             mm_setup = 'sudo sysctl -w net.ipv4.ip_forward=1'
             sh.run(mm_setup, shell=True)
+            if quantizer == -1:
+                mm_quantizer = 100
+            else:
+                mm_quantizer = quantizer
 
-            sender_cmd = f'mm-delay 25 mm-link --uplink-log=\"{log_dir}/mahimahi.log\" {uplink_trace} {downlink_trace} ./offer.sh {video_file} {fps} {log_dir}/sender.log {log_dir} {exec_dir} {enable_prediction} {reference_update_freq} {quantizer} {socket_path} {prediction_type} {lr_target_bitrate} {lr_enable_gcc} '
+            sender_cmd = f'mm-delay 25 mm-link --uplink-log=\"{log_dir}/mahimahi.log\" --uplink-queue=droptail --uplink-queue-args=\"packets=250\" {uplink_trace} {downlink_trace} ./offer.sh {video_file} {fps} {log_dir}/sender.log {log_dir} {exec_dir} {enable_prediction} {reference_update_freq} {mm_quantizer} {socket_path} {prediction_type} {lr_target_bitrate} {lr_enable_gcc} '
         else:
 
             sender_cmd =  f'python {exec_dir}/cli.py offer \
@@ -660,6 +664,11 @@ def gather_data_single_experiment(params):
             else:
                 use_video_length_for_bitrate = False
         '''
+        if os.path.isfile(f'{save_dir}/mahimahi.log'):
+            sh.run(f'mm-graph {save_dir}/mahimahi.log {duration} --no-port \
+                    --xrange \"0:{duration}\" --yrange \"0:3\" --y2range \"0:2000\" \
+                    > {save_dir}/mahimahi.eps 2> {save_dir}/mmgraph.log', shell=True)
+
         stats = log_parser.gather_trace_statistics(dump_file, window / 1000)
         num_windows = len(stats['bits_sent']['video'])
         streams = list(stats['bits_sent'].keys())
@@ -727,9 +736,4 @@ def gather_data_single_experiment(params):
                 df[m] = metrics[m]
 
         combined_df = pd.concat([df, combined_df], ignore_index=True)
-        if os.path.isfile(f'{save_dir}/mahimahi.log'):
-            sh.run(f'mm-graph {save_dir}/mahimahi.log {duration} --no-port \
-                    --xrange \"0:{duration}\" --yrange \"0:3\" --y2range \"0:2000\" \
-                    > {save_dir}/mahimahi.eps 2> {save_dir}/mmgraph.log', shell=True)
-
     return pd.DataFrame(combined_df.mean(axis=0).to_dict(), index=[combined_df.index.values[-1]])
