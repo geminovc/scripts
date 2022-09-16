@@ -11,7 +11,7 @@ data<-read.csv(file)
 label_list <- c(
                  "vpx" = "VP8 (Chromium)",
                  "bicubic" = "Bicubic",
-                 "ours" = "Ours",
+                 "ours" = "Gemino",
                  "SwinIR" = "SwinIR",
                  "fomm" = "FOMM")
 
@@ -43,7 +43,7 @@ breaks_list <- c("vpx", "bicubic", "SwinIR", "fomm", "ours")
 ssim_plot <- ggplot(data, aes(x=kbps,y=ssim_db,color=approach,linetype=approach, shape=approach)) + 
         geom_line(size=0.8) +
         geom_point(size=2) +
-        geom_errorbar(aes(ymin=ssim_db-ssim_db_sd, ymax=ssim_db+ssim_db_sd), width=.2) +
+        #geom_errorbar(aes(ymin=ssim_db-ssim_db_sd, ymax=ssim_db+ssim_db_sd), width=.2) +
         xlim(0, 900) + 
         
         scale_color_manual(
@@ -71,7 +71,7 @@ ggsave(plot_filename, width=12.2,height=5)
 psnr_plot <- ggplot(data, aes(x=kbps,y=psnr,color=approach,linetype=approach, shape=approach)) + 
         geom_line(size=0.8) +
         geom_point(size=2) +
-        geom_errorbar(aes(ymin=psnr-psnr_sd, ymax=psnr+psnr_sd), width=.2) +
+        #geom_errorbar(aes(ymin=psnr-psnr_sd, ymax=psnr+psnr_sd), width=.2) +
         xlim(0, 900) +  
 
         scale_color_manual(
@@ -101,7 +101,7 @@ psnr_plot <- ggplot(data, aes(x=kbps,y=psnr,color=approach,linetype=approach, sh
 lpips_plot <- ggplot(data, aes(x=kbps,y=orig_lpips,color=approach,linetype=approach, shape=approach)) + 
         geom_line(size=0.8) +
         geom_point(size=2) + 
-        geom_errorbar(aes(ymin=orig_lpips-orig_lpips_sd, ymax=orig_lpips+orig_lpips_sd), width=.2) +
+        #geom_errorbar(aes(ymin=orig_lpips-orig_lpips_sd, ymax=orig_lpips+orig_lpips_sd), width=.2) +
         xlim(0, 900) +
 
         scale_color_manual(
