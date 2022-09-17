@@ -8,4 +8,5 @@ post_experiment_process/bw_results/
 end2end_experiments/*kbps
 traces/fixed/
 traces/custom/
+traces/*png
 *ssim_data_threshold_approach.txt
