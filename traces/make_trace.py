@@ -11,11 +11,12 @@ parser.add_argument('--time-list', type=int, nargs='+',
 parser.add_argument('--save-path', type=str,
                     help='path to save the file in',
                     required=True)
-parser.add_argument('--smooth', action='store_true',
-                    help='smoothly transits the bitrate over from first element of' 
+parser.add_argument('--use-case', type=str,
+                    help='smooth: smoothly transits the bitrate over from first element of' 
                     'bw-list to the last element of bw-list over first and last' 
                     'elements of time-list',
                     required=True)
+
 args = parser.parse_args()
 
 def make_trace(t, bw, last_c, f):
@@ -28,21 +29,38 @@ def make_trace(t, bw, last_c, f):
             c += tt_MTU
             f.write(str(c))
             f.write('\n')
-
     return c
 
-f = open(args.save_path, "w")
-last_c = 0
-if args.smooth:
-    assert(args.time_list[0] < args.time_list[-1])
-    slope_sign = np.sign(args.bw_list[-1] - args.bw_list[0])
-    bw_list = range(args.bw_list[0], args.bw_list[-1], slope_sign)
-    delta_t = slope_sign * (args.time_list[-1] - args.time_list[0]) / (args.bw_list[-1] - args.bw_list[0])
+def make_slope(last_c, bws, duration, f):
+    slope_sign = np.sign(bws[1] - bws[0])
+    bw_list = range(bws[0], bws[-1], slope_sign)
+    delta_t = slope_sign * duration / (bws[1] - bws[0])
     time_list = [delta_t for i in bw_list]
     for t, bw in zip(time_list, bw_list):
         last_c = make_trace(t, bw, last_c, f)
+    return last_c
+
+f = open(args.save_path, "w")
+last_c = 0
+
+if args.use_case == 'paper_ours':
+    last_c = make_trace(100, 550, last_c, f)
+    last_c = make_slope(last_c, [550, 20], 320, f)
+    last_c = make_trace(70, 20, last_c, f)
+    last_c = make_slope(last_c, [20, 550], 330, f)
+    last_c = make_trace(60, 550, last_c, f)
+elif args.use_case == 'paper_vpx':
+    last_c = make_trace(60, 550, last_c, f)
+    last_c = make_slope(last_c, [550, 20], 320, f)
+    last_c = make_trace(70, 20, last_c, f)
+    last_c = make_slope(last_c, [20, 550], 330), f
+    last_c = make_trace(60, 550, last_c, f)
+elif args.use_case == 'smooth':
+    assert(args.time_list[0] < args.time_list[-1])
+    make_slope(last_c, args.bw_list, args.time_list[-1] - args.time_list[0])
 else:
     for t, bw in zip(args.time_list, args.bw_list):
         last_c = make_trace(t, bw, last_c, f)
+
 f.close()
 
