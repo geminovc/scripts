@@ -53,8 +53,20 @@ elif args.use_case == 'paper_vpx':
     last_c = make_trace(60, 550, last_c, f)
     last_c = make_slope(last_c, [550, 20], 320, f)
     last_c = make_trace(70, 20, last_c, f)
-    last_c = make_slope(last_c, [20, 550], 330), f
+    last_c = make_slope(last_c, [20, 550], 330, f)
     last_c = make_trace(60, 550, last_c, f)
+elif args.use_case == 'paper_ours_shrink':
+    last_c = make_trace(70, 550, last_c, f)
+    last_c = make_slope(last_c, [550, 20], 160, f)
+    last_c = make_trace(41, 20, last_c, f)
+    last_c = make_slope(last_c, [20, 550], 160, f)
+    last_c = make_trace(1000, 550, last_c, f)
+elif args.use_case == 'paper_vpx_shrink':
+    last_c = make_trace(30, 550, last_c, f)
+    last_c = make_slope(last_c, [550, 20], 160, f)
+    last_c = make_trace(41, 20, last_c, f)
+    last_c = make_slope(last_c, [20, 550], 160, f)
+    last_c = make_trace(1000, 550, last_c, f)
 elif args.use_case == 'smooth':
     assert(args.time_list[0] < args.time_list[-1])
     make_slope(last_c, args.bw_list, args.time_list[-1] - args.time_list[0])

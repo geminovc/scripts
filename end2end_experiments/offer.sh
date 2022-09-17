@@ -12,9 +12,9 @@ prediction_type=${10}
 lr_target_bitrate=${11}
 lr_enable_gcc=${12}
 
-#if [[ "${quantizer}" == "100" ]]; then
-#	quantizer="-1"
-#fi
+if [[ "${quantizer}" == "100" ]]; then
+	quantizer="-1"
+fi
 
 echo '==================== in the offer.sh ======================'
 args1=" offer --play-from ${video_file} --signaling-path ${socket_path} "

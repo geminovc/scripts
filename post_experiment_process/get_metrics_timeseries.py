@@ -19,6 +19,8 @@ parser.add_argument('--video-path-1', type=str,
                     help='path to the first video file', required=True)
 parser.add_argument('--video-path-2', type=str,
                     help='path to the second video file', required=True)
+parser.add_argument('--window', type=int,
+                    help='window to aggregate the results over (assumns ms)', default=1000)
 args = parser.parse_args()
 
 
@@ -38,7 +40,8 @@ def get_windowed_metrics(metrics_dict, output_len, vid1_len):
     else:
         orig_lpips = [0 for i in psnrs]
 
-    window_size = max(int(len(psnrs)/output_len), 1)
+    window_size = int(30 * args.window / 1000) #assumes a video with 30fps
+
     while len(psnrs) < window_size * output_len:
         psnrs.append(0)
         ssims.append(0)
@@ -49,7 +52,14 @@ def get_windowed_metrics(metrics_dict, output_len, vid1_len):
         windowed_ssims.append(np.average(ssims[i*window_size: (i+1) * window_size]))
         windowed_lpips.append(np.average(orig_lpips[i*window_size: (i+1) * window_size]))
  
-    return windowed_psnrs, windowed_ssims, windowed_lpips
+    return windowed_psnrs[0:output_len], windowed_ssims[0:output_len], windowed_lpips[0:output_len]
+
+
+def get_num_frames(filename):
+    cmd = f"ffprobe -v error -select_streams v:0 -count_frames -show_entries stream=nb_read_frames -print_format csv {filename}"
+    num_frames = os.popen(cmd).read()
+    num_frames = int(num_frames.split(',')[1])
+    return num_frames
 
 
 def get_per_frame_metrics(video_path_1, video_path_2):
@@ -58,25 +68,21 @@ def get_per_frame_metrics(video_path_1, video_path_2):
     frame_count = 0
     loss_fn_vgg = get_loss_fn_vgg()
 
+    num_frames_1 = get_num_frames(video_path_1)
+    num_frames_2 = get_num_frames(video_path_2)
     reader1 = imageio.get_reader(video_path_1, "ffmpeg")
+    reader1.set_image_index(0)
     reader2 = imageio.get_reader(video_path_2, "ffmpeg")
-
-    for frame in reader1:
-        video_frames1.append(frame)
-
-    for frame2 in reader2:
-        try:
-            frame1 = video_frames1[frame_count]
-            metric = visual_metrics(frame1, frame2, loss_fn_vgg)
-            metrics.append(metric)
-            frame_count += 1
-            if frame_count % 100 == 0:
-                print(frame_count)
-        except Exception as e:
-            print(e)
-            pass
-
-    return metrics, len(video_frames1)
+    reader2.set_image_index(0)
+ 
+    for frame_index in range(min(num_frames_1, num_frames_2)):
+        frame1 = reader1.get_next_data()
+        frame2 = reader2.get_next_data()
+        metric = visual_metrics(frame1, frame2, loss_fn_vgg)
+        metrics.append(metric)
+        if frame_index % 100 == 0:
+            print(frame_index)
+    return metrics, num_frames_1
 
 
 if __name__ == "__main__":

@@ -31,6 +31,7 @@ def get_common_intervals(windowed_trace_bw, ref_video_bitrates, windowed_estimat
 if __name__ == "__main__":
     bitrate_stats = get_log_statistics(args.log_path, args.window/1000)
     window = bitrate_stats['window']
+    elapsed_time = bitrate_stats['elapsed_time']
     ref_video_bitrates = [i/window/1000 for i in bitrate_stats['bitrates']['video']]
     lr_video_bitrates = [i/window/1000 for i in bitrate_stats['bitrates']['lr_video']]
     total_video_bitrates = [sum(value) for value in zip(ref_video_bitrates, lr_video_bitrates)]
@@ -48,19 +49,27 @@ if __name__ == "__main__":
                     lr_estimated_max_bws[i] = lr_estimated_max_bws[i - 1]
  
             time_axis = np.linspace(0, args.window * len(total_video_bitrates)/1000, len(total_video_bitrates))
-            windowed_trace = lr_estimated_max_bws
+            cc_bitrate_estimation = lr_estimated_max_bws if np.average(lr_estimated_max_bws) > 0 else ref_estimated_max_bws
             #TODO: fix trace problem
-            '''
-            full_trace = get_full_trace(args.trace_path, int(elapsed_time) + 20))
-            windowed_trace = get_average_bw_over_window(full_trace, window=args.window)
-            windowed_trace = get_common_intervals(windowed_trace, bitrate_stats['elapsed_time'], bitrate_stats['first_packet_time'])
+            if os.path.exists(args.trace_path):
+                """use the real trace if experiment was with mahimahi"""
+                full_trace = get_full_trace(args.trace_path, args.window * (int(elapsed_time) + 100))
+                windowed_trace = get_average_bw_over_window(full_trace, window=args.window)
+                if np.average(lr_estimated_max_bws) > 0:
+                    #crop the model warmup part
+                    windowed_trace = windowed_trace[20:len(cc_bitrate_estimation) + 20]
+                else:
+                    windowed_trace = windowed_trace[:len(cc_bitrate_estimation)]
+            else:
+                windowed_trace = lr_estimated_max_bws if np.average(lr_estimated_max_bws) > 0 else ref_estimated_max_bws
+            #windowed_trace = get_common_intervals(windowed_trace, bitrate_stats['elapsed_time'], bitrate_stats['first_packet_time'])
+
             plot_graph(time_axis,\
-                      [windowed_trace_bw, windowed_estimated_bw, total_video_bitrates],\
+                      [windowed_trace, cc_bitrate_estimation, total_video_bitrates],\
                       ['link', 'estimated bw from receiver', 'sent video bitrates'], \
                       ['r', 'g', 'b'], 'time (s)', 'bitrate (kbps)', \
                       f'sent vs link vs estimated bitrate for {args.output_name}', \
                       args.save_dir, f'link_vs_sent_vs_estimation_{save_suffix}')
-            '''
 
             plot_graph(time_axis,\
                       [ref_estimated_max_bws, ref_video_bitrates],\
@@ -120,8 +129,8 @@ if __name__ == "__main__":
             timeseries_file = open(os.path.join(args.save_dir, f'timeseries_{save_suffix}.csv'), 'wt')
             writer = csv.writer(timeseries_file)
             writer.writerow(['actual_bitrate', 'estimated_bitrate', 'total_video_bitrates'])
-            for i in range(len(lr_estimated_max_bws)):
-                writer.writerow([windowed_trace[i], lr_estimated_max_bws[i], total_video_bitrates[i]])
+            for i in range(len(total_video_bitrates)):
+                writer.writerow([windowed_trace[i], cc_bitrate_estimation[i], total_video_bitrates[i]])
 
             timeseries_file.close()
 
