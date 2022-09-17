@@ -40,7 +40,7 @@ settings = {
         'main_exp:fomm': ['fomm'],
         'main_exp:vpx': ['tgt1000Kb', 'tgt200Kb', 'tgt400Kb', 'tgt600Kb', 'tgt800Kb'],
         'main_exp:SwinIR': main_settings, 
-        'encoder_effect:tgt15kb': encoder_exp_settings,
+        'encoder_effect:tgt15Kb': encoder_exp_settings,
         'encoder_effect:tgt45Kb': encoder_exp_settings,
         'encoder_effect:tgt75Kb': encoder_exp_settings,
         'encoder_effect:tgt_random': encoder_exp_settings,
@@ -78,25 +78,32 @@ def get_label(setting, approach):
     elif '3_pathways' in setting:
         label = 'Gemino'
     elif 'skip_connections' in setting:
-        label = 'FOMM w/ Skip' 
+        label = 'FOMM w/ Skip'
+    else:
+        label = setting
     return label
 
 
 def make_label(labels):
     """ add a label row on top of figure """
-    total_width = len(labels) * args.img_width
-    height = 170
+    img_width = args.img_width
+    total_width = len(labels) * img_width
+    height = 170 if img_width == 1024 else 90
     white_background = np.full((height, total_width, 3), 255, dtype=np.uint8)
     white_img = Image.fromarray(white_background, "RGB")
     white_img_draw = ImageDraw.Draw(white_img)
-    desired_font = ImageFont.truetype('arial.ttf', 85)
+    font_size = round(height / 2)
+    desired_font = ImageFont.truetype('times.ttf', font_size)
     for i, l in enumerate(labels):
         if len(l) < 8:
-            x_loc = round((i + 0.4)* args.img_width - 0.6*len(l))
+            x_loc = round((i + 0.4)* img_width - 0.6*len(l))
         elif len(l) < 16:
-            x_loc = round((i + 0.25)* args.img_width - 0.6*len(l))
+            if img_width == 512:
+                x_loc = round((i + 0.32)* img_width - 0.4*len(l))
+            else:
+                x_loc = round((i + 0.25)* img_width - 0.6*len(l))
         else:
-            x_loc = round((i + 0.05)* args.img_width)
+            x_loc = round((i + 0.05)* img_width)
         white_img_draw.text((x_loc, round(0.43*height)), l, fill=(0, 0, 0), font=desired_font)
     array = np.array(white_img)
     return array
@@ -104,11 +111,11 @@ def make_label(labels):
 
 def get_offset(setting, approach):
     """ return offset at which prediction is found based on setting """
-    if approach in ['main_exp:bicubic', 'main_exp:SwinIR', 'main_exp:vpx']:
+    if approach in ['main_exp:bicubic', 'main_exp:vpx']:
         offset = 0
     elif 'personalization' in setting or 'generic' in setting:
         offset = 7
-    elif 'pure_upsampling' in setting:
+    elif 'pure_upsampling' in setting or approach == 'main_exp:SwinIR':
         offset = 2
     elif '3_pathways' in setting or 'lr_decoder' in setting:
         offset = 7
