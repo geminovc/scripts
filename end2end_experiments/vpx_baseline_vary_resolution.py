@@ -138,12 +138,12 @@ def run_experiments():
 
                 for quantizer in args.quantizer_list:
                     for vpx_default_bitrate in args.vpx_default_bitrate_list:
-                        if args.enable_gcc:
-                            vpx_min_bitrate_range = [50000]
-                            vpx_max_bitrate_range = [1500000]
-                        else:
-                            vpx_min_bitrate_range = [vpx_default_bitrate]
-                            vpx_max_bitrate_range = [vpx_default_bitrate]
+                        #if args.enable_gcc:
+                        #    vpx_min_bitrate_range = [50000]
+                        #    vpx_max_bitrate_range = [1500000]
+                        #else:
+                        vpx_min_bitrate_range = [vpx_default_bitrate]
+                        vpx_max_bitrate_range = [vpx_default_bitrate]
 
                         for vpx_min_bitrate in vpx_min_bitrate_range:
                             for vpx_max_bitrate in vpx_max_bitrate_range:
@@ -184,12 +184,12 @@ def aggregate_data():
     for resolution in args.resolutions:
         for quantizer in args.quantizer_list:
             for vpx_default_bitrate in args.vpx_default_bitrate_list:
-                if args.enable_gcc:
-                    vpx_min_bitrate_range = [50000]
-                    vpx_max_bitrate_range = [1500000]
-                else:
-                    vpx_min_bitrate_range = [vpx_default_bitrate]
-                    vpx_max_bitrate_range = [vpx_default_bitrate]
+                #if args.enable_gcc:
+                #    vpx_min_bitrate_range = [50000]
+                #    vpx_max_bitrate_range = [1500000]
+                #else:
+                vpx_min_bitrate_range = [vpx_default_bitrate]
+                vpx_max_bitrate_range = [vpx_default_bitrate]
 
                 for vpx_min_bitrate in vpx_min_bitrate_range:
                     for vpx_max_bitrate in vpx_max_bitrate_range:

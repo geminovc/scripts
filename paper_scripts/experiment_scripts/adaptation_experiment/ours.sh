@@ -23,7 +23,7 @@ python adaptation.py \
 --quantizer-list 32 --lr-quantizer-list -1 \
 --configs-dir /data4/pantea/nets_scripts/paper_configs/exps_overview \
 --generator-type occlusion_aware --resolution 1024 \
---video-num-range 0 0 --disable-mahimahi --just-aggregate \
+--video-num-range 0 0 --disable-mahimahi  \
 
 
 cd /data4/pantea/nets_scripts/post_experiment_process

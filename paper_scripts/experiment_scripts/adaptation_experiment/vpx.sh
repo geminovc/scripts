@@ -22,7 +22,7 @@ python vpx_baseline_vary_resolution.py \
 --executable-dir /data4/pantea/aiortc/examples/videostream-cli \
 --csv ${save_prefix}/vpx_${trace}.csv \
 --quantizer-list -1 --vpx-default-bitrate-list 550000 \
---video-num-range 0 0 --disable-mahimahi --just-aggregate  \
+--video-num-range 0 0 --disable-mahimahi  \
 
 cd /data4/pantea/nets_scripts/post_experiment_process
 
