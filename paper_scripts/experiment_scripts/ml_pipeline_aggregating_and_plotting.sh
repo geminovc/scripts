@@ -13,6 +13,7 @@ python collect_results_from_ml_pipeline.py --approaches-to-compare resolution_co
 python collect_results_from_ml_pipeline.py --approaches-to-compare encoder_in_training --base-dir-list /video-conf/scratch/vibhaa_lam2/final_results/encoder_effect  --person-list kayleigh xiran adam_neely fancy_fueko needle_drop --people-for-strip adam_neely xiran kayleigh --save-prefix ../data/encoder_effect --csv-name summary.csv --img-width 1024 --video-num 2 --frame-num 1952 --summarize
 
 # model ablation
+python collect_results_from_ml_pipeline.py --approaches-to-compare model_ablation --base-dir-list /video-conf/scratch/vibhaa_lam2/final_results/model_comparison_with_encoder  --person-list kayleigh xiran fancy_fueko needle_drop adam_neely  --people-for-strip kayleigh needle_drop xiran --save-prefix ../data/model_ablation_with_encoder --csv-name summary.csv --img-width 1024 --video-num 2 --frame-num 839 --summarize
 
 # personalization effect (both strip and table)
 python collect_results_from_ml_pipeline.py --approaches-to-compare personalization --base-dir-list /video-conf/scratch/vibhaa_mm_log_directory/personalization/  --person-list kayleigh jen_psaki trevor_noah seth_meyers needle_drop --people-for-strip needle_drop seth_meyers jen_psaki --save-prefix ../data/personalization --csv-name summary.csv --img-width 512 --video-num 2 --frame-num 1952 --summarize
