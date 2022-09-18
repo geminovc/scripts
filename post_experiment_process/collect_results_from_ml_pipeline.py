@@ -46,8 +46,8 @@ settings = {
         'encoder_effect:tgt_random': encoder_exp_settings,
         'encoder_effect:no_encoder': encoder_exp_settings,
         'personalization': ['personalization', 'generic'],
-        'model_ablation': ['fomm', 'fomm_skip_connections', 'fomm_skip_connections_lr_in_decoder', \
-                'fomm_3_pathways_with_occlusion', 'sme_3_pathways_with_occlusion', 'pure_upsampling'],
+        'model_ablation': ['pure_upsampling', 'fomm_skip_connections_lr_in_decoder', \
+                'fomm_3_pathways_with_occlusion', 'sme_3_pathways_with_occlusion'],
         'resolution_comparison': ['lr64_tgt45Kb', 'lr128_tgt45Kb', 'lr256_tgt45Kb'],
         'design_model_comparison': ['fomm', 'fomm_3_pathways_with_occlusion']
 }
