@@ -64,7 +64,7 @@ def get_label(setting, approach):
     elif 'SwinIR' in approach:
         label = 'SwinIR'
     elif 'ours' in approach:
-        label = 'Gemino'
+        label = 'Gemino (Ours)'
     elif 'vpx' in approach:
         label = 'VP8 (Chromium)'
     elif setting == 'fomm':
@@ -78,9 +78,9 @@ def get_label(setting, approach):
     elif 'lr_in_decoder' in setting:
         label = 'Cond. SR w/ Warped HR'
     elif 'sme' in setting:
-        label = 'Gemino w/ RGB Warping'
+        label = 'Gemino w/ RGB Warp'
     elif '3_pathways' in setting:
-        label = 'Gemino'
+        label = 'Gemino (Ours)'
     elif 'skip_connections' in setting:
         label = 'FOMM w/ Skip'
     else:
@@ -96,19 +96,19 @@ def make_label(labels):
     white_background = np.full((height, total_width, 3), 255, dtype=np.uint8)
     white_img = Image.fromarray(white_background, "RGB")
     white_img_draw = ImageDraw.Draw(white_img)
-    font_size = round(height / 2)
+    font_size = round(0.8*height) if 'Pure Upsampling' not in labels else round(0.6*height)
     desired_font = ImageFont.truetype('times.ttf', font_size)
     for i, l in enumerate(labels):
         if len(l) < 8:
             x_loc = round((i + 0.4)* img_width - 0.6*len(l))
         elif len(l) < 16:
             if img_width == 512:
-                x_loc = round((i + 0.32)* img_width - 0.4*len(l))
+                x_loc = round((i + 0.2)* img_width - 0.4*len(l))
             else:
                 x_loc = round((i + 0.25)* img_width - 0.6*len(l))
         else:
             x_loc = round((i + 0.05)* img_width)
-        white_img_draw.text((x_loc, round(0.43*height)), l, fill=(0, 0, 0), font=desired_font)
+        white_img_draw.text((x_loc, round(0.1*height)), l, fill=(0, 0, 0), font=desired_font)
     array = np.array(white_img)
     return array
 
