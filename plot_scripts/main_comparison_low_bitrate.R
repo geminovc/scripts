@@ -5,11 +5,10 @@ source("style.R")
 
 args <- commandArgs(trailingOnly=TRUE)
 file <- "../data/main_experiment/summary.csv"
-plot_filename <- "pdfs/main_experiment.pdf"
+plot_filename <- "pdfs/main_experiment_zoomed_in.pdf"
 data<-read.csv(file)
 
 label_list <- c(
-                 "vpx" = "VP8 (Chromium)",
                  "bicubic" = "Bicubic",
                  "ours" = "Gemino",
                  "SwinIR" = "SwinIR",
@@ -17,34 +16,31 @@ label_list <- c(
 
 
 shape_list <- c(
-                 "vpx" = 15,
                  "bicubic" = 8,
                  "ours" = 16,
                  "SwinIR" = 20,
                  "fomm" = 17)
 
 line_list <- c(
-                 "vpx" = "twodash",
                  "bicubic" = "dashed",
                  "ours" = "solid",
                  "SwinIR" = "dotted",
                  "fomm" = "blank")
 
 color_list <- c(
-                 "vpx" = "#00BF7D",
                  "SwinIR" = "#A3A500",
                  "bicubic" = "#F8766D",
                  "ours" = "#00B0F6",
                  "fomm" = "#E76BF3")
 
 
-breaks_list <- c("vpx", "bicubic", "SwinIR", "fomm", "ours")
+breaks_list <- c("bicubic", "SwinIR", "fomm", "ours")
 
 ssim_plot <- ggplot(data, aes(x=kbps,y=ssim_db,color=approach,linetype=approach, shape=approach)) + 
         geom_line(size=1) +
         geom_point(size=3) +
         #geom_errorbar(aes(ymin=ssim_db-ssim_db_sd, ymax=ssim_db+ssim_db_sd), width=.2) +
-        xlim(0, 900) + 
+        xlim(0, 200) + 
         
         scale_color_manual(
                 values = color_list,
@@ -72,7 +68,7 @@ psnr_plot <- ggplot(data, aes(x=kbps,y=psnr,color=approach,linetype=approach, sh
         geom_line(size=1) +
         geom_point(size=3) +
         #geom_errorbar(aes(ymin=psnr-psnr_sd, ymax=psnr+psnr_sd), width=.2) +
-        xlim(0, 900) +  
+        xlim(0, 200) +  
 
         scale_color_manual(
                 values = color_list,
@@ -102,7 +98,7 @@ lpips_plot <- ggplot(data, aes(x=kbps,y=orig_lpips,color=approach,linetype=appro
         geom_line(size=1) +
         geom_point(size=3) + 
         #geom_errorbar(aes(ymin=orig_lpips-orig_lpips_sd, ymax=orig_lpips+orig_lpips_sd), width=.2) +
-        xlim(0, 900) +
+        xlim(0, 200) +
 
         scale_color_manual(
                 values = color_list,
