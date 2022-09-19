@@ -17,5 +17,7 @@ ggplot <- function(...) ggplot2::ggplot(...) +
                               text = element_text(size = 18, family="serif"), 
                               axis.text.x = element_text(size = 12, color = "black"), 
                               axis.text.y = element_text(size = 12, color = "black"),
-							  legend.key = element_blank(),
-							  strip.background = element_blank())
+			      legend.key = element_blank(),
+			      strip.background = element_blank(),
+                              strip.text.x = element_blank(), 
+                              strip.text.y = element_blank())
