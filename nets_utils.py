@@ -554,6 +554,7 @@ def run_single_experiment(params):
             sender_cmd += ' --verbose' 
 
         sender_args = shlex.split(sender_cmd)
+        base_env['CUDA_VISIBLE_DEVICES'] = '3'
         sender_proc = sh.Popen(sender_args, stderr=sender_output, env=base_env)
  
         if not disable_mahimahi:
@@ -599,11 +600,13 @@ def run_single_experiment(params):
 
         receiver_cmd += ' --verbose'
         receiver_args = shlex.split(receiver_cmd)
+        base_env['CUDA_VISIBLE_DEVICES'] = '2'
         recv_proc = sh.Popen(receiver_args, stderr=recv_output, env=base_env) 
 
         # wait for experiment and kill processes
         print("PIDS", recv_proc.pid, sender_proc.pid)
-        check_receiving_finished(video_file, f'{log_dir}/receiver.log', duration)
+        #check_receiving_finished(video_file, f'{log_dir}/receiver.log', duration)
+        time.sleep(duration)
         os.kill(recv_proc.pid, signal.SIGINT)
         time.sleep(5)
 
