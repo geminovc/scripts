@@ -86,13 +86,17 @@ lr_decoder = Vp8Decoder()
 frame_idx = 0
 lr_stream = []
 for av_frame in container.decode(stream):
-    frame = av_frame.to_rgb().to_ndarray()
-    driving = frame_to_tensor(img_as_float32(frame), device)
-    driving_lr = resize_tensor_to_array(driving, lr_size, device)
+    if lr_size == 1024:
+        driving_lr_av = av_frame
+    else:
+        frame = av_frame.to_rgb().to_ndarray()
+        driving = frame_to_tensor(img_as_float32(frame), device)
+        driving_lr = resize_tensor_to_array(driving, lr_size, device)
 
-    driving_lr_av = av.VideoFrame.from_ndarray(driving_lr)
-    driving_lr_av.pts = av_frame.pts
-    driving_lr_av.time_base = av_frame.time_base
+        driving_lr_av = av.VideoFrame.from_ndarray(driving_lr)
+        driving_lr_av.pts = av_frame.pts
+        driving_lr_av.time_base = av_frame.time_base
+
     quantizer_level = -1
             
     driving_lr_av, driving_lr, compressed_tgt = get_frame_from_video_codec(driving_lr_av,
