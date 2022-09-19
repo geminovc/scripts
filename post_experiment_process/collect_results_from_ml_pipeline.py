@@ -27,8 +27,12 @@ parser.add_argument('--img-width', type=int,
                     help='Frame width in pixels', default=1024)
 parser.add_argument('--video-num', type=str,
                     help='Default video to use', default='/video_conf/scratch/vibhaa_mm_directory/personalization')
-parser.add_argument('--summarize', action='store_true')
-parser.add_argument('--cdf', action='store_true')
+parser.add_argument('--summarize', action='store_true', 
+                    help='summarize results')
+parser.add_argument('--cdf', action='store_true',
+                    help='generate cdf across frames/videos')
+parser.add_argument('--per-video', action='store_true', 
+                    help='use videos for cdf, else defaults to frames')
 args = parser.parse_args()
 
 
@@ -282,7 +286,12 @@ if args.summarize:
 # aggregate results across all people for each setting for each approach
 elif args.cdf:
     for (approach, base_dir) in zip(approaches_to_compare, base_dir_list):
-        settings_to_compare = settings[approach]
+        settings_to_compare = settings[approach] 
+        if 'main_exp' in approach:
+            setting_to_compare = ['fomm'] if 'fomm' in approach else ['lr256_tgt45Kb']
+        if 'vpx' in approach:
+            continue
+        
         df_dict = {}
         for person in args.person_list:
             for setting in settings_to_compare:
@@ -300,14 +309,11 @@ elif args.cdf:
                 metrics_file = f'{folder}/{prefix}_per_frame_metrics.txt'
                 print(f'reading {metrics_file}')
                 cur_frame = pd.read_csv(metrics_file)
-                #avg_df = pd.DataFrame(cur_frame.mean().to_dict(), \
-                #            index=[cur_frame.index.values[-1]])
-                avg_df = cur_frame.groupby('video_num').mean().reset_index()
+                if args.per_video:
+                    avg_df = cur_frame.groupby('video_num').mean().reset_index()
+                else:
+                    avg_df = cur_frame
                 avg_df['person'] = person
-                """
-                avg_df = pd.DataFrame(cur_frame.groupby('video_num').mean().to_dict(), \
-                            index=[cur_frame.index.values[-1]])
-                """
                 
                 if setting not in df_dict:
                     df_dict[setting] = avg_df
