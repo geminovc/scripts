@@ -19,12 +19,21 @@ args = parser.parse_args()
 
 final_df = pd.DataFrame()
 for approach, exp_folder in zip(args.approaches_to_compare, args.base_dir_list):
-    bitrate_df = pd.read_csv(f'{exp_folder}/timeseries_sender_w1000_ms.csv')
-    metrics_df = pd.read_csv(f'{exp_folder}/visual_timeseries.csv')
+    bitrate_df = pd.read_csv(f'{exp_folder}/compression_timeseries_sender_w1000_ms.csv')
+    metrics_df = pd.read_csv(f'{exp_folder}/windowed_visual_timeseries.csv')
     combined_df = pd.concat([bitrate_df, metrics_df], axis=1) 
     combined_df['time'] = np.arange(1, len(combined_df) + 1)
     combined_df['approach'] = approach
     final_df = pd.concat([final_df, combined_df])
+
+    # add target line
+    if approach == 'vpx':
+        combined_df['approach'] = 'target'
+        combined_df['total_video_bitrates'] = combined_df['actual_bitrate']
+        combined_df['psnr'] = 0
+        combined_df['lpips'] = 1 
+        combined_df['ssim'] = 0
+        final_df = pd.concat([final_df, combined_df])
 
 os.makedirs(args.save_prefix, exist_ok=True)
 final_df.to_csv(f'{args.save_prefix}/{args.csv_name}', index=False, header=True)
