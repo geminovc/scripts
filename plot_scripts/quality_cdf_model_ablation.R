@@ -12,7 +12,7 @@ data1<-read.csv(file1)
 data2<-read.csv(file2)
 
 label_list <- c(
-                 "pure_upsampling" = "Pure Up-sampling",
+                 "pure_upsampling" = "Pure Upsampling",
                  "fomm_skip_connections_lr_in_decoder" = "Conditional SR w/ warped HR",
                  "fomm_3_pathways_with_occlusion" = "Gemino",
                  "sme_3_pathways_with_occlusion" = "Gemino w/ RGB-based warping")
