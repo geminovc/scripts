@@ -131,16 +131,31 @@ def get_offset(setting, approach):
     print(f'returning at offset {offset} for {setting} in {approach}')
     return offset
 
+
+def extract_at_offset(full_array, offset, img_width):
+    """ check if offset is within range and return image """
+    if (offset + 1) * img_width < full_array.shape[1]:
+        return full_array[:, offset*img_width: (offset + 1)*img_width, :]
+    else:
+        print(f'Offset {offset} invalid for {img_width} image of ' + \
+                f'full size {full_array.shape[1]}')
+    return None
+
+
 def extract_prediction(person, frame_id, video_num, offset, folder, setting, approach):
     """ retrieve the prediction from strip consisting of all intermediates """
     prefix = f'{video_num}.mp4_frame{frame_id}.npy'
     img = np.load(f'{folder}/visualization/{prefix}')
-    prediction = img[:, offset*args.img_width: (offset + 1)*args.img_width, :]
+    prediction = extract_at_offset(img, offset, args.img_width)
+    if prediction is None:
+        return None
+
     if offset == 0:
         prediction *= 255
         prediction = prediction.astype(np.uint8)
     matplotlib.image.imsave(f'{args.save_prefix}/full_prediction_{setting}_{approach}.pdf', img)
     return prediction
+
 
 def extract_src_tgt(person, frame_id, video_num, folder):
     """ retrieve the source and target from strip consisting of all intermediates """
@@ -148,9 +163,10 @@ def extract_src_tgt(person, frame_id, video_num, folder):
     img = np.load(f'{folder}/visualization/{prefix}')
     src_offset = 1
     tgt_offset = 4
-    src = img[:, src_offset*args.img_width: (src_offset + 1)*args.img_width, :]
-    tgt = img[:, tgt_offset*args.img_width: (tgt_offset + 1)*args.img_width, :]
+    src = extract_at_offset(img, src_offset, args.img_width)
+    tgt = extract_at_offset(img, tgt_offset, args.img_width)
     return src, tgt
+
 
 final_df = pd.DataFrame()
 strip = []
@@ -217,6 +233,9 @@ if args.summarize:
                     labels.append(get_label(setting, approach))
         
             if person in args.people_for_strip and len(row_in_strip) > 0:
+                if any(item is None for item in row_in_strip):
+                    print('Some invalid offset, stopping')
+                    quit()
                 completed_row = np.concatenate(row_in_strip, axis=1)
                 strip.append(completed_row)
         if len(strip) > 0:
@@ -271,6 +290,9 @@ if args.summarize:
                 row_in_strip.append(prediction)
             
             if person in args.people_for_strip and len(row_in_strip) > 0:
+                if any(item is None for item in row_in_strip):
+                    print('Some invalid offset, stopping')
+                    quit()
                 completed_row = np.concatenate(row_in_strip, axis=1)
                 strip.append(completed_row)
         if len(strip) > 0:
