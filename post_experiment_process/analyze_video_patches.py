@@ -21,7 +21,7 @@ args = parser.parse_args()
 video_name = args.name
 video_size = 1024
 
-rows = cols = 8
+rows = cols = 16
 
 """ iterate through video frames fetching grids and finding its source patch
 """
@@ -42,10 +42,18 @@ while cap.isOpened():
     # extract the source, predicted and flow
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     source_img = img[:, :video_size, :]
-    driving_img = img[:, video_size:2*video_size, :]
+    driving_img = img[:, 2*video_size:3*video_size, :]
     deformed_img = img[:, 3*video_size:4*video_size, :]
     flow = img[:, 4*video_size:5*video_size, :]
     predicted_img = img[:, 5*video_size:6*video_size, :]
+
+    plt.imshow(source_img)
+    plt.show()
+    plt.imshow(driving_img)
+    plt.show()
+    plt.imsave("prediction.pdf", predicted_img)
+    plt.imshow(predicted_img)
+    plt.show()
     
     # display source and predicted, register call back
     for i in range(0, rows):
@@ -62,7 +70,7 @@ while cap.isOpened():
 
             ssim_list.append(patch_ssim)
             
-            if patch_ssim < 0.4:
+            if patch_ssim < 0.7:
                 predicted_patch_list.append(predicted_patch)
                 original_patch_list.append(original_patch)
     
