@@ -20,7 +20,9 @@ settings = {
         'model_ablation': ['pure_upsampling', 'fomm_skip_connections_lr_in_decoder', \
                 'fomm_3_pathways_with_occlusion', 'sme_3_pathways_with_occlusion'],
         'resolution_comparison': ['lr64_tgt45Kb', 'lr128_tgt45Kb', 'lr256_tgt45Kb'],
-        'design_model_comparison': ['fomm', 'fomm_3_pathways_with_occlusion']
+        'design_model_comparison': ['fomm', 'fomm_3_pathways_with_occlusion'],
+        'dropout': ['dropout'], 
+        'main_exp:no_dropout': ['no_dropout']
 }
 metrics_of_interest = ['psnr', 'ssim_db', 'orig_lpips']
 
@@ -136,13 +138,16 @@ def extract_src_tgt(person, frame_id, video_num, folder, img_width):
 
 def get_folder_prefix(approach, setting, base_dir, person):
     """ return folder and file prefix based on setting/person """
-    if setting == "generic":
+    if setting == 'generic':
         folder = f'{base_dir}/{setting}/reconstruction_single_source_{person}'
         prefix = f'single_source_{person}'
-    elif "encoder_effect" in approach:
+    elif 'encoder_effect' in approach:
         model_type = f'lr128_{approach.split(":")[-1]}'
         folder = f'{base_dir}/{model_type}/{person}/reconstruction_single_source_{setting}'
         prefix = f'single_source_{setting}'
+    elif 'dropout' in approach:
+        folder = f'{base_dir}/reconstruction_single_source_{person}'
+        prefix = f'single_source_{person}'
     else:
         folder = f'{base_dir}/{setting}/{person}/reconstruction_single_source'
         prefix = f'single_source'

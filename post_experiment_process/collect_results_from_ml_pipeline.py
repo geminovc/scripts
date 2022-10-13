@@ -77,7 +77,7 @@ if args.summarize:
                     df_dict[setting] = pd.concat([df_dict[setting], cur_frame])
 
                 # skip multiple settings for extracting strip for main exp
-                if 'main_exp' in approach or 'encoder_effect' in approach:
+                if 'main_exp' in approach or 'encoder_effect' in approach or 'dropout' in approach:
                     continue
 
                 prediction = extract_prediction(person, args.frame_num, args.video_num, \
@@ -129,7 +129,11 @@ if args.summarize:
                 if 'vpx' in approach:
                     continue
 
-                if 'main_exp' in approach:
+                if 'dropout' in approach:
+                    setting = settings[approach][0]
+                    folder = f'{base_dir}/reconstruction_single_source_{person}'
+                    prefix = f'single_source_{person}'
+                elif 'main_exp' in approach:
                     setting = 'lr256_tgt45Kb' if 'fomm' not in approach else 'fomm'
                     folder = f'{base_dir}/{setting}/{person}/reconstruction_single_source'
                     prefix = f'single_source'
@@ -142,12 +146,13 @@ if args.summarize:
                 prediction = extract_prediction(person, args.frame_num, args.video_num, \
                         get_offset(setting, approach), folder, setting, approach, img_width, \
                         args.save_prefix)
-                if approach == 'main_exp:ours':
+                if approach == 'main_exp:ours' or approach == 'main_exp:no_dropout':
                     (src, tgt) = extract_src_tgt(person, args.frame_num, args.video_num, folder, img_width)
                     row_in_strip = [src, tgt] + row_in_strip
                 elif 'encoder' in approach and len(row_in_strip) == 0:
                     (src, tgt) = extract_src_tgt(person, args.frame_num, args.video_num, folder, img_width)
                     row_in_strip = [src, tgt]
+
                 
                 if num == 1:
                     labels.append(get_label(setting, approach))
