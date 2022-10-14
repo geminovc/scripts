@@ -110,7 +110,7 @@ def get_offset(setting, approach):
 
 def extract_at_offset(full_array, offset, img_width):
     """ check if offset is within range and return image """
-    if (offset + 1) * img_width < full_array.shape[1]:
+    if (offset + 1) * img_width <= full_array.shape[1]:
         return full_array[:, offset*img_width: (offset + 1)*img_width, :]
     else:
         print(f'Offset {offset} invalid for {img_width} image of ' + \
@@ -120,7 +120,8 @@ def extract_at_offset(full_array, offset, img_width):
 
 def extract_prediction(person, frame_id, video_num, offset, folder, setting, approach, img_width, save_prefix):
     """ retrieve the prediction from strip consisting of all intermediates """
-    prefix = f'{video_num}.mp4_frame{frame_id}.npy'
+    file_ext = 'y4m' if 'vp9' in approach else 'mp4'
+    prefix = f'{video_num}.{file_ext}_frame{frame_id}.npy'
     img = np.load(f'{folder}/visualization/{prefix}')
     prediction = extract_at_offset(img, offset, img_width)
     if prediction is None:
