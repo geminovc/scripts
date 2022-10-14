@@ -171,7 +171,7 @@ if args.summarize:
     if final_img is not None:
         label = make_label(labels, img_width)
         final_img = np.concatenate([label, final_img], axis=0)
-        matplotlib.image.imsave(f'{args.save_prefix}/strip.pdf', final_img)
+        matplotlib.image.imsave(f'{args.save_prefix}/video{args.video_num}_frame{args.frame_num}.pdf', final_img)
 
 
 # aggregate results across all people for each setting for each approach

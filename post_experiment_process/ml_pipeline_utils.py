@@ -9,6 +9,7 @@ settings = {
         'main_exp:ours': main_settings,
         'main_exp:bicubic': main_settings,
         'main_exp:fomm': ['fomm'],
+        'main_exp:vp9_bicubic': main_settings,
         'main_exp:vpx': ['tgt1000Kb', 'tgt200Kb', 'tgt400Kb', 'tgt600Kb', 'tgt800Kb'],
         'main_exp:SwinIR': main_settings, 
         'encoder_effect:tgt15Kb': encoder_exp_settings,
@@ -28,7 +29,9 @@ metrics_of_interest = ['psnr', 'ssim_db', 'orig_lpips']
 
 def get_label(setting, approach):
     """ get label for an approach and setting """
-    if 'bicubic' in approach:
+    if 'vp9_bicubic' in approach:
+        label = 'Bicubic (VP9)'
+    elif 'bicubic' in approach:
         label = 'Bicubic'
     elif 'SwinIR' in approach:
         label = 'SwinIR'
@@ -36,13 +39,17 @@ def get_label(setting, approach):
         label = 'Gemino (Ours)'
     elif 'vpx' in approach:
         label = 'VP8 (Chromium)'
-    elif setting == 'fomm':
+    elif 'fomm' in approach:
         label = 'FOMM'
+    elif 'no_dropout' in approach:
+        label = 'No Dropout'
+    elif 'dropout' in approach:
+        label = 'Dropout'
     elif 'personalization' in setting:
         label = 'Personalized'
     elif 'generic' in setting:
         label = 'Generic'
-    elif setting == 'pure_upsampling':
+    elif setting == 'pure_upsampling' or 'pure_upsampling' in approach:
         label = 'Pure Upsampling'
     elif 'lr_in_decoder' in setting:
         label = 'Cond. SR w/ Warped HR'
@@ -83,11 +90,12 @@ def make_label(labels, img_width):
 
 def get_offset(setting, approach):
     """ return offset at which prediction is found based on setting """
-    if approach in ['main_exp:bicubic', 'main_exp:vpx']:
+    if approach in ['main_exp:bicubic', 'main_exp:vpx', 'main_exp:vp9_bicubic']:
         offset = 0
     elif 'personalization' in setting or 'generic' in setting:
         offset = 7
-    elif 'pure_upsampling' in setting or approach == 'main_exp:SwinIR':
+    elif 'pure_upsampling' in setting or 'pure_upsampling' in approach \
+            or approach == 'main_exp:SwinIR':
         offset = 2
     elif '3_pathways' in setting or 'lr_decoder' in setting:
         offset = 7
