@@ -28,6 +28,21 @@ def get_common_intervals(windowed_trace_bw, ref_video_bitrates, windowed_estimat
             np.clip(windowed_estimated_bw[0:min_len], 0, 12000)
 
 
+def get_bitrate_using_compression(compressed):
+    bitrates = []
+    estimated_bitrates = []
+    while len(compressed) % 30 != 0:
+        compressed.append(0)
+
+    frame_indexs = range(0, len(compressed))
+    hardcoded_bitrates = [min(max(750000 - 110 * x, 20000) + max(0, -942500 + 110 * x), 650000) for x in frame_indexs]
+    for i in range(0, int(len(compressed)/30) - 1):
+            bitrates.append(8 * sum(compressed[i * 30: (i + 1)*30]) / 1000)
+            estimated_bitrates.append(np.average(hardcoded_bitrates[i * 30: (i + 1)*30]) / 1000)
+    return bitrates, estimated_bitrates
+
+
+
 if __name__ == "__main__":
     bitrate_stats = get_log_statistics(args.log_path, args.window/1000)
     window = bitrate_stats['window']
@@ -105,15 +120,31 @@ if __name__ == "__main__":
                   ['r', 'b'], 'time (s)', 'bitrate (kbps)', \
                   f'total sent video bitrate for {args.output_name}',\
                   args.save_dir, f'sent_total_video_rtp_{save_suffix}')
+            
 
             for video_type in ['video', 'lr_video']:
-                if len(compression_stats[video_type]) > 0:
+                if len(compression_stats[video_type]) > 30:
                     plot_graph(compression_stats[f'{video_type}_time'], [compression_stats[video_type]],\
                               ['encoder payload size'], \
                               ['m'], 'time (s)', f'payload size (bytes)',\
                               f'{video_type} encoder output for {args.output_name}',\
                               args.save_dir, f'{video_type}_encoder_output_vs_time_{save_suffix}',\
                               is_scatter=(video_type=='video'))
+
+                    compression_bitrates, hardcoded_bitrates = get_bitrate_using_compression(compression_stats[video_type])
+                    plot_graph(range(0, len(compression_bitrates)), [compression_bitrates, hardcoded_bitrates],\
+                              ['bitrates from encoder', 'hardcoded link'], \
+                              ['b', 'r'], 'time (s)', f'kbps',\
+                              f'{video_type} encoder output for {args.output_name}',\
+                              args.save_dir, f'bitrates_using_encoder_{video_type}_{save_suffix}')
+
+                    # dump compression timeseries
+                    timeseries_file = open(os.path.join(args.save_dir, f'compression_timeseries_{save_suffix}.csv'), 'wt')
+                    writer = csv.writer(timeseries_file)
+                    writer.writerow(['actual_bitrate', 'estimated_bitrate', 'total_video_bitrates'])
+                    for i in range(len(hardcoded_bitrates)):
+                        writer.writerow([hardcoded_bitrates[i], hardcoded_bitrates[i], compression_bitrates[i]])
+                    timeseries_file.close()
 
             measurement_file = open(os.path.join(args.save_dir, f'bitrate_average_{save_suffix}.csv'), 'wt')
             measurement_string = f'Average sent reference video bitrate {np.mean(ref_video_bitrates)} kbps \n'

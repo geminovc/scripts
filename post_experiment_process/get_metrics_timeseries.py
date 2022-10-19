@@ -52,7 +52,7 @@ def get_windowed_metrics(metrics_dict, output_len, vid1_len):
         windowed_ssims.append(np.average(ssims[i*window_size: (i+1) * window_size]))
         windowed_lpips.append(np.average(orig_lpips[i*window_size: (i+1) * window_size]))
  
-    return windowed_psnrs[0:output_len], windowed_ssims[0:output_len], windowed_lpips[0:output_len]
+    return windowed_psnrs[0:output_len], windowed_ssims[0:output_len], windowed_lpips[0:output_len], psnrs, ssims, orig_lpips
 
 
 def get_num_frames(filename):
@@ -94,14 +94,42 @@ if __name__ == "__main__":
         for row in csv_reader:
             output_len += 1
 
-    windowed_psnrs, windowed_ssims, windowed_lpips = get_windowed_metrics(metrics_dict, \
+    windowed_psnrs, windowed_ssims, windowed_lpips, psnrs, ssims, orig_lpips = get_windowed_metrics(metrics_dict, \
                                                         output_len, vid1_len)
-    # dump timeseries
+    # dump per frame metrics
     timeseries_file = open(os.path.join(args.save_dir, \
-                        f'visual_timeseries.csv'), 'wt')
+            f'per_frame_visual_timeseries.csv'), 'wt')
+
+    writer = csv.writer(timeseries_file)
+    writer.writerow(['psnr', 'ssim', 'lpips'])
+    for i in range(len(psnrs)):
+        writer.writerow([psnrs[i], ssims[i], orig_lpips[i]])
+    timeseries_file.close()
+
+    # dump windowed timeseries
+    timeseries_file = open(os.path.join(args.save_dir, \
+                        f'windowed_visual_timeseries.csv'), 'wt')    
     writer = csv.writer(timeseries_file)
     writer.writerow(['psnr', 'ssim', 'lpips'])
     for i in range(len(windowed_psnrs)):
         writer.writerow([windowed_psnrs[i], windowed_ssims[i], windowed_lpips[i]])
-
     timeseries_file.close()
+
+    plot_graph(range(0, len(windowed_psnrs)), [windowed_psnrs],\
+          ['PSNR'], \
+          ['r'], 'time (s)', f'psnr',\
+          f'vidual quality comparison',\
+          args.save_dir, f'windowed_psnr_using_encoder')
+
+    plot_graph(range(0, len(windowed_ssims)), [windowed_ssims],\
+          ['SSIM'], \
+          ['r'], 'time (s)', f'ssim',\
+          f'vidual quality comparison',\
+          args.save_dir, f'windowed_ssim_using_encoder')
+
+    plot_graph(range(0, len(windowed_lpips)), [windowed_lpips],\
+          ['LPIPS'], \
+          ['r'], 'time (s)', f'lpips',\
+          f'vidual quality comparison',\
+          args.save_dir, f'windowed_lpips_using_encoder')
+

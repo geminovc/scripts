@@ -55,14 +55,14 @@ elif args.use_case == 'paper_vpx':
     last_c = make_trace(70, 20, last_c, f)
     last_c = make_slope(last_c, [20, 550], 330, f)
     last_c = make_trace(60, 550, last_c, f)
-elif args.use_case == 'paper_ours_shrink':
-    last_c = make_trace(70, 550, last_c, f)
-    last_c = make_slope(last_c, [550, 20], 160, f)
+elif args.use_case == 'paper_ours_new':
+    last_c = make_trace(70, 650, last_c, f)
+    last_c = make_slope(last_c, [650, 20], 160, f)
     last_c = make_trace(41, 20, last_c, f)
     last_c = make_slope(last_c, [20, 550], 160, f)
     last_c = make_trace(1000, 550, last_c, f)
-elif args.use_case == 'paper_vpx_shrink':
-    last_c = make_trace(30, 550, last_c, f)
+elif args.use_case == 'paper_vpx_new':
+    last_c = make_trace(30, 650, last_c, f)
     last_c = make_slope(last_c, [550, 20], 160, f)
     last_c = make_trace(41, 20, last_c, f)
     last_c = make_slope(last_c, [20, 550], 160, f)

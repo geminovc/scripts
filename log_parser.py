@@ -103,7 +103,7 @@ def gather_encoder_statistics(log_filename, window=1):
         if not line:
             break
 
-        if "is encoded with timestamp" in line:
+        if "is encoded with resolution" in line:
             parts = line.strip().split(" ")
             compression_size = int(parts[10])
             date_str = parts[13] + " " + parts[14]
