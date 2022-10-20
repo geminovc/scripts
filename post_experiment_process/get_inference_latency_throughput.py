@@ -71,7 +71,8 @@ def get_timings(save_dir, window=0.5):
 
     total_frames = total_predicted_frames if total_predicted_frames > 0 else total_displayed_frames
     print("total_frames", total_frames)
-    print("throughput", total_frames / (last_displayed_time - first_displayed_time))
+    if last_displayed_time is not None and first_displayed_time is not None:
+        print("throughput", total_frames / (last_displayed_time - first_displayed_time))
     return frame_times_dict
 
 
