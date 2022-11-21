@@ -661,6 +661,12 @@ def gather_data_single_experiment(params):
         save_dir = f'{save_prefix}/run{run_num}'
         dump_file = f'{save_dir}/sender.log'
         saved_video_file = f'{save_dir}/received.mp4'
+
+        if os.path.isfile(f'{save_dir}/mahimahi.log'):
+            sh.run(f'mm-graph {save_dir}/mahimahi.log {duration} --no-port \
+                    --xrange \"0:{duration}\" --yrange \"0:3\" --y2range \"0:2000\" \
+                    > {save_dir}/mahimahi.eps 2> {save_dir}/mmgraph.log', shell=True)
+
         saved_video_duration = get_video_duration(saved_video_file)
         print("saved_video_duration", saved_video_duration)
         '''
@@ -672,11 +678,6 @@ def gather_data_single_experiment(params):
             else:
                 use_video_length_for_bitrate = False
         '''
-        if os.path.isfile(f'{save_dir}/mahimahi.log'):
-            sh.run(f'mm-graph {save_dir}/mahimahi.log {duration} --no-port \
-                    --xrange \"0:{duration}\" --yrange \"0:3\" --y2range \"0:2000\" \
-                    > {save_dir}/mahimahi.eps 2> {save_dir}/mmgraph.log', shell=True)
-
         stats = log_parser.gather_trace_statistics(dump_file, window / 1000)
         num_windows = len(stats['bits_sent']['video'])
         streams = list(stats['bits_sent'].keys())
