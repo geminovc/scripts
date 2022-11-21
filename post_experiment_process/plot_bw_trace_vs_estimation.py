@@ -29,18 +29,24 @@ def get_common_intervals(windowed_trace_bw, ref_video_bitrates, windowed_estimat
 
 
 def get_bitrate_using_compression(compressed):
+    # TODO: change the function below based on what's logged  in the aiortc code
     bitrates = []
     estimated_bitrates = []
     while len(compressed) % 30 != 0:
         compressed.append(0)
 
     frame_indexs = range(0, len(compressed))
-    hardcoded_bitrates = [min(max(750000 - 110 * x, 20000) + max(0, -942500 + 110 * x), 650000) for x in frame_indexs]
+    hardcoded_bitrates = [min(max(750000 - 55 * 2 * x, 20000) + max(0, -942500 + 55 * 2 * x),
+                            650000) for x in frame_indexs]
+    # TODO for Vibha: This below for example starts at 1Mbps and goes down to 20kbps
+    #and then goes up again
+    #hardcoded_bitrates = [min(max(1200000 - 110 * x, 20000) + max(0, -942500 + 110  *x),
+    #                       1000000) for x in frame_indexs]
+
     for i in range(0, int(len(compressed)/30) - 1):
             bitrates.append(8 * sum(compressed[i * 30: (i + 1)*30]) / 1000)
             estimated_bitrates.append(np.average(hardcoded_bitrates[i * 30: (i + 1)*30]) / 1000)
     return bitrates, estimated_bitrates
-
 
 
 if __name__ == "__main__":
@@ -63,12 +69,16 @@ if __name__ == "__main__":
                 if lr_estimated_max_bws[i] == 0:
                     lr_estimated_max_bws[i] = lr_estimated_max_bws[i - 1]
  
-            time_axis = np.linspace(0, args.window * len(total_video_bitrates)/1000, len(total_video_bitrates))
-            cc_bitrate_estimation = lr_estimated_max_bws if np.average(lr_estimated_max_bws) > 0 else ref_estimated_max_bws
+            time_axis = np.linspace(0, args.window * len(total_video_bitrates)/1000,
+                                    len(total_video_bitrates))
+            cc_bitrate_estimation = lr_estimated_max_bws if np.average(lr_estimated_max_bws) > 0 \
+                                        else ref_estimated_max_bws
+
             #TODO: fix trace problem
             if os.path.exists(args.trace_path):
                 """use the real trace if experiment was with mahimahi"""
-                full_trace = get_full_trace(args.trace_path, args.window * (int(elapsed_time) + 100))
+                full_trace = get_full_trace(args.trace_path,
+                                        args.window * (int(elapsed_time) + 100))
                 windowed_trace = get_average_bw_over_window(full_trace, window=args.window)
                 if np.average(lr_estimated_max_bws) > 0:
                     #crop the model warmup part
@@ -76,8 +86,11 @@ if __name__ == "__main__":
                 else:
                     windowed_trace = windowed_trace[:len(cc_bitrate_estimation)]
             else:
-                windowed_trace = lr_estimated_max_bws if np.average(lr_estimated_max_bws) > 0 else ref_estimated_max_bws
-            #windowed_trace = get_common_intervals(windowed_trace, bitrate_stats['elapsed_time'], bitrate_stats['first_packet_time'])
+                windowed_trace = lr_estimated_max_bws if np.average(lr_estimated_max_bws) > 0 \
+                                    else ref_estimated_max_bws
+
+            #windowed_trace = get_common_intervals(windowed_trace,
+            #bitrate_stats['elapsed_time'], bitrate_stats['first_packet_time'])
 
             plot_graph(time_axis,\
                       [windowed_trace, cc_bitrate_estimation, total_video_bitrates],\

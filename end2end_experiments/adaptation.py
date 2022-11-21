@@ -95,9 +95,6 @@ def run_experiments():
     params['socket_path'] = 'adaptation.sock'
     vid_start, vid_end = args.video_num_range 
     assert(vid_end >= vid_start)
-    #base_env = os.environ.copy()
-    #config_path = base_env['CONFIG_PATH']
-    #params['config_path'] = config_path
 
     for person in args.people:
         params['person'] = person

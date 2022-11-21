@@ -21,6 +21,8 @@ parser.add_argument('--video-path-2', type=str,
                     help='path to the second video file', required=True)
 parser.add_argument('--window', type=int,
                     help='window to aggregate the results over (assumns ms)', default=1000)
+parser.add_argument('--sample', action='store_true',
+                    help='sample the metrics every 10 frames instead to make the computation faster')
 args = parser.parse_args()
 
 
@@ -52,7 +54,8 @@ def get_windowed_metrics(metrics_dict, output_len, vid1_len):
         windowed_ssims.append(np.average(ssims[i*window_size: (i+1) * window_size]))
         windowed_lpips.append(np.average(orig_lpips[i*window_size: (i+1) * window_size]))
  
-    return windowed_psnrs[0:output_len], windowed_ssims[0:output_len], windowed_lpips[0:output_len], psnrs, ssims, orig_lpips
+    return windowed_psnrs[0:output_len], windowed_ssims[0:output_len], \
+            windowed_lpips[0:output_len], psnrs, ssims, orig_lpips
 
 
 def get_num_frames(filename):
@@ -74,14 +77,16 @@ def get_per_frame_metrics(video_path_1, video_path_2):
     reader1.set_image_index(0)
     reader2 = imageio.get_reader(video_path_2, "ffmpeg")
     reader2.set_image_index(0)
- 
+    prev_metric = None
     for frame_index in range(min(num_frames_1, num_frames_2)):
         frame1 = reader1.get_next_data()
         frame2 = reader2.get_next_data()
-        metric = visual_metrics(frame1, frame2, loss_fn_vgg)
-        metrics.append(metric)
+        if prev_metric is None or frame_index % 10 == 0 or not args.sample:
+            metric = visual_metrics(frame1, frame2, loss_fn_vgg)
+            prev_metric = metric
+        metrics.append(prev_metric)
         if frame_index % 100 == 0:
-            print(frame_index)
+            print("computed metrics for ", frame_index)
     return metrics, num_frames_1
 
 
@@ -118,18 +123,18 @@ if __name__ == "__main__":
     plot_graph(range(0, len(windowed_psnrs)), [windowed_psnrs],\
           ['PSNR'], \
           ['r'], 'time (s)', f'psnr',\
-          f'vidual quality comparison',\
+          f'visual quality comparison',\
           args.save_dir, f'windowed_psnr_using_encoder')
 
     plot_graph(range(0, len(windowed_ssims)), [windowed_ssims],\
           ['SSIM'], \
           ['r'], 'time (s)', f'ssim',\
-          f'vidual quality comparison',\
+          f'visual quality comparison',\
           args.save_dir, f'windowed_ssim_using_encoder')
 
     plot_graph(range(0, len(windowed_lpips)), [windowed_lpips],\
           ['LPIPS'], \
           ['r'], 'time (s)', f'lpips',\
-          f'vidual quality comparison',\
+          f'visual quality comparison',\
           args.save_dir, f'windowed_lpips_using_encoder')
 

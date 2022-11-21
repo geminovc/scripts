@@ -447,15 +447,17 @@ def check_receiving_finished(video_file, receiver_log, max_duration):
 
     while True:
         if time.time() - start_time > 120 and not received_at_least_one:
-            print("Killing the experiment: nothing has been received after 2 minutes")
-            return
+            pass
+            #print("Killing the experiment: nothing has been received after 2 minutes")
+            #return
         if time.time() - start_time > max_duration:
             return
 
         result = subprocess.check_output(f'grep -i "Frame displayed at receiver" {receiver_log} | tail -1 | cut -d" " -f 6 ' , shell=True)
         try:
             if int(result.decode("utf-8").strip()) == video_num_frames - 1:
-                return
+                #return
+                pass
             received_at_least_one = True
         except Exception as e:
             print(e)
@@ -563,6 +565,7 @@ def run_single_experiment(params):
             sender_cmd += ' --verbose' 
 
         sender_args = shlex.split(sender_cmd)
+        base_env['CUDA_VISIBLE_DEVICES'] = '0'
         sender_proc = sh.Popen(sender_args, stderr=sender_output, env=base_env)
  
         if not disable_mahimahi:
@@ -608,6 +611,7 @@ def run_single_experiment(params):
 
         receiver_cmd += ' --verbose'
         receiver_args = shlex.split(receiver_cmd)
+        base_env['CUDA_VISIBLE_DEVICES'] = '0'
         recv_proc = sh.Popen(receiver_args, stderr=recv_output, env=base_env) 
 
         # wait for experiment and kill processes
