@@ -543,7 +543,11 @@ def run_single_experiment(params):
             else:
                 mm_quantizer = quantizer
 
-            sender_cmd = f'mm-delay 25 mm-link --uplink-log=\"{log_dir}/mahimahi.log\" --uplink-queue=droptail --uplink-queue-args=\"packets=500\" {uplink_trace} {downlink_trace} ./offer.sh {video_file} {fps} {log_dir}/sender.log {log_dir} {exec_dir} {enable_prediction} {reference_update_freq} {mm_quantizer} {socket_path} {prediction_type} {lr_target_bitrate} {lr_enable_gcc} '
+            sender_cmd = f'mm-delay 25 mm-link --uplink-log=\"{log_dir}/mahimahi.log\" ' +\
+                         f'{uplink_trace} {downlink_trace} ' +\
+                         f'./offer.sh {video_file} {fps} {log_dir}/sender.log {log_dir} {exec_dir} ' +\
+                         f'{enable_prediction} {reference_update_freq} {mm_quantizer} {socket_path} ' +\
+                         f'{prediction_type} {lr_target_bitrate} {lr_enable_gcc} '
         else:
 
             sender_cmd =  f'python {exec_dir}/cli.py offer \

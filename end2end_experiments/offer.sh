@@ -12,10 +12,6 @@ prediction_type=${10}
 lr_target_bitrate=${11}
 lr_enable_gcc=${12}
 
-if [[ "${quantizer}" == "100" ]]; then
-	quantizer="-1"
-fi
-
 echo '==================== in the offer.sh ======================'
 args1=" offer --play-from ${video_file} --signaling-path ${socket_path} "
 args2=" --signaling unix-socket --reference-update-freq ${reference_frame_update_freq} "
@@ -28,10 +24,7 @@ if [[ "${enable_prediction}" == "True" ]]; then
     args2="${args2} --lr-target-bitrate ${lr_target_bitrate} "
     args2="${args2} --lr-enable-gcc "
 
-#    if [[ "${lr_enable_gcc}" == "True" ]]; then
-#    	args2="${args2} --lr-enable-gcc "
-#    fi
 fi
-echo  ${args1}${args2}${args3}
+#echo  ${args1}${args2}${args3}
 
 python3 ${exec_dir}/cli.py ${args1}${args2}${args3} 2>${sender_log_file}
