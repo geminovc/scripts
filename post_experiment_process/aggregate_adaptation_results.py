@@ -21,7 +21,8 @@ final_df = pd.DataFrame()
 for approach, exp_folder in zip(args.approaches_to_compare, args.base_dir_list):
     bitrate_df = pd.read_csv(f'{exp_folder}/compression_timeseries_sender_w1000_ms.csv')
     metrics_df = pd.read_csv(f'{exp_folder}/windowed_visual_timeseries.csv')
-    combined_df = pd.concat([bitrate_df, metrics_df], axis=1) 
+    combined_df = pd.concat([bitrate_df, metrics_df], axis=1)
+    combined_df = combined_df[10:]
     combined_df['time'] = np.arange(1, len(combined_df) + 1)
     combined_df['approach'] = approach
     final_df = pd.concat([final_df, combined_df])

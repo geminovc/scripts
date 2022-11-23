@@ -4,10 +4,10 @@
 source("style.R")
 
 args <- commandArgs(trailingOnly=TRUE)
-file <- "../data/adaptation/summary.csv"
-plot_filename <- "pdfs/adaptation.pdf"
+file <- "../data/adaptation_1mbps_upper/summary.csv"
+plot_filename <- "pdfs/adaptation_1mbps.pdf"
 data<-read.csv(file)
-data<- data[data$time < 220,]
+data<- data[data$time < 230,]
 
 label_list <- c(
                  "vpx" = "VP8 (Chromium)",
@@ -45,6 +45,9 @@ bitrate_plot <- ggplot(data, aes(x=time,y=total_video_bitrates,color=approach,li
                 labels=label_list,
                 breaks=breaks_list,
                 guide=guide_legend(title=NULL, nrow=1)) +
+    
+        scale_y_continuous(breaks=seq(-200,1000,200), expand = c(0, 0)) + 
+        scale_x_continuous(breaks=seq(-50,250,50), expand = c(0, 0)) + 
         
         theme(legend.text=element_text(size=rel(1)), legend.key.size=unit(15,"points"), legend.position="none",
               legend.box.margin=margin(-10,-10,-10,-10), legend.title=element_blank(),
@@ -66,6 +69,8 @@ lpips_plot <- ggplot(data[data$approach != 'target', ], aes(x=time,y=lpips,color
                 labels=label_list,
                 breaks=breaks_list,
                 guide=guide_legend(title=NULL, nrow=1)) +
+        
+        scale_x_continuous(breaks=seq(0,250,50), expand = c(0, 0)) + 
 
         labs(y="LPIPS", x="Time (s)") 
  
