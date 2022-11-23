@@ -14,7 +14,7 @@ log_dir=${save_prefix}/${person}/${video_num}.mp4/lrquantizer-1/quantizer32/run0
 # full-range quantizer
 python adaptation.py \
 --lr-enable-gcc \
---duration 500 --window ${window} --runs 1 \
+--duration 1200 --window ${window} --runs 1 \
 --root-dir ${video_root} \
 --people ${person} \
 --save-prefix ${save_prefix} \

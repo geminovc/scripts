@@ -35,13 +35,9 @@ def get_bitrate_using_compression(compressed):
     while len(compressed) % 30 != 0:
         compressed.append(0)
 
-    frame_indexs = range(0, len(compressed))
-    hardcoded_bitrates = [min(max(750000 - 55 * 2 * x, 20000) + max(0, -942500 + 55 * 2 * x),
-                            650000) for x in frame_indexs]
-    # TODO for Vibha: This below for example starts at 1Mbps and goes down to 20kbps
-    #and then goes up again
-    #hardcoded_bitrates = [min(max(1200000 - 110 * x, 20000) + max(0, -942500 + 110  *x),
-    #                       1000000) for x in frame_indexs]
+    frame_indices = range(0, len(compressed))
+    hardcoded_bitrates = [min(max(1200000 - 165 * x, 20000) + max(0, -1175000 + 165  *x),
+                           1000000) for x in frame_indices]
 
     for i in range(0, int(len(compressed)/30) - 1):
             bitrates.append(8 * sum(compressed[i * 30: (i + 1)*30]) / 1000)

@@ -16,7 +16,7 @@ export CONFIG_PATH=${nets_scripts_dir}/paper_configs/resolution1024_vpx.yaml
 # full-range quantizer
 python vpx_baseline_vary_resolution.py \
 --resolutions 1024x1024 \
---duration 400 --window ${window} --runs 1 \
+--duration 800 --window ${window} --runs 1 \
 --root-dir ${video_root} \
 --people ${person} \
 --save-prefix ${save_prefix} \
