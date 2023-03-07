@@ -4,15 +4,15 @@
 source("style.R")
 
 args <- commandArgs(trailingOnly=TRUE)
-file <- "../data/main_experiment_with_vp9/summary.csv"
-plot_filename <- "pdfs/main_experiment_with_vp9_zoomed_in.pdf"
+file <- "../data/with_vp9_and_bicubic/summary.csv"
+plot_filename <- "pdfs/main_experiment_with_vp9_bicubic_zoomed_in.pdf"
 data<-read.csv(file)
 
 label_list <- c(
                  "bicubic" = "Bicubic",
                  "vp9_bicubic" = "Bicubic (VP9)",
                  "ours" = "Gemino",
-                 "SwinIR" = "SwinIR",
+                 "vp9_ours" = "Gemino (VP9)",
                  "fomm" = "FOMM")
 
 
@@ -20,25 +20,25 @@ shape_list <- c(
                  "bicubic" = 8,
                  "vp9_bicubic" = 17,
                  "ours" = 16,
-                 "SwinIR" = 20,
+                 "vp9_ours" = 20,
                  "fomm" = 17)
 
 line_list <- c(
                  "bicubic" = "dashed",
                  "vp9_bicubic" = "dotdash",
                  "ours" = "solid",
-                 "SwinIR" = "dotted",
+                 "vp9_ours" = "dotted",
                  "fomm" = "blank")
 
 color_list <- c(
-                 "SwinIR" = "#A3A500",
+                 "vp9_ours" = "#A3A500",
                  "vp9_bicubic" = "#7570B3",
                  "bicubic" = "#F8766D",
                  "ours" = "#00B0F6",
                  "fomm" = "#E76BF3")
 
 
-breaks_list <- c("bicubic", "vp9_bicubic", "SwinIR", "fomm", "ours")
+breaks_list <- c("bicubic", "vp9_bicubic", "vp9_ours", "fomm", "ours")
 
 ssim_plot <- ggplot(data, aes(x=kbps,y=ssim_db,color=approach,linetype=approach, shape=approach)) + 
         geom_line(size=1) +

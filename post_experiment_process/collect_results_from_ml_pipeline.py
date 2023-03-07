@@ -134,7 +134,7 @@ if args.summarize:
                     folder = f'{base_dir}/reconstruction_single_source_{person}'
                     prefix = f'single_source_{person}'
                 elif 'main_exp' in approach:
-                    setting = 'lr256_tgt45Kb' if 'fomm' not in approach else 'fomm'
+                    setting = 'lr256_tgt75Kb' if 'fomm' not in approach else 'fomm'
                     folder = f'{base_dir}/{setting}/{person}/reconstruction_single_source'
                     prefix = f'single_source'
                 else:
@@ -170,8 +170,9 @@ if args.summarize:
     # save img data
     if final_img is not None:
         label = make_label(labels, img_width)
-        final_img = np.concatenate([label, final_img], axis=0)
-        matplotlib.image.imsave(f'{args.save_prefix}/video{args.video_num}_frame{args.frame_num}.pdf', final_img)
+        print(np.shape(label), np.shape(final_img))
+        # final_img = np.concatenate([label, final_img], axis=0)
+        matplotlib.image.imsave(f'{args.save_prefix}/video{args.video_num}_frame{args.frame_num}_75Kb.pdf', final_img)
 
 
 # aggregate results across all people for each setting for each approach

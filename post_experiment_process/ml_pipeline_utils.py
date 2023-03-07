@@ -3,14 +3,15 @@ import matplotlib.image
 import os
 from PIL import Image, ImageDraw, ImageFont
 
-main_settings = ['lr128_tgt15Kb', 'lr256_tgt45Kb', 'lr256_tgt75Kb', 'lr256_tgt105Kb', 'lr512_tgt180Kb', 'lr512_tgt420Kb']
+main_settings = ['lr128_tgt15Kb', 'lr256_tgt45Kb', 'lr256_tgt75Kb', 'lr256_tgt105Kb'] # 'lr512_tgt180Kb', 'lr512_tgt420Kb']
 encoder_exp_settings = ['15Kb', '45Kb', '75Kb']
 settings = {
         'main_exp:ours': main_settings,
         'main_exp:bicubic': main_settings,
         'main_exp:fomm': ['fomm'],
         'main_exp:vp9_bicubic': main_settings,
-        'main_exp:vpx': ['tgt1000Kb', 'tgt200Kb', 'tgt400Kb', 'tgt600Kb', 'tgt800Kb'],
+        'main_exp:vp9_ours': main_settings,
+        'main_exp:vpx': ['tgt100Kb', 'tgt150Kb', 'tgt200Kb', 'tgt250Kb', 'tgt300Kb'],
         'main_exp:SwinIR': main_settings, 
         'encoder_effect:tgt15Kb': encoder_exp_settings,
         'encoder_effect:tgt45Kb': encoder_exp_settings,
@@ -35,6 +36,8 @@ def get_label(setting, approach):
         label = 'Bicubic'
     elif 'SwinIR' in approach:
         label = 'SwinIR'
+    elif 'vp9_ours' in approach:
+        label = 'Gemino (VP9)'
     elif 'ours' in approach:
         label = 'Gemino (Ours)'
     elif 'vpx' in approach:
@@ -120,7 +123,7 @@ def extract_at_offset(full_array, offset, img_width):
 
 def extract_prediction(person, frame_id, video_num, offset, folder, setting, approach, img_width, save_prefix):
     """ retrieve the prediction from strip consisting of all intermediates """
-    file_ext = 'y4m' if 'vp9' in approach else 'mp4'
+    file_ext = 'mp4' #'y4m' if 'vp9' in approach else 'mp4'
     prefix = f'{video_num}.{file_ext}_frame{frame_id}.npy'
     img = np.load(f'{folder}/visualization/{prefix}')
     prediction = extract_at_offset(img, offset, img_width)
