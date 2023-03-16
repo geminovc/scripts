@@ -44,29 +44,29 @@ f = open(args.save_path, "w")
 last_c = 0
 
 if args.use_case == 'paper_ours':
-    last_c = make_trace(100, 550, last_c, f)
-    last_c = make_slope(last_c, [550, 20], 320, f)
-    last_c = make_trace(70, 20, last_c, f)
-    last_c = make_slope(last_c, [20, 550], 330, f)
-    last_c = make_trace(60, 550, last_c, f)
-elif args.use_case == 'paper_vpx':
-    last_c = make_trace(60, 550, last_c, f)
-    last_c = make_slope(last_c, [550, 20], 320, f)
-    last_c = make_trace(70, 20, last_c, f)
-    last_c = make_slope(last_c, [20, 550], 330, f)
-    last_c = make_trace(60, 550, last_c, f)
-elif args.use_case == 'paper_ours_new':
     last_c = make_trace(70, 650, last_c, f)
     last_c = make_slope(last_c, [650, 20], 160, f)
     last_c = make_trace(41, 20, last_c, f)
-    last_c = make_slope(last_c, [20, 550], 160, f)
-    last_c = make_trace(1000, 550, last_c, f)
-elif args.use_case == 'paper_vpx_new':
-    last_c = make_trace(30, 650, last_c, f)
-    last_c = make_slope(last_c, [550, 20], 160, f)
+    last_c = make_slope(last_c, [20, 650], 160, f)
+    last_c = make_trace(100, 650, last_c, f)
+elif args.use_case == 'paper_ours_1M':
+    last_c = make_trace(70, 1000, last_c, f)
+    last_c = make_slope(last_c, [1000, 20], 160, f)
     last_c = make_trace(41, 20, last_c, f)
-    last_c = make_slope(last_c, [20, 550], 160, f)
-    last_c = make_trace(1000, 550, last_c, f)
+    last_c = make_slope(last_c, [20, 1000], 160, f)
+    last_c = make_trace(100, 650, last_c, f)
+elif args.use_case == 'paper_vpx':
+    last_c = make_trace(30, 650, last_c, f)
+    last_c = make_slope(last_c, [650, 20], 160, f)
+    last_c = make_trace(41, 20, last_c, f)
+    last_c = make_slope(last_c, [20, 650], 160, f)
+    last_c = make_trace(100, 650, last_c, f)
+elif args.use_case == 'paper_vpx_1M':
+    last_c = make_trace(30, 650, last_c, f)
+    last_c = make_slope(last_c, [650, 20], 160, f)
+    last_c = make_trace(41, 20, last_c, f)
+    last_c = make_slope(last_c, [20, 650], 160, f)
+    last_c = make_trace(100, 650, last_c, f)
 elif args.use_case == 'smooth':
     assert(args.time_list[0] < args.time_list[-1])
     make_slope(last_c, args.bw_list, args.time_list[-1] - args.time_list[0])

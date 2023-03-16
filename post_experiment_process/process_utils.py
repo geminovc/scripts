@@ -187,9 +187,11 @@ def get_average_bw_over_window(kbits_per_ms, window=1000):
 #TODO: complete this function. use fixed windows in time, no elapse
 def get_log_statistics(log_path, window):
     measured_value = {'video': 0, 'audio': 0, 'keypoints':0, 'lr_video':0,
-                    'estimated_max_bw_video':0, 'estimated_max_bw_lr_video':0}
+                      'estimated_max_bw_video':0, 'estimated_max_bw_lr_video':0,
+                      'recv_video': 0}
     bits_sent = {'video': [], 'audio': [], 'keypoints': [], 'lr_video':[],
-            'estimated_max_bw_video':[], 'estimated_max_bw_lr_video':[]}
+                 'estimated_max_bw_video':[], 'estimated_max_bw_lr_video':[],
+                 'recv_video': []}
     count = 0
     count_kp = count_video = count_lr_video = 0
     num_bw = {'estimated_max_bw_video':0, 'estimated_max_bw_lr_video':0}
@@ -213,6 +215,12 @@ def get_log_statistics(log_path, window):
 
                     date_str = line.split(") ")[-1][:-1]
 
+                if parts[1] == "<" and parts[3].startswith("RtpPacket") and "retransmission" not in line:
+                    packet_type = 'recv_video'
+                    packet_value = 8 * int(line.split(", ")[-1].split(" ")[0]) # in bits
+
+                    date_str = line.split(") ")[-1][:-1]
+
             if "maximum bitrate" in line:
                 if 'lr_video' in line:
                     packet_type = "estimated_max_bw_lr_video"
@@ -225,7 +233,10 @@ def get_log_statistics(log_path, window):
 
             if date_str is not None:
                 date_str = date_str + '.0' if '.' not in date_str else date_str
-                time_object = dt.datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S.%f')
+                try:
+                    time_object = dt.datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S.%f')
+                except:
+                    print(line)
                 if last_window_start == -1:
                     last_window_start = time_object
                     first_packet_time = time_object
