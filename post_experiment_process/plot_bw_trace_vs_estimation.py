@@ -50,6 +50,7 @@ if __name__ == "__main__":
     window = bitrate_stats['window']
     elapsed_time = bitrate_stats['elapsed_time']
     ref_video_bitrates = [i/window/1000 for i in bitrate_stats['bitrates']['video']]
+    recv_video_bitrates = [i/window/1000 for i in bitrate_stats['bitrates']['recv_video']]
     lr_video_bitrates = [i/window/1000 for i in bitrate_stats['bitrates']['lr_video']]
     total_video_bitrates = [sum(value) for value in zip(ref_video_bitrates, lr_video_bitrates)]
     ref_estimated_max_bws = [i/1000 for i in bitrate_stats['bitrates']['estimated_max_bw_video']]
@@ -74,19 +75,17 @@ if __name__ == "__main__":
             if os.path.exists(args.trace_path):
                 """use the real trace if experiment was with mahimahi"""
                 full_trace = get_full_trace(args.trace_path,
-                                        args.window * (int(elapsed_time) + 100))
+                                        args.window * (int(elapsed_time) + 500))
                 windowed_trace = get_average_bw_over_window(full_trace, window=args.window)
                 if np.average(lr_estimated_max_bws) > 0:
+                    print("Crop the warm-up")
                     #crop the model warmup part
-                    windowed_trace = windowed_trace[20:len(cc_bitrate_estimation) + 20]
+                    windowed_trace = windowed_trace[65:len(cc_bitrate_estimation) + 65]
                 else:
                     windowed_trace = windowed_trace[:len(cc_bitrate_estimation)]
             else:
                 windowed_trace = lr_estimated_max_bws if np.average(lr_estimated_max_bws) > 0 \
                                     else ref_estimated_max_bws
-
-            #windowed_trace = get_common_intervals(windowed_trace,
-            #bitrate_stats['elapsed_time'], bitrate_stats['first_packet_time'])
 
             plot_graph(time_axis,\
                       [windowed_trace, cc_bitrate_estimation, total_video_bitrates],\
@@ -101,6 +100,13 @@ if __name__ == "__main__":
                       ['g', 'b'], 'time (s)', 'bitrate (kbps)', \
                       f'reference stream sent vs estimated bitrate for {args.output_name}', \
                       args.save_dir, f'ref_sent_vs_estimation_{save_suffix}')
+
+            plot_graph(time_axis,\
+                      [recv_video_bitrates],\
+                      ['received video bitrates'], \
+                      ['b'], 'time (s)', 'bitrate (kbps)', \
+                      f'received video {args.output_name}', \
+                      args.save_dir, f'recv_video_{save_suffix}')
 
             plot_graph(time_axis,\
                       [lr_estimated_max_bws, lr_video_bitrates],\
