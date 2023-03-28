@@ -275,3 +275,20 @@ def get_log_statistics(log_path, window):
 
     log_file.close()
     return {'bitrates': bits_sent, 'window': window, 'elapsed_time': elapsed_time, 'first_packet_time': first_packet_time}
+
+
+def get_shell_init_timestamp(mahimahi_log_path):
+    log_file = open(mahimahi_log_path, 'r')
+    init_timestamp = None
+    while True:
+        line = log_file.readline()
+        if not line:
+            break
+
+        if "init timestamp" in line:
+            parts = line.strip().split(" ")
+            init_timestamp = int(parts[3])
+            break
+
+    log_file.close()
+    return init_timestamp

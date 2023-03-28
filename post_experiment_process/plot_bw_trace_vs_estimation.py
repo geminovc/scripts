@@ -15,8 +15,10 @@ parser.add_argument('--save-dir', type=str,
                     help='directory to save graph in', default='./bw_graphs')
 parser.add_argument('--output-name', type=str,
                     help='file to save final graph in', default="bw")
-parser.add_argument('--log-path', type=str,
-                    help='path to the log file', required=True)
+parser.add_argument('--log-dir', type=str,
+                    help='path to the log files', required=True)
+parser.add_argument('--end-point', type=str,
+                    help='end point to process', default='sender')
 parser.add_argument('--trace-path', type=str,
                     help='path to the trace file', required=True)
 args = parser.parse_args()
@@ -46,7 +48,7 @@ def get_bitrate_using_compression(compressed):
 
 
 if __name__ == "__main__":
-    bitrate_stats = get_log_statistics(args.log_path, args.window/1000)
+    bitrate_stats = get_log_statistics(f'{args.log_dir}/{args.end_point}.log', args.window/1000)
     window = bitrate_stats['window']
     elapsed_time = bitrate_stats['elapsed_time']
     ref_video_bitrates = [i/window/1000 for i in bitrate_stats['bitrates']['video']]
@@ -55,8 +57,9 @@ if __name__ == "__main__":
     total_video_bitrates = [sum(value) for value in zip(ref_video_bitrates, lr_video_bitrates)]
     ref_estimated_max_bws = [i/1000 for i in bitrate_stats['bitrates']['estimated_max_bw_video']]
     lr_estimated_max_bws = [i/1000 for i in bitrate_stats['bitrates']['estimated_max_bw_lr_video']]
-    compression_stats  = log_parser.gather_encoder_statistics(args.log_path)
+    compression_stats  = log_parser.gather_encoder_statistics(f'{args.log_dir}/{args.end_point}.log')
     save_suffix = f'{args.output_name}_w{args.window}_ms'
+    first_packet_time = bitrate_stats['first_packet_time']
     try:
         if len(total_video_bitrates) > 0:
             # replace 0s with previous estimation
@@ -77,12 +80,9 @@ if __name__ == "__main__":
                 full_trace = get_full_trace(args.trace_path,
                                         args.window * (int(elapsed_time) + 500))
                 windowed_trace = get_average_bw_over_window(full_trace, window=args.window)
-                if np.average(lr_estimated_max_bws) > 0:
-                    print("Crop the warm-up")
-                    #crop the model warmup part
-                    windowed_trace = windowed_trace[65:len(cc_bitrate_estimation) + 65]
-                else:
-                    windowed_trace = windowed_trace[:len(cc_bitrate_estimation)]
+                shell_init_time = get_shell_init_timestamp(f'{args.log_dir}/mahimahi.log')
+                offset_time = int(abs(shell_init_time - first_packet_time.timestamp() * 1000) / args.window)
+                windowed_trace = windowed_trace[offset_time:len(cc_bitrate_estimation) + offset_time]
             else:
                 windowed_trace = lr_estimated_max_bws if np.average(lr_estimated_max_bws) > 0 \
                                     else ref_estimated_max_bws
