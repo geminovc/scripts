@@ -544,6 +544,7 @@ def run_single_experiment(params):
                 mm_quantizer = quantizer
 
             sender_cmd = f'mm-delay 25 mm-link --uplink-log=\"{log_dir}/mahimahi.log\" ' +\
+                         '--uplink-queue=droptail --uplink-queue-args=bytes=1000000 ' +\
                          f'{uplink_trace} {downlink_trace} ' +\
                          f'./offer.sh {video_file} {fps} {log_dir}/sender.log {log_dir} {exec_dir} ' +\
                          f'{enable_prediction} {reference_update_freq} {mm_quantizer} {socket_path} ' +\
@@ -615,7 +616,7 @@ def run_single_experiment(params):
 
         receiver_cmd += ' --verbose'
         receiver_args = shlex.split(receiver_cmd)
-        base_env['CUDA_VISIBLE_DEVICES'] = '0'
+        base_env['CUDA_VISIBLE_DEVICES'] = '1'
         recv_proc = sh.Popen(receiver_args, stderr=recv_output, env=base_env) 
 
         # wait for experiment and kill processes
