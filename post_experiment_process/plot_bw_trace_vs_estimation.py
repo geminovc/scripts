@@ -138,7 +138,7 @@ if __name__ == "__main__":
             
 
             for video_type in ['video', 'lr_video']:
-                if len(compression_stats[video_type]) > 30:
+                if len(compression_stats[video_type]) > 30 and not os.path.exists(args.trace_path):
                     plot_graph(compression_stats[f'{video_type}_time'], [compression_stats[video_type]],\
                               ['encoder payload size'], \
                               ['m'], 'time (s)', f'payload size (bytes)',\
