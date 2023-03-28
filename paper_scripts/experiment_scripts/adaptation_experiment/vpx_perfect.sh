@@ -29,7 +29,8 @@ cd ${nets_scripts_dir}/post_experiment_process
 
 python plot_bw_trace_vs_estimation.py \
 	--trace-path /bla \
-        --log-path ${log_dir}/sender.log \
+        --log-dir ${log_dir} \
+	--end-point sender \
         --save-dir ${log_dir} \
         --output-name sender \
         --window ${window}
@@ -41,10 +42,3 @@ python get_metrics_timeseries.py \
         --video-path-1 ${video_root}/${person}/test/${video_num}.mp4 \
         --video-path-2 ${log_dir}/received.mp4 \
 	--window ${window}
-
-
-#python estimate_rtt_at_sender.py \
-#        --log-path ${log_dir}/sender.log \
-#        --save-dir ${log_dir} \
-#        --output-name sender
-
