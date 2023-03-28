@@ -26,12 +26,13 @@ python vpx_baseline_vary_resolution.py \
 --executable-dir ${aiortc_dir}/examples/videostream-cli \
 --csv ${save_prefix}/vpx_gcc_${trace}.csv \
 --quantizer-list -1 --vpx-default-bitrate-list 550000 \
---video-num-range 0 0  \
+--video-num-range 0 0 \
 
 cd ${nets_scripts_dir}/post_experiment_process
 
 python plot_bw_trace_vs_estimation.py \
-        --log-path ${log_dir}/sender.log \
+        --log-dir ${log_dir} \
+	--end-point sender \
         --trace-path /video-conf/scratch/pantea_mapmaker/traces/${trace} \
         --save-dir ${log_dir} \
         --output-name sender \
@@ -39,15 +40,8 @@ python plot_bw_trace_vs_estimation.py \
 
 
 python get_metrics_timeseries.py \
-        --template-output ${log_dir}/compression_timeseries_sender_w${window}_ms.csv \
+        --template-output ${log_dir}/timeseries_sender_w${window}_ms.csv \
         --save-dir ${log_dir} \
         --video-path-1 ${video_root}/${person}/test/${video_num}.mp4 \
         --video-path-2 ${log_dir}/received.mp4 \
 	--window ${window}
-
-
-#python estimate_rtt_at_sender.py \
-#        --log-path ${log_dir}/sender.log \
-#        --save-dir ${log_dir} \
-#        --output-name sender
-
