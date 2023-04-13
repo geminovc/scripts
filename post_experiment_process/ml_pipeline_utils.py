@@ -3,15 +3,17 @@ import matplotlib.image
 import os
 from PIL import Image, ImageDraw, ImageFont
 
-main_settings = ['lr128_tgt15Kb', 'lr256_tgt45Kb', 'lr256_tgt75Kb', 'lr256_tgt105Kb'] # 'lr512_tgt180Kb', 'lr512_tgt420Kb']
+main_settings = ['lr128_tgt15Kb', 'lr256_tgt45Kb', 'lr256_tgt75Kb', 'lr256_tgt105Kb', 'lr512_tgt180Kb', 'lr512_tgt420Kb']
+vp9_settings = ['lr256_tgt15Kb', 'lr256_tgt45Kb', 'lr512_tgt75Kb', 'lr512_tgt105Kb']
 encoder_exp_settings = ['15Kb', '45Kb', '75Kb']
 settings = {
         'main_exp:ours': main_settings,
         'main_exp:bicubic': main_settings,
         'main_exp:fomm': ['fomm'],
-        'main_exp:vp9_bicubic': main_settings,
-        'main_exp:vp9_ours': main_settings,
-        'main_exp:vpx': ['tgt100Kb', 'tgt150Kb', 'tgt200Kb', 'tgt250Kb', 'tgt300Kb'],
+        'main_exp:vp9_bicubic': vp9_settings,
+        'main_exp:vp9_ours': vp9_settings,
+        'main_exp:vpx': ['tgt200Kb', 'tgt400Kb', 'tgt600Kb', 'tgt800Kb', 'tgt1000Kb'],
+        'main_exp:vp9': ['lr1024_tgt100Kb', 'lr1024_tgt200Kb', 'lr1024_tgt300Kb', 'lr1024_tgt400Kb', 'lr1024_tgt500Kb', 'lr1024_tgt600Kb'],
         'main_exp:SwinIR': main_settings, 
         'encoder_effect:tgt15Kb': encoder_exp_settings,
         'encoder_effect:tgt45Kb': encoder_exp_settings,

@@ -126,7 +126,7 @@ if args.summarize:
             num += 1
             row_in_strip = []
             for (approach, base_dir) in zip(approaches_to_compare, base_dir_list):
-                if 'vpx' in approach:
+                if 'vpx' in approach or approach == 'main_exp:vp9':
                     continue
 
                 if 'dropout' in approach:
@@ -134,7 +134,12 @@ if args.summarize:
                     folder = f'{base_dir}/reconstruction_single_source_{person}'
                     prefix = f'single_source_{person}'
                 elif 'main_exp' in approach:
-                    setting = 'lr256_tgt75Kb' if 'fomm' not in approach else 'fomm'
+                    if 'fomm' in approach:
+                        setting = 'fomm'
+                    elif 'vp9' in approach:
+                        setting = 'lr512_tgt105Kb'
+                    else:
+                        setting = 'lr256_tgt105Kb'
                     folder = f'{base_dir}/{setting}/{person}/reconstruction_single_source'
                     prefix = f'single_source'
                 else:
@@ -171,8 +176,8 @@ if args.summarize:
     if final_img is not None:
         label = make_label(labels, img_width)
         print(np.shape(label), np.shape(final_img))
-        # final_img = np.concatenate([label, final_img], axis=0)
-        matplotlib.image.imsave(f'{args.save_prefix}/video{args.video_num}_frame{args.frame_num}_75Kb.pdf', final_img)
+        final_img = np.concatenate([label, final_img], axis=0)
+        matplotlib.image.imsave(f'{args.save_prefix}/video{args.video_num}_frame{args.frame_num}_105Kb.pdf', final_img)
 
 
 # aggregate results across all people for each setting for each approach
