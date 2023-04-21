@@ -4,10 +4,8 @@
 source("style.R")
 
 args <- commandArgs(trailingOnly=TRUE)
-#file <- "../data/with_vp9_and_bicubic/summary.csv"
-file <- "../data/vp8_and_bicubic_512/summary.csv"
-#plot_filename <- "pdfs/main_experiment_with_vp9_bicubic.pdf"
-plot_filename <- "pdfs/vp8_and_bicubic512.pdf"
+file <- "../data/full_comparison_with_vp9_after_recalibrating/summary.csv"
+plot_filename <- "pdfs/full_comparison_with_vp9_after_recalibrating_with_break.pdf"
 data<-read.csv(file)
 
 label_list <- c(
@@ -15,7 +13,8 @@ label_list <- c(
                  "bicubic" = "Bicubic",
                  "vp9_bicubic" = "Bicubic (VP9)",
                  "ours" = "Gemino",
-                 "vp9_ours" = "Gemino (VP9)",
+                 "SwinIR" = "SwinIR",
+                 "vp9" = "VP9",
                  "fomm" = "FOMM")
 
 
@@ -24,7 +23,8 @@ shape_list <- c(
                  "bicubic" = 8,
                  "vp9_bicubic" = 8,
                  "ours" = 16,
-                 "vp9_ours" = 20,
+                 "SwinIR" = 20,
+                 "vp9" = 18,
                  "fomm" = 17)
 
 line_list <- c(
@@ -32,71 +32,74 @@ line_list <- c(
                  "bicubic" = "dashed",
                  "vp9_bicubic" = "twodash",
                  "ours" = "solid",
-                 "vp9_ours" = "dotted",
+                 "SwinIR" = "dotted",
+                 "vp9" = "twodash",
                  "fomm" = "blank")
 
 color_list <- c(
                  "vpx" = "#00BF7D",
-                 "vp9_ours" = "#A3A500",
+                 "SwinIR" = "#A3A500",
                  "bicubic" = "#F8766D",
                  "vp9_bicubic" = "#000000",
+                 "vp9" = "#bf5b17",
                  "ours" = "#00B0F6",
                  "fomm" = "#E76BF3")
 
 
-breaks_list <- c("vpx", "bicubic", "vp9_bicubic", "vp9_ours", "fomm", "ours")
+breaks_list <- c("vpx", "vp9", "bicubic", "vp9_bicubic", "SwinIR", "fomm", "ours")
 
 ssim_plot <- ggplot(data, aes(x=kbps,y=ssim_db,color=approach,linetype=approach, shape=approach)) + 
         geom_line(size=1) +
         geom_point(size=3) +
         #geom_errorbar(aes(ymin=ssim_db-ssim_db_sd, ymax=ssim_db+ssim_db_sd), width=.2) +
-        xlim(0, 300) + 
+        scale_x_continuous(breaks=seq(0,600,100), limits=c(0,600)) +
         
         scale_color_manual(
                 values = color_list,
                 labels=label_list,
                 breaks=breaks_list,
-                guide=guide_legend(title=NULL, nrow=1)) +
+                guide=guide_legend(title=NULL, nrow=2)) +
 
         scale_shape_manual(
                 values=shape_list,
                 labels=label_list,
                 breaks=breaks_list,
-                guide=guide_legend(title=NULL, nrow=1)) +
+                guide=guide_legend(title=NULL, nrow=2)) +
 
         scale_linetype_manual(
                 values = line_list,
                 labels=label_list,
                 breaks=breaks_list,
-                guide=guide_legend(title=NULL, nrow=1)) +
+                guide=guide_legend(title=NULL, nrow=2)) +
+        scale_x_break(c(200, 500), scales=0.5, space=0.75) +
 
 
         labs(y="SSIM (dB)", x="Kbps") 
-ggsave(plot_filename, width=12.2,height=5)
   
 psnr_plot <- ggplot(data, aes(x=kbps,y=psnr,color=approach,linetype=approach, shape=approach)) + 
         geom_line(size=1) +
         geom_point(size=3) +
         #geom_errorbar(aes(ymin=psnr-psnr_sd, ymax=psnr+psnr_sd), width=.2) +
-        xlim(0, 300) +  
+        scale_x_continuous(breaks=seq(0,600,100), limits=c(0,600)) +
+        scale_x_break(c(200, 500), scales=0.5, space=.75) +
 
         scale_color_manual(
                 values = color_list,
                 labels=label_list,
                 breaks=breaks_list,
-                guide=guide_legend(title=NULL, nrow=1)) +
+                guide=guide_legend(title=NULL, nrow=2)) +
 
         scale_shape_manual(
                 values=shape_list,
                 labels=label_list,
                 breaks=breaks_list,
-                guide=guide_legend(title=NULL, nrow=1)) +
+                guide=guide_legend(title=NULL, nrow=2)) +
 
         scale_linetype_manual(
                 values = line_list,
                 labels=label_list,
                 breaks=breaks_list,
-                guide=guide_legend(title=NULL, nrow=1)) +
+                guide=guide_legend(title=NULL, nrow=2)) +
 
 
         theme(legend.text=element_text(size=rel(1)), legend.key.size=unit(15,"points"), legend.position="none",
@@ -108,25 +111,26 @@ lpips_plot <- ggplot(data, aes(x=kbps,y=orig_lpips,color=approach,linetype=appro
         geom_line(size=1) +
         geom_point(size=3) + 
         #geom_errorbar(aes(ymin=orig_lpips-orig_lpips_sd, ymax=orig_lpips+orig_lpips_sd), width=.2) +
-        xlim(0, 300) +
+        scale_x_continuous(breaks=seq(0,600,100), limits=c(0,600)) +
+        scale_x_break(c(200, 500), scales=0.5, space=.75) +
 
         scale_color_manual(
                 values = color_list,
                 labels=label_list,
                 breaks=breaks_list,
-                guide=guide_legend(title=NULL, nrow=1)) +
+                guide=guide_legend(title=NULL, nrow=2)) +
 
         scale_shape_manual(
                 values=shape_list,
                 labels=label_list,
                 breaks=breaks_list,
-                guide=guide_legend(title=NULL, nrow=1)) +
+                guide=guide_legend(title=NULL, nrow=2)) +
 
         scale_linetype_manual(
                 values = line_list,
                 labels=label_list,
                 breaks=breaks_list,
-                guide=guide_legend(title=NULL, nrow=1)) +
+                guide=guide_legend(title=NULL, nrow=2)) +
 
         labs(y="LPIPS", x="Kbps") 
  
@@ -134,9 +138,9 @@ lpips_plot <- ggplot(data, aes(x=kbps,y=orig_lpips,color=approach,linetype=appro
 legend <- get_legend(psnr_plot + theme(legend.position="top"))
 
 
-prow <- plot_grid(ssim_plot + theme(legend.position="none"),
-                  psnr_plot + theme(legend.position="none"),
-                  lpips_plot + theme(legend.position="none"),
+prow <- plot_grid(print(ssim_plot + theme(legend.position="none")),
+                  print(psnr_plot + theme(legend.position="none")),
+                  print(lpips_plot + theme(legend.position="none")),
                   ncol = 3, align = "v", axis = "l")
 
 # this tells it what order to put it in

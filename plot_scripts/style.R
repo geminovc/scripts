@@ -5,6 +5,7 @@ library(scales)
 library(sysfonts)
 library(showtext)
 library(showtextdb)
+library(ggbreak)
 showtext_auto()
 
 ggplot <- function(...) ggplot2::ggplot(...) + 
@@ -12,6 +13,9 @@ ggplot <- function(...) ggplot2::ggplot(...) +
                         theme(panel.border = element_blank(), 
                               axis.line = element_line(colour = "black"), 
                               axis.line.x = element_line(), 
+                              axis.line.x.top = element_blank(),
+                              axis.ticks.x.top = element_blank(),
+                              axis.text.x.top = element_blank(), 
                               axis.line.y = element_line(),
 			      axis.text = element_text(size = 24, color = "black"),
                               text = element_text(size = 24, family="serif"), 
