@@ -4,7 +4,7 @@
 source("style.R")
 
 args <- commandArgs(trailingOnly=TRUE)
-file <- "../data/full_comparison_with_vp9_after_recalibrating/summary.csv"
+file <- "../data/full_comparison_with_vp9_after_recalibrating/wrangled_summary.csv"
 plot_filename <- "pdfs/full_comparison_with_vp9_after_recalibrating_with_break.pdf"
 data<-read.csv(file)
 
@@ -72,6 +72,11 @@ ssim_plot <- ggplot(data, aes(x=kbps,y=ssim_db,color=approach,linetype=approach,
                 breaks=breaks_list,
                 guide=guide_legend(title=NULL, nrow=2)) +
         scale_x_break(c(200, 500), scales=0.5, space=0.75) +
+        
+        annotate("segment", x = 580, xend = 520, y = 6, yend = 9,
+           colour = "grey", size = 2, arrow = arrow()) +
+        annotate("text", x = 572, y = 7.8, angle=305, size=5,
+           colour = "grey", label="Better") +
 
 
         labs(y="SSIM (dB)", x="Kbps") 
@@ -100,6 +105,11 @@ psnr_plot <- ggplot(data, aes(x=kbps,y=psnr,color=approach,linetype=approach, sh
                 labels=label_list,
                 breaks=breaks_list,
                 guide=guide_legend(title=NULL, nrow=2)) +
+        
+        annotate("segment", x = 580, xend = 520, y = 20, yend = 25,
+           colour = "grey", size = 2, arrow = arrow()) +
+        annotate("text", x = 570, y = 23, angle=305, size=5,
+           colour = "grey", label="Better") +
 
 
         theme(legend.text=element_text(size=rel(1)), legend.key.size=unit(15,"points"), legend.position="none",
@@ -131,6 +141,11 @@ lpips_plot <- ggplot(data, aes(x=kbps,y=orig_lpips,color=approach,linetype=appro
                 labels=label_list,
                 breaks=breaks_list,
                 guide=guide_legend(title=NULL, nrow=2)) +
+        
+        annotate("segment", x = 580, xend = 520, y = 0.38, yend = 0.31,
+           colour = "grey", size = 2, arrow = arrow()) +
+        annotate("text", x = 540, y = 0.37, angle=52, size=5,
+           colour = "grey", label="Better") +
 
         labs(y="LPIPS", x="Kbps") 
  
