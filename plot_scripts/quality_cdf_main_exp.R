@@ -6,33 +6,51 @@ source("style.R")
 
 args <- commandArgs(trailingOnly=TRUE)
 file <- args[1]
-plot_filename <- args[2] 
+plot_filename <- args[2]
+metric <- args[3]
+if (metric == "ssim_db") {
+    metric_name <- "SSIM (dB)"
+} else if (metric == "psnr") {
+    metric_name <- "PSNR (dB)"
+} else {
+    metric_name <- "LPIPS"
+}
+
+
 data<-read.csv(file)
 
 label_list <- c(
                  "bicubic" = "Bicubic",
                  "ours" = "Gemino",
                  "SwinIR" = "SwinIR",
+                 "vp9_bicubic" = "Bicubic (VP9)",
+                 "vp9_ours" = "Gemino (VP9)",
                  "fomm" = "FOMM")
 
 line_list <- c(
                  "bicubic" = "dashed",
                  "ours" = "solid",
-                 "SwinIR" = "dotted",
+                 "SwinIR" = "solid",
+                 "vp9_bicubic" = "twodash",
+                 "vp9_ours" = "dotted",
                  "fomm" = "twodash")
 
 color_list <- c(
-                 "SwinIR" = "#A3A500",
+                 "SwinIR" = "#d95f02",
                  "bicubic" = "#F8766D",
                  "ours" = "#00B0F6",
+                 "vp9_ours" = "#A3A500",
+                 "vp9_bicubic" = "#000000",
                  "fomm" = "#E76BF3")
 
 
-breaks_list <- c("bicubic", "SwinIR", "fomm", "ours")
+breaks_list <- c("bicubic", "SwinIR", "fomm", "ours", "vp9_ours", "vp9_bicubic")
 
 
-ssim_plot <- ggplot(data) +
-        stat_ecdf(aes(ssim_db,color=approach,linetype=approach), size=1) +  
+first_plot <- ggplot(data[data$setting == 'lr128_tgt15Kb' | data$setting == 'lr256_tgt15Kb', ]) +
+        stat_ecdf(aes_string(metric,color="approach",linetype="approach"), size=1) +
+        ggtitle(metric_name) +
+
         scale_color_manual(
                 values = color_list,
                 labels=label_list,
@@ -44,11 +62,11 @@ ssim_plot <- ggplot(data) +
                 labels=label_list,
                 breaks=breaks_list,
                 guide=guide_legend(title=NULL, nrow=1)) +
-        labs(x="SSIM (dB)", y="CDF") 
+        labs(x="15 Kbps", y="CDF") 
   
-psnr_plot <- ggplot(data) +
-        stat_ecdf(aes(psnr,color=approach,linetype=approach), size=1) + 
-        labs(x="PSNR (dB)", y="CDF") + 
+second_plot <- ggplot(data[data$setting == 'lr256_tgt45Kb' | data$setting == 'fomm', ]) +
+        stat_ecdf(aes_string(metric,color="approach",linetype="approach"), size=1) + 
+        labs(x="45 Kbps", y="CDF") +
 
         scale_color_manual(
                 values = color_list,
@@ -66,8 +84,8 @@ psnr_plot <- ggplot(data) +
               legend.box.margin=margin(-10,-10,-10,-10), legend.title=element_blank(),
               legend.margin=margin(c(0,0,0,0))) 
 
-lpips_plot <- ggplot(data) +
-        stat_ecdf(aes(orig_lpips,color=approach,linetype=approach), size=1) + 
+third_plot <- ggplot(data[data$setting == 'lr256_tgt75Kb'| data$setting == 'lr512_tgt75Kb', ]) +
+        stat_ecdf(aes_string(metric,color="approach",linetype="approach"), size=1) + 
         scale_color_manual(
                 values = color_list,
                 labels=label_list,
@@ -79,19 +97,20 @@ lpips_plot <- ggplot(data) +
                 labels=label_list,
                 breaks=breaks_list,
                 guide=guide_legend(title=NULL, nrow=1)) +
-        labs(x="LPIPS", y="CDF") 
+        labs(x="75 Kbps", y="CDF") 
 
-legend <- get_legend(psnr_plot + theme(legend.position="top"))
+legend <- get_legend(first_plot + theme(legend.position="top"))
+title <- get_title(first_plot + theme(plot.title = element_text(hjust = 0.5)))
 
 
-prow <- plot_grid(ssim_plot + theme(legend.position="none"),
-                  psnr_plot + theme(legend.position="none"),
-                  lpips_plot + theme(legend.position="none"),
+prow <- plot_grid(first_plot + theme(legend.position="none", plot.title=element_blank()),
+                  second_plot + theme(legend.position="none"),
+                  third_plot + theme(legend.position="none"),
                   ncol = 3, align = "v", axis = "l")
 
 # this tells it what order to put it in
 # so basically tells it put legend first then plots with th legend height 20% of the
 # plot
-p <- plot_grid(legend, prow, rel_heights=c(.2,1), ncol =1)
+p <- plot_grid(legend, prow, title, rel_heights=c(.2,1, .2), ncol =1) 
 
 ggsave(plot_filename, width=12.2, height=5)
