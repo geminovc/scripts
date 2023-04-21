@@ -28,7 +28,10 @@ python collect_results_from_ml_pipeline.py --approaches-to-compare model_ablatio
 
 
 # personalization effect (both strip and table)
+# Gemino
 python collect_results_from_ml_pipeline.py --approaches-to-compare personalization --base-dir-list /video-conf/scratch/vibhaa_mm_log_directory/personalization/  --person-list kayleigh jen_psaki trevor_noah seth_meyers needle_drop --people-for-strip needle_drop seth_meyers jen_psaki --save-prefix ../data/personalization --csv-name summary.csv --img-width 512 --video-num 2 --frame-num 1952 --summarize
+# up-sampling
+python collect_results_from_ml_pipeline.py --approaches-to-compare personalization --base-dir-list /video-conf/scratch/vibhaa_lam2/final_results/generic_vs_personalized_pure_upsampling  --person-list kayleigh jen_psaki trevor_noah seth_meyers needle_drop --people-for-strip needle_drop seth_meyers jen_psaki --save-prefix ../data/personalization_up_sampling --csv-name summary.csv --img-width 512 --video-num 2 --frame-num 1952 --summarize
 
 # adaptation experiment
 python aggregate_adaptation_results.py --save-prefix ../data/adaptation --approaches-to-compare vpx ours --base-dir-list /data4/pantea/nsdi_fall_2022/adaptation/final_results/vpx_everything_comparison_perfect_estimator_shrinked_trace/resolution1024x1024/needle_drop/1.mp4/quantizer-1/vpx_min550000_default550000_max550000bitrate/run0/ /data4/pantea/nsdi_fall_2022/adaptation/final_results/ours_everything_comparison_perfect_estimator_shrinked_trace/needle_drop/1.mp4/lrquantizer-1/quantizer32/run0/
