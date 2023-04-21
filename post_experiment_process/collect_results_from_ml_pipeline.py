@@ -185,16 +185,21 @@ elif args.cdf:
     for (approach, base_dir) in zip(approaches_to_compare, base_dir_list):
         settings_to_compare = settings[approach] 
         if 'main_exp' in approach:
-            setting_to_compare = ['fomm'] if 'fomm' in approach else ['lr256_tgt45Kb']
-        if 'vpx' in approach:
+            if 'fomm' in approach:
+                setting_to_compare = ['fomm'] 
+            elif 'vp9' in approach:
+                setting_to_compare = ['lr256_tgt15Kb', 'lr256_tgt45Kb', 'lr512_tgt75Kb']
+            else:
+                setting_to_compare = ['lr128_tgt15Kb', 'lr256_tgt45Kb', 'lr256_tgt75Kb']
+        if 'vpx' in approach or approach == 'main_exp:vp9':
             continue
         
         df_dict = {}
         for person in args.person_list:
-            for setting in settings_to_compare:
+            for setting in setting_to_compare:
                 folder, prefix = get_folder_prefix(approach, setting, base_dir, person)
                 metrics_file = f'{folder}/{prefix}_per_frame_metrics.txt'
-                print(f'reading {metrics_file}')
+                print(f'reading {metrics_file} for cdf')
                 cur_frame = pd.read_csv(metrics_file)
                 if args.per_video:
                     avg_df = cur_frame.groupby('video_num').mean().reset_index()
@@ -207,7 +212,7 @@ elif args.cdf:
                 else:
                     df_dict[setting] = pd.concat([df_dict[setting], avg_df])
         
-        for setting in settings_to_compare:
+        for setting in setting_to_compare:
             setting_df = df_dict[setting]
             setting_df['setting'] = setting
             setting_df['approach'] = approach.split(':')[1] if ':' in approach else approach
