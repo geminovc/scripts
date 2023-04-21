@@ -14,7 +14,8 @@ settings = {
         'main_exp:vp9_ours': vp9_settings,
         'main_exp:vpx': ['tgt200Kb', 'tgt400Kb', 'tgt600Kb', 'tgt800Kb', 'tgt1000Kb'],
         'main_exp:vp9': ['lr1024_tgt100Kb', 'lr1024_tgt200Kb', 'lr1024_tgt300Kb', 'lr1024_tgt400Kb', 'lr1024_tgt500Kb', 'lr1024_tgt600Kb'],
-        'main_exp:SwinIR': main_settings, 
+        'main_exp:SwinIR': main_settings,
+        'main_exp:SR': main_settings,
         'encoder_effect:tgt15Kb': encoder_exp_settings,
         'encoder_effect:tgt45Kb': encoder_exp_settings,
         'encoder_effect:tgt75Kb': encoder_exp_settings,
@@ -54,7 +55,7 @@ def get_label(setting, approach):
         label = 'Personalized'
     elif 'generic' in setting:
         label = 'Generic'
-    elif setting == 'pure_upsampling' or 'pure_upsampling' in approach:
+    elif setting == 'pure_upsampling' or 'pure_upsampling' in approach or 'SR' in approach:
         label = 'Pure Upsampling'
     elif 'lr_in_decoder' in setting:
         label = 'Cond. SR w/ Warped HR'
@@ -100,7 +101,7 @@ def get_offset(setting, approach):
     elif 'personalization' in setting or 'generic' in setting:
         offset = 7
     elif 'pure_upsampling' in setting or 'pure_upsampling' in approach \
-            or approach == 'main_exp:SwinIR':
+            or approach == 'main_exp:SwinIR' or approach == 'main_exp:SR':
         offset = 2
     elif '3_pathways' in setting or 'lr_decoder' in setting:
         offset = 7
