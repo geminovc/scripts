@@ -186,22 +186,22 @@ elif args.cdf:
         settings_to_compare = settings[approach] 
         if 'main_exp' in approach:
             if 'fomm' in approach:
-                setting_to_compare = ['fomm']
+                settings_to_compare = ['fomm']
             elif 'ours' in approach:
                 if 'vp9' in approach:
-                    setting_to_compare =  ['lr512_tgt75Kb', 'lr512_tgt105Kb']
+                    settings_to_compare =  ['lr512_tgt75Kb', 'lr512_tgt105Kb']
                 else:
-                    setting_to_compare =  ['lr128_tgt15Kb', 'lr256_tgt45Kb']
+                    settings_to_compare =  ['lr128_tgt15Kb', 'lr256_tgt45Kb']
             elif 'vp9' in approach:
-                setting_to_compare = ['lr256_tgt15Kb', 'lr256_tgt45Kb', 'lr512_tgt75Kb', 'lr512_tgt105Kb']
+                settings_to_compare = ['lr256_tgt15Kb', 'lr256_tgt45Kb', 'lr512_tgt75Kb', 'lr512_tgt105Kb']
             else:
-                setting_to_compare = ['lr128_tgt15Kb', 'lr256_tgt45Kb', 'lr256_tgt75Kb', 'lr256_tgt105Kb']
+                settings_to_compare = ['lr128_tgt15Kb', 'lr256_tgt45Kb', 'lr256_tgt75Kb', 'lr256_tgt105Kb']
         if 'vpx' in approach or approach == 'main_exp:vp9':
             continue
         
         df_dict = {}
         for person in args.person_list:
-            for setting in setting_to_compare:
+            for setting in settings_to_compare:
                 folder, prefix = get_folder_prefix(approach, setting, base_dir, person)
                 metrics_file = f'{folder}/{prefix}_per_frame_metrics.txt'
                 print(f'reading {metrics_file} for cdf')
@@ -217,7 +217,7 @@ elif args.cdf:
                 else:
                     df_dict[setting] = pd.concat([df_dict[setting], avg_df])
         
-        for setting in setting_to_compare:
+        for setting in settings_to_compare:
             setting_df = df_dict[setting]
             setting_df['setting'] = setting
             if 'ours' in approach:
