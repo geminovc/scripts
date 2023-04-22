@@ -13,27 +13,27 @@ data2<-read.csv(file2)
 
 label_list <- c(
                  "pure_upsampling" = "Pure Upsampling",
-                 "fomm_skip_connections_lr_in_decoder" = "Conditional SR w/ warped HR",
-                 "fomm_3_pathways_with_occlusion" = "Gemino",
-                 "sme_3_pathways_with_occlusion" = "Gemino w/ RGB-based warping")
+                 #"fomm_skip_connections_lr_in_decoder" = "Conditional SR w/ warped HR",
+                 #"sme_3_pathways_with_occlusion" = "Gemino w/ RGB-based warping",
+                 "fomm_3_pathways_with_occlusion" = "Gemino")
 
 line_list <- c(
                  "pure_upsampling" = "dashed",
-                 "fomm_3_pathways_with_occlusion" = "solid",
-                 "fomm_skip_connections_lr_in_decoder" = "dotted",
-                 "sme_3_pathways_with_occlusion" = "twodash")
+                 #"fomm_skip_connections_lr_in_decoder" = "dotted",
+                 #"sme_3_pathways_with_occlusion" = "twodash",
+                 "fomm_3_pathways_with_occlusion" = "solid")
 
 color_list <- c(
-                 "fomm_skip_connections_lr_in_decoder" = "#A3A500",
+                 #"fomm_skip_connections_lr_in_decoder" = "#A3A500",
+                 #"sme_3_pathways_with_occlusion" = "#E76BF3",
                  "pure_upsampling" = "#F8766D",
-                 "fomm_3_pathways_with_occlusion" = "#00B0F6",
-                 "sme_3_pathways_with_occlusion" = "#E76BF3")
+                 "fomm_3_pathways_with_occlusion" = "#00B0F6")
 
 
 breaks_list <- c("pure_upsampling", 
-                 "fomm_skip_connections_lr_in_decoder", 
-                 "fomm_3_pathways_with_occlusion", 
-                 "sme_3_pathways_with_occlusion")
+                 #"fomm_skip_connections_lr_in_decoder", 
+                 #"sme_3_pathways_with_occlusion",
+                 "fomm_3_pathways_with_occlusion")
 
 frames_plot <- ggplot(data1) +
         stat_ecdf(aes(orig_lpips,color=setting,linetype=setting), size=1) + 
@@ -57,13 +57,13 @@ videos_plot <- ggplot(data2) +
                 values = color_list,
                 labels=label_list,
                 breaks=breaks_list,
-                guide=guide_legend(title=NULL, nrow=2)) +
+                guide=guide_legend(title=NULL, nrow=1)) +
 
         scale_linetype_manual(
                 values = line_list,
                 labels=label_list,
                 breaks=breaks_list,
-                guide=guide_legend(title=NULL, nrow=2)) +
+                guide=guide_legend(title=NULL, nrow=1)) +
         labs(x="LPIPS", y="CDF (across videos)") +
         theme(legend.text=element_text(size=rel(0.8)), legend.key.size=unit(15,"points"), legend.position="none",
               legend.box.margin=margin(-10,-10,-10,-10), legend.title=element_blank(),

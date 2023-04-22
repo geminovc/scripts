@@ -22,8 +22,7 @@ settings = {
         'encoder_effect:tgt_random': encoder_exp_settings,
         'encoder_effect:no_encoder': encoder_exp_settings,
         'personalization': ['personalization', 'generic'],
-        'model_ablation': ['pure_upsampling', 'fomm_skip_connections_lr_in_decoder', \
-                'fomm_3_pathways_with_occlusion', 'sme_3_pathways_with_occlusion'],
+        'model_ablation': ['pure_upsampling', 'fomm_3_pathways_with_occlusion'],
         'resolution_comparison': ['lr64_tgt45Kb', 'lr128_tgt45Kb', 'lr256_tgt45Kb'],
         'design_model_comparison': ['fomm', 'fomm_3_pathways_with_occlusion'],
         'dropout': ['dropout'], 
@@ -81,12 +80,15 @@ def make_label(labels, img_width):
     desired_font = ImageFont.truetype('times.ttf', font_size)
     for i, l in enumerate(labels):
         if len(l) < 8:
-            x_loc = round((i + 0.4)* img_width - 0.6*len(l))
+            x_loc = round((i + 0.4)* img_width - 0.6*len(l)) - 50
+            if img_width != 512:
+                x_loc -= 20
         elif len(l) < 16:
             if img_width == 512:
-                x_loc = round((i + 0.2)* img_width - 0.4*len(l))
+                x_loc = round((i + 0.2)* img_width - 0.5*len(l))
             else:
-                x_loc = round((i + 0.25)* img_width - 0.6*len(l))
+                x_loc = round((i + 0.25)* img_width - 0.8*len(l))
+                x_loc -= 100
         else:
             x_loc = round((i + 0.05)* img_width)
         white_img_draw.text((x_loc, round(0.1*height)), l, fill=(0, 0, 0), font=desired_font)
