@@ -10,7 +10,7 @@ data<-read.csv(file)
 
 label_list <- c(
                  "vpx" = "VP8 (Chromium)",
-                 "bicubic" = "Bicubic",
+                 "bicubic" = "Bicubic (VP8)",
                  "vp9_bicubic" = "Bicubic (VP9)",
                  "ours" = "Gemino",
                  "SwinIR" = "SwinIR",

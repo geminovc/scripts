@@ -36,7 +36,7 @@ def get_label(setting, approach):
     if 'vp9_bicubic' in approach:
         label = 'Bicubic (VP9)'
     elif 'bicubic' in approach:
-        label = 'Bicubic'
+        label = 'Bicubic (VP8)'
     elif 'SwinIR' in approach:
         label = 'SwinIR'
     elif 'vp9_ours' in approach:

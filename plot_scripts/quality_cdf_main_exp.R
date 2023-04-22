@@ -20,31 +20,28 @@ if (metric == "ssim_db") {
 data<-read.csv(file)
 
 label_list <- c(
-                 "bicubic" = "Bicubic",
+                 "bicubic" = "Bicubic (VP8)",
                  "ours" = "Gemino",
                  "SwinIR" = "SwinIR",
                  "vp9_bicubic" = "Bicubic (VP9)",
-                 "vp9_ours" = "Gemino (VP9)",
                  "fomm" = "FOMM")
 
 line_list <- c(
                  "bicubic" = "dashed",
                  "ours" = "solid",
-                 "SwinIR" = "solid",
+                 "SwinIR" = "dotted",
                  "vp9_bicubic" = "twodash",
-                 "vp9_ours" = "dotted",
                  "fomm" = "twodash")
 
 color_list <- c(
-                 "SwinIR" = "#d95f02",
                  "bicubic" = "#F8766D",
                  "ours" = "#00B0F6",
-                 "vp9_ours" = "#A3A500",
+                 "SwinIR" = "#A3A500",
                  "vp9_bicubic" = "#000000",
                  "fomm" = "#E76BF3")
 
 
-breaks_list <- c("bicubic", "SwinIR", "fomm", "ours", "vp9_ours", "vp9_bicubic")
+breaks_list <- c("bicubic", "SwinIR", "fomm", "ours", "vp9_bicubic")
 
 
 first_plot <- ggplot(data[data$setting == 'lr128_tgt15Kb' | data$setting == 'lr256_tgt15Kb', ]) +
@@ -98,6 +95,21 @@ third_plot <- ggplot(data[data$setting == 'lr256_tgt75Kb'| data$setting == 'lr51
                 breaks=breaks_list,
                 guide=guide_legend(title=NULL, nrow=1)) +
         labs(x="75 Kbps", y="CDF") 
+    
+fourth_plot <- ggplot(data[data$setting == 'lr256_tgt105Kb'| data$setting == 'lr512_tgt105Kb', ]) +
+        stat_ecdf(aes_string(metric,color="approach",linetype="approach"), size=1) + 
+        scale_color_manual(
+                values = color_list,
+                labels=label_list,
+                breaks=breaks_list,
+                guide=guide_legend(title=NULL, nrow=1)) +
+
+        scale_linetype_manual(
+                values = line_list,
+                labels=label_list,
+                breaks=breaks_list,
+                guide=guide_legend(title=NULL, nrow=1)) +
+        labs(x="105 Kbps", y="CDF") 
 
 legend <- get_legend(first_plot + theme(legend.position="top"))
 title <- get_title(first_plot + theme(plot.title = element_text(hjust = 0.5)))
@@ -106,11 +118,12 @@ title <- get_title(first_plot + theme(plot.title = element_text(hjust = 0.5)))
 prow <- plot_grid(first_plot + theme(legend.position="none", plot.title=element_blank()),
                   second_plot + theme(legend.position="none"),
                   third_plot + theme(legend.position="none"),
-                  ncol = 3, align = "v", axis = "l")
+                  fourth_plot + theme(legend.position="none"),
+                  ncol = 4, align = "v", axis = "l")
 
 # this tells it what order to put it in
 # so basically tells it put legend first then plots with th legend height 20% of the
 # plot
 p <- plot_grid(legend, prow, title, rel_heights=c(.2,1, .2), ncol =1) 
 
-ggsave(plot_filename, width=12.2, height=5)
+ggsave(plot_filename, width=15.5, height=5)

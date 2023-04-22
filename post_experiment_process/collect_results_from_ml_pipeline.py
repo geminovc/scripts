@@ -126,7 +126,7 @@ if args.summarize:
             num += 1
             row_in_strip = []
             for (approach, base_dir) in zip(approaches_to_compare, base_dir_list):
-                if 'vpx' in approach or approach == 'main_exp:vp9':
+                if 'vpx' in approach or approach == 'main_exp:vp9' or approach == 'main_exp:vp9_ours':
                     continue
 
                 if 'dropout' in approach:
@@ -137,9 +137,9 @@ if args.summarize:
                     if 'fomm' in approach:
                         setting = 'fomm'
                     elif 'vp9' in approach:
-                        setting = 'lr512_tgt105Kb'
+                        setting = 'lr256_tgt45Kb'
                     else:
-                        setting = 'lr256_tgt105Kb'
+                        setting = 'lr256_tgt45Kb'
                     folder = f'{base_dir}/{setting}/{person}/reconstruction_single_source'
                     prefix = f'single_source'
                 else:
@@ -177,7 +177,7 @@ if args.summarize:
         label = make_label(labels, img_width)
         print(np.shape(label), np.shape(final_img))
         final_img = np.concatenate([label, final_img], axis=0)
-        matplotlib.image.imsave(f'{args.save_prefix}/video{args.video_num}_frame{args.frame_num}_105Kb.pdf', final_img)
+        matplotlib.image.imsave(f'{args.save_prefix}/video{args.video_num}_frame{args.frame_num}_45Kb.pdf', final_img)
 
 
 # aggregate results across all people for each setting for each approach
@@ -186,11 +186,16 @@ elif args.cdf:
         settings_to_compare = settings[approach] 
         if 'main_exp' in approach:
             if 'fomm' in approach:
-                setting_to_compare = ['fomm'] 
+                setting_to_compare = ['fomm']
+            elif 'ours' in approach:
+                if 'vp9' in approach:
+                    setting_to_compare =  ['lr512_tgt75Kb', 'lr512_tgt105Kb']
+                else:
+                    setting_to_compare =  ['lr128_tgt15Kb', 'lr256_tgt45Kb']
             elif 'vp9' in approach:
-                setting_to_compare = ['lr256_tgt15Kb', 'lr256_tgt45Kb', 'lr512_tgt75Kb']
+                setting_to_compare = ['lr256_tgt15Kb', 'lr256_tgt45Kb', 'lr512_tgt75Kb', 'lr512_tgt105Kb']
             else:
-                setting_to_compare = ['lr128_tgt15Kb', 'lr256_tgt45Kb', 'lr256_tgt75Kb']
+                setting_to_compare = ['lr128_tgt15Kb', 'lr256_tgt45Kb', 'lr256_tgt75Kb', 'lr256_tgt105Kb']
         if 'vpx' in approach or approach == 'main_exp:vp9':
             continue
         
@@ -215,7 +220,10 @@ elif args.cdf:
         for setting in setting_to_compare:
             setting_df = df_dict[setting]
             setting_df['setting'] = setting
-            setting_df['approach'] = approach.split(':')[1] if ':' in approach else approach
+            if 'ours' in approach:
+                setting_df['approach'] = 'ours'
+            else:
+                setting_df['approach'] = approach.split(':')[1] if ':' in approach else approach
             setting_df['kbps'] = setting_df['reference_kbps'] + setting_df['lr_kbps']
             final_df = pd.concat([final_df, setting_df])
     # same summary in csv
