@@ -13,4 +13,15 @@ CUDA_VISIBLE_DEVICES=3 python run.py --config config/paper_configs/personalizati
 # depthwise
 CONV_TYPE='depthwise' CUDA_VISIBLE_DEVICES=3 python run.py --config config/paper_configs/personalization/resolution512_our_model.yaml --experiment_name single_source_profile --person_id needle_drop --mode reconstruction --checkpoint /video-conf/scratch/vibhaa_tardy/depthwise_conv/no_encoder/generic_depthwise\ 24_03_23_15.24.30/00000029-checkpoint.pth.tar --profile
 
+# netadapted versions
+for conv_type in 'depthwise' 'normal';
+do 
+    for percent in '10' '1.5';
+    do 
+        CONV_TYPE=${conv_type} CUDA_VISIBLE_DEVICES=3 python run.py --config config/paper_configs/netadapt/netadapt.yaml --experiment_name single_source_profile --person_id needle_drop --mode reconstruction --checkpoint /video-conf/scratch/vedantha/paper_trials/${conv_type}/${percent}/generic/00000038-checkpoint.pth.tar --profile;
+    done
+done
+
+
+
 # timing (needs to be rerun on each platform)
