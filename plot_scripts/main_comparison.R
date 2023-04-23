@@ -52,7 +52,7 @@ ssim_plot <- ggplot(data, aes(x=kbps,y=ssim_db,color=approach,linetype=approach,
         geom_line(size=1) +
         geom_point(size=3) +
         #geom_errorbar(aes(ymin=ssim_db-ssim_db_sd, ymax=ssim_db+ssim_db_sd), width=.2) +
-        scale_x_continuous(breaks=seq(0,600,100), limits=c(0,600)) +
+        scale_x_continuous(breaks=seq(0,700,100), limits=c(0,700)) +
         
         scale_color_manual(
                 values = color_list,
@@ -73,9 +73,9 @@ ssim_plot <- ggplot(data, aes(x=kbps,y=ssim_db,color=approach,linetype=approach,
                 guide=guide_legend(title=NULL, nrow=2)) +
         scale_x_break(c(200, 500), scales=0.5, space=0.75) +
         
-        annotate("segment", x = 580, xend = 520, y = 6, yend = 9,
+        annotate("segment", x = 680, xend = 520, y = 6, yend = 9,
            colour = "grey", size = 2, arrow = arrow()) +
-        annotate("text", x = 572, y = 7.8, angle=305, size=5,
+        annotate("text", x = 642, y = 7.8, angle=315, size=5,
            colour = "grey", label="Better") +
 
 
@@ -85,7 +85,7 @@ psnr_plot <- ggplot(data, aes(x=kbps,y=psnr,color=approach,linetype=approach, sh
         geom_line(size=1) +
         geom_point(size=3) +
         #geom_errorbar(aes(ymin=psnr-psnr_sd, ymax=psnr+psnr_sd), width=.2) +
-        scale_x_continuous(breaks=seq(0,600,100), limits=c(0,600)) +
+        scale_x_continuous(breaks=seq(0,700,100), limits=c(0,700)) +
         scale_x_break(c(200, 500), scales=0.5, space=.75) +
 
         scale_color_manual(
@@ -106,9 +106,9 @@ psnr_plot <- ggplot(data, aes(x=kbps,y=psnr,color=approach,linetype=approach, sh
                 breaks=breaks_list,
                 guide=guide_legend(title=NULL, nrow=2)) +
         
-        annotate("segment", x = 580, xend = 520, y = 20, yend = 25,
+        annotate("segment", x = 680, xend = 520, y = 20, yend = 25,
            colour = "grey", size = 2, arrow = arrow()) +
-        annotate("text", x = 570, y = 23, angle=305, size=5,
+        annotate("text", x = 640, y = 23, angle=315, size=5,
            colour = "grey", label="Better") +
 
 
@@ -121,7 +121,7 @@ lpips_plot <- ggplot(data, aes(x=kbps,y=orig_lpips,color=approach,linetype=appro
         geom_line(size=1) +
         geom_point(size=3) + 
         #geom_errorbar(aes(ymin=orig_lpips-orig_lpips_sd, ymax=orig_lpips+orig_lpips_sd), width=.2) +
-        scale_x_continuous(breaks=seq(0,600,100), limits=c(0,600)) +
+        scale_x_continuous(breaks=seq(0,700,100), limits=c(0,700)) +
         scale_x_break(c(200, 500), scales=0.5, space=.75) +
 
         scale_color_manual(
@@ -142,9 +142,9 @@ lpips_plot <- ggplot(data, aes(x=kbps,y=orig_lpips,color=approach,linetype=appro
                 breaks=breaks_list,
                 guide=guide_legend(title=NULL, nrow=2)) +
         
-        annotate("segment", x = 580, xend = 520, y = 0.38, yend = 0.31,
+        annotate("segment", x = 680, xend = 520, y = 0.38, yend = 0.31,
            colour = "grey", size = 2, arrow = arrow()) +
-        annotate("text", x = 540, y = 0.37, angle=52, size=5,
+        annotate("text", x = 590, y = 0.37, angle=50, size=5,
            colour = "grey", label="Better") +
 
         labs(y="LPIPS", x="Kbps") 
