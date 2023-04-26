@@ -3,8 +3,8 @@ import matplotlib.image
 import os
 from PIL import Image, ImageDraw, ImageFont
 
-main_settings = ['lr128_tgt15Kb', 'lr256_tgt45Kb', 'lr256_tgt75Kb', 'lr256_tgt105Kb', 'lr512_tgt180Kb', 'lr512_tgt420Kb']
-vp9_settings = ['lr256_tgt15Kb', 'lr256_tgt45Kb', 'lr512_tgt75Kb', 'lr512_tgt105Kb']
+main_settings = ['lr128_tgt15Kb', 'lr256_tgt45Kb', 'lr256_tgt75Kb', 'lr256_tgt105Kb', 'lr512_tgt180Kb']
+vp9_settings = ['lr256_tgt15Kb', 'lr256_tgt45Kb', 'lr512_tgt75Kb', 'lr512_tgt105Kb', 'lr512_tgt180Kb']
 encoder_exp_settings = ['15Kb', '45Kb', '75Kb']
 settings = {
         'main_exp:ours': main_settings,

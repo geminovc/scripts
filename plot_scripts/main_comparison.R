@@ -4,8 +4,8 @@
 source("style.R")
 
 args <- commandArgs(trailingOnly=TRUE)
-file <- "../data/full_comparison_with_vp9_after_recalibrating/wrangled_summary.csv"
-plot_filename <- "pdfs/full_comparison_with_vp9_after_recalibrating_with_break.pdf"
+file <- "../data/full_comparison_with_vp9_after_recalibrating/wrangled_summary2.csv"
+plot_filename <- "pdfs/full_comparison_with_vp9_after_recalibrating.pdf"
 data<-read.csv(file)
 
 label_list <- c(
@@ -14,7 +14,7 @@ label_list <- c(
                  "vp9_bicubic" = "Bicubic (VP9)",
                  "ours" = "Gemino",
                  "SwinIR" = "SwinIR",
-                 "vp9" = "VP9",
+                 "vp9" = "VP9 (Chromium)",
                  "fomm" = "FOMM")
 
 
@@ -52,7 +52,7 @@ ssim_plot <- ggplot(data, aes(x=kbps,y=ssim_db,color=approach,linetype=approach,
         geom_line(size=1) +
         geom_point(size=3) +
         #geom_errorbar(aes(ymin=ssim_db-ssim_db_sd, ymax=ssim_db+ssim_db_sd), width=.2) +
-        scale_x_continuous(breaks=seq(0,700,100), limits=c(0,700)) +
+        xlim(0, 700) +
         
         scale_color_manual(
                 values = color_list,
@@ -71,7 +71,7 @@ ssim_plot <- ggplot(data, aes(x=kbps,y=ssim_db,color=approach,linetype=approach,
                 labels=label_list,
                 breaks=breaks_list,
                 guide=guide_legend(title=NULL, nrow=2)) +
-        scale_x_break(c(200, 500), scales=0.5, space=0.75) +
+        #scale_x_break(c(200, 500), scales=0.5, space=0.75) +
         
         annotate("segment", x = 680, xend = 520, y = 6, yend = 9,
            colour = "grey", size = 2, arrow = arrow()) +
@@ -85,8 +85,8 @@ psnr_plot <- ggplot(data, aes(x=kbps,y=psnr,color=approach,linetype=approach, sh
         geom_line(size=1) +
         geom_point(size=3) +
         #geom_errorbar(aes(ymin=psnr-psnr_sd, ymax=psnr+psnr_sd), width=.2) +
-        scale_x_continuous(breaks=seq(0,700,100), limits=c(0,700)) +
-        scale_x_break(c(200, 500), scales=0.5, space=.75) +
+        xlim(0, 700) +
+        #scale_x_break(c(200, 500), scales=0.5, space=.75) +
 
         scale_color_manual(
                 values = color_list,
@@ -121,8 +121,8 @@ lpips_plot <- ggplot(data, aes(x=kbps,y=orig_lpips,color=approach,linetype=appro
         geom_line(size=1) +
         geom_point(size=3) + 
         #geom_errorbar(aes(ymin=orig_lpips-orig_lpips_sd, ymax=orig_lpips+orig_lpips_sd), width=.2) +
-        scale_x_continuous(breaks=seq(0,700,100), limits=c(0,700)) +
-        scale_x_break(c(200, 500), scales=0.5, space=.75) +
+        xlim(0, 700) +
+        #scale_x_break(c(200, 500), scales=0.5, space=.75) +
 
         scale_color_manual(
                 values = color_list,

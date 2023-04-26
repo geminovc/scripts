@@ -4,65 +4,73 @@
 source("style.R")
 
 args <- commandArgs(trailingOnly=TRUE)
-file <- "../data/with_vp9_and_bicubic/summary.csv"
-plot_filename <- "pdfs/main_experiment_with_vp9_bicubic_zoomed_in.pdf"
+file <- "../data/full_comparison_with_vp9_after_recalibrating/wrangled_summary2.csv"
+plot_filename <- "pdfs/full_comparison_with_vp9_after_recalibrating_zoomed_in.pdf"
 data<-read.csv(file)
-
 label_list <- c(
-                 "bicubic" = "Bicubic",
+                 "vpx" = "VP8 (Chromium)",
+                 "bicubic" = "Bicubic (VP8)",
                  "vp9_bicubic" = "Bicubic (VP9)",
                  "ours" = "Gemino",
-                 "vp9_ours" = "Gemino (VP9)",
+                 "SwinIR" = "SwinIR",
+                 "vp9" = "VP9 (Chromium)",
                  "fomm" = "FOMM")
 
 
 shape_list <- c(
+                 "vpx" = 15,
                  "bicubic" = 8,
-                 "vp9_bicubic" = 17,
+                 "vp9_bicubic" = 8,
                  "ours" = 16,
-                 "vp9_ours" = 20,
+                 "SwinIR" = 20,
+                 "vp9" = 18,
                  "fomm" = 17)
 
 line_list <- c(
+                 "vpx" = "twodash",
                  "bicubic" = "dashed",
-                 "vp9_bicubic" = "dotdash",
+                 "vp9_bicubic" = "twodash",
                  "ours" = "solid",
-                 "vp9_ours" = "dotted",
+                 "SwinIR" = "dotted",
+                 "vp9" = "twodash",
                  "fomm" = "blank")
 
 color_list <- c(
-                 "vp9_ours" = "#A3A500",
-                 "vp9_bicubic" = "#7570B3",
+                 "vpx" = "#00BF7D",
+                 "SwinIR" = "#A3A500",
                  "bicubic" = "#F8766D",
+                 "vp9_bicubic" = "#000000",
+                 "vp9" = "#bf5b17",
                  "ours" = "#00B0F6",
                  "fomm" = "#E76BF3")
 
 
-breaks_list <- c("bicubic", "vp9_bicubic", "vp9_ours", "fomm", "ours")
+breaks_list <- c("vpx", "vp9", "bicubic", "vp9_bicubic", "SwinIR", "fomm", "ours")
 
 ssim_plot <- ggplot(data, aes(x=kbps,y=ssim_db,color=approach,linetype=approach, shape=approach)) + 
         geom_line(size=1) +
         geom_point(size=3) +
         #geom_errorbar(aes(ymin=ssim_db-ssim_db_sd, ymax=ssim_db+ssim_db_sd), width=.2) +
         xlim(0, 200) + 
+        ylim(4, 13) +
         
         scale_color_manual(
                 values = color_list,
                 labels=label_list,
                 breaks=breaks_list,
-                guide=guide_legend(title=NULL, nrow=1)) +
+                guide=guide_legend(title=NULL, nrow=2)) +
 
         scale_shape_manual(
                 values=shape_list,
                 labels=label_list,
                 breaks=breaks_list,
-                guide=guide_legend(title=NULL, nrow=1)) +
+                guide=guide_legend(title=NULL, nrow=2)) +
 
         scale_linetype_manual(
                 values = line_list,
                 labels=label_list,
                 breaks=breaks_list,
-                guide=guide_legend(title=NULL, nrow=1)) +
+                guide=guide_legend(title=NULL, nrow=2)) +
 
 
         labs(y="SSIM (dB)", x="Kbps") 
@@ -73,24 +81,25 @@ psnr_plot <- ggplot(data, aes(x=kbps,y=psnr,color=approach,linetype=approach, sh
         geom_point(size=3) +
         #geom_errorbar(aes(ymin=psnr-psnr_sd, ymax=psnr+psnr_sd), width=.2) +
         xlim(0, 200) +  
+        ylim(17, 32) +
 
         scale_color_manual(
                 values = color_list,
                 labels=label_list,
                 breaks=breaks_list,
-                guide=guide_legend(title=NULL, nrow=1)) +
+                guide=guide_legend(title=NULL, nrow=2)) +
 
         scale_shape_manual(
                 values=shape_list,
                 labels=label_list,
                 breaks=breaks_list,
-                guide=guide_legend(title=NULL, nrow=1)) +
+                guide=guide_legend(title=NULL, nrow=2)) +
 
         scale_linetype_manual(
                 values = line_list,
                 labels=label_list,
                 breaks=breaks_list,
-                guide=guide_legend(title=NULL, nrow=1)) +
+                guide=guide_legend(title=NULL, nrow=2)) +
 
 
         theme(legend.text=element_text(size=rel(1)), legend.key.size=unit(15,"points"), legend.position="none",
@@ -103,24 +112,25 @@ lpips_plot <- ggplot(data, aes(x=kbps,y=orig_lpips,color=approach,linetype=appro
         geom_point(size=3) + 
         #geom_errorbar(aes(ymin=orig_lpips-orig_lpips_sd, ymax=orig_lpips+orig_lpips_sd), width=.2) +
         xlim(0, 200) +
+        ylim(0.15, 0.4) + 
 
         scale_color_manual(
                 values = color_list,
                 labels=label_list,
                 breaks=breaks_list,
-                guide=guide_legend(title=NULL, nrow=1)) +
+                guide=guide_legend(title=NULL, nrow=2)) +
 
         scale_shape_manual(
                 values=shape_list,
                 labels=label_list,
                 breaks=breaks_list,
-                guide=guide_legend(title=NULL, nrow=1)) +
+                guide=guide_legend(title=NULL, nrow=2)) +
 
         scale_linetype_manual(
                 values = line_list,
                 labels=label_list,
                 breaks=breaks_list,
-                guide=guide_legend(title=NULL, nrow=1)) +
+                guide=guide_legend(title=NULL, nrow=2)) +
 
         labs(y="LPIPS", x="Kbps") 
  
