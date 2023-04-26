@@ -95,6 +95,27 @@ def make_label(labels, img_width):
     array = np.array(white_img)
     return array
 
+def make_metrics_label(metrics, img_width):
+    """ add a label row on top of figure """
+    total_width = (len(metrics['PSNR (dB):']) + 1) * img_width
+    height = 300
+    white_background = np.full((height, total_width, 3), 255, dtype=np.uint8)
+    white_img = Image.fromarray(white_background, "RGB")
+    white_img_draw = ImageDraw.Draw(white_img)
+    font_size = round(0.8*height/3)
+    desired_font = ImageFont.truetype('times.ttf', font_size)
+    for j, m in enumerate(metrics):
+        print(j, m)
+        x_loc = 300
+        white_img_draw.text((x_loc, round(j*height/3)), m, fill=(0, 0, 0), font=desired_font)
+        for i, l in enumerate(metrics[m]):
+            label = "{:.2f}".format(l)
+            x_loc = round((i + 1 + 0.4)* img_width - 0.6*len(label)) - 20
+            x_loc = x_loc + 30 if len(label) == 4 else x_loc
+            white_img_draw.text((x_loc, round(j*height/3)), label, fill=(0, 0, 0), font=desired_font)
+    array = np.array(white_img)
+    return array
+
 
 def get_offset(setting, approach):
     """ return offset at which prediction is found based on setting """

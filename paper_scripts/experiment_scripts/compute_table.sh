@@ -26,7 +26,7 @@ for conv_type in 'depthwise' 'normal';
 do 
     for percent in '10' '1.5';
     do 
-        CONV_TYPE=${conv_type} CUDA_VISIBLE_DEVICES=3 python run.py --config config/paper_configs/netadapt/netadapt.yaml --experiment_name single_source_profile --person_id needle_drop --mode reconstruction --checkpoint /video-conf/scratch/vedantha/paper_trials/${conv_type}/${percent}/generic/00000038-checkpoint.pth.tar --profile;
+        CONV_TYPE=${conv_type} CUDA_VISIBLE_DEVICES=3 python run.py --config config/paper_configs/netadapt/netadapt.yaml --experiment_name single_source_profile --person_id needle_drop --mode reconstruction --netadapt_checkpoint /video-conf/scratch/vedantha/paper_trials/${conv_type}/${percent}/generic/00000038-checkpoint.pth.tar --profile;
     done
 done
 
