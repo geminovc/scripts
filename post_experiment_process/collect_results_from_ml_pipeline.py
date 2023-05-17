@@ -177,6 +177,12 @@ if args.summarize:
         label = make_label(labels, img_width)
         print(np.shape(label), np.shape(final_img))
         final_img = np.concatenate([label, final_img], axis=0)
+        """
+        final_img = final_img[:,1024:,:]
+        metrics = {'PSNR (dB):': [25.47, 24.59, 25.64], 'SSIM (dB):': [8.31, 7.46, 9.29], 'LPIPS:': [0.28, 0.31, 0.24]}
+        metrics_label = make_metrics_label(metrics, img_width)
+        final_img = np.concatenate([final_img, metrics_label], axis=0)
+        """
         matplotlib.image.imsave(f'{args.save_prefix}/video{args.video_num}_frame{args.frame_num}_45Kb.pdf', final_img)
 
 
