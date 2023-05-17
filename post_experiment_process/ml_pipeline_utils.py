@@ -22,6 +22,7 @@ settings = {
         'encoder_effect:tgt_random': encoder_exp_settings,
         'encoder_effect:no_encoder': encoder_exp_settings,
         'personalization': ['personalization', 'generic'],
+        'netadapt_1024': ['depthwise_10', 'depthwise_1.5', 'normal_10', 'normal_1.5'],
         'model_ablation': ['pure_upsampling', 'fomm_3_pathways_with_occlusion'],
         'resolution_comparison': ['lr64_tgt45Kb', 'lr128_tgt45Kb', 'lr256_tgt45Kb'],
         'design_model_comparison': ['fomm', 'fomm_3_pathways_with_occlusion'],
@@ -88,9 +89,12 @@ def make_label(labels, img_width):
                 x_loc = round((i + 0.2)* img_width - 0.5*len(l))
             else:
                 x_loc = round((i + 0.25)* img_width - 0.8*len(l))
-                x_loc -= 100
+                x_loc -= 50
+                if l == "Reference":
+                    print("here")
+                    x_loc += 40
         else:
-            x_loc = round((i + 0.05)* img_width)
+            x_loc = round((i + 0.05)* img_width) + 60
         white_img_draw.text((x_loc, round(0.1*height)), l, fill=(0, 0, 0), font=desired_font)
     array = np.array(white_img)
     return array
@@ -121,6 +125,8 @@ def get_offset(setting, approach):
     """ return offset at which prediction is found based on setting """
     if approach in ['main_exp:bicubic', 'main_exp:vpx', 'main_exp:vp9_bicubic']:
         offset = 0
+    elif 'netadapt' in approach:
+        offset = 7
     elif 'personalization' in setting or 'generic' in setting:
         offset = 7
     elif 'pure_upsampling' in setting or 'pure_upsampling' in approach \
