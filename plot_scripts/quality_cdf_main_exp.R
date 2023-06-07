@@ -77,7 +77,7 @@ second_plot <- ggplot(data[data$setting == 'lr256_tgt45Kb' | data$setting == 'fo
                 breaks=breaks_list,
                 guide=guide_legend(title=NULL, nrow=1)) +
 
-        theme(legend.text=element_text(size=rel(1)), legend.key.size=unit(15,"points"), legend.position="none",
+        theme(legend.text=element_text(size=unit(25,"points")), legend.key.size=unit(15,"points"), legend.position="none",
               legend.box.margin=margin(-10,-10,-10,-10), legend.title=element_blank(),
               legend.margin=margin(c(0,0,0,0))) 
 
@@ -111,7 +111,7 @@ fourth_plot <- ggplot(data[data$setting == 'lr256_tgt105Kb'| data$setting == 'lr
                 guide=guide_legend(title=NULL, nrow=1)) +
         labs(x="105 Kbps", y="CDF") 
 
-legend <- get_legend(first_plot + theme(legend.position="top"))
+legend <- get_legend(second_plot + theme(legend.position="top"))
 title <- get_title(first_plot + theme(plot.title = element_text(hjust = 0.5)))
 
 

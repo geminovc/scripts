@@ -65,7 +65,7 @@ videos_plot <- ggplot(data2) +
                 breaks=breaks_list,
                 guide=guide_legend(title=NULL, nrow=1)) +
         labs(x="LPIPS", y="CDF (across videos)") +
-        theme(legend.text=element_text(size=rel(0.8)), legend.key.size=unit(15,"points"), legend.position="none",
+        theme(legend.text=element_text(size=unit(25,"points")), legend.key.size=unit(15,"points"), legend.position="none",
               legend.box.margin=margin(-10,-10,-10,-10), legend.title=element_blank(),
               legend.margin=margin(c(0,0,0,0))) 
 
